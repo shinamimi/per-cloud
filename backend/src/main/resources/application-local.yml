@@ -1,0 +1,19 @@
+spring:
+
+  datasource:
+
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cloud}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+
+    username: ${MYSQL_USER:cloud}
+
+    password: ${MYSQL_PASSWORD:mimi}
+
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+
+    redis:
+
+      host: localhost
+
+      port: ${REDIS_PORT:6379}
