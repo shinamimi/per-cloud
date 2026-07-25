@@ -10,3 +10,30 @@ spring:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
+
+minio:
+  endpoint: http://${MINIO_HOST:minio}:${MINIO_API_PORT:9000}
+  access-key: ${MINIO_ROOT_USER:minioadmin}
+  secret-key: ${MINIO_ROOT_PASSWORD:minio123456}
+  bucket: cloud-storage
+  auto-create-bucket: true
+  public-url: http://${MINIO_HOST:minio}:${MINIO_API_PORT:9000}
+
+jwt:
+  secret: ${JWT_SECRET:my-secret-key-change-in-production}
+  expiration: 86400000
+  header: Authorization
+  prefix: Bearer
+  issuer: cloud
+
+redis:
+  host: ${REDIS_HOST:redis}
+  port: ${REDIS_PORT:6379}
+  database: 0
+  password: ${REDIS_PASSWORD:}
+  timeout: 3000
+
+file:
+  storage-path: /tmp/cloud-storage
+  chunk-size: 10485760
+  max-size: 536870912
