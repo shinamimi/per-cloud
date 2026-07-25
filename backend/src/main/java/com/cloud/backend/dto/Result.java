@@ -6,10 +6,19 @@ import lombok.Data;
 @Data
 public class Result<T> {
 
-    private int code;
+    /**
+     * 业务状态码
+     */
+    private Integer code;
 
+    /**
+     * 返回信息
+     */
     private String message;
 
+    /**
+     * 返回数据
+     */
     private T data;
 
     public static <T> Result<T> success(T data) {
