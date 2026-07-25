@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.RecycleBinMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.RecycleBin"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_recycle_bin (user_id, file_id, original_name, object_name, parent_id, size, mime_type, deleted_time, expire_time)
+        VALUES (#{userId}, #{fileId}, #{originalName}, #{objectName}, #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
+    </insert>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM t_recycle_bin WHERE id = #{id}
+    </delete>
+
+    <select id="findByUserId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId}
+    </select>
+
+</mapper>

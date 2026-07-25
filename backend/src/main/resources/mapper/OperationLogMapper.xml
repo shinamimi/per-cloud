@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.OperationLogMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.OperationLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_operation_log (user_id, operation, target_type, target_id, detail, ip, user_agent)
+        VALUES (#{userId}, #{operation}, #{targetType}, #{targetId}, #{detail}, #{ip}, #{userAgent})
+    </insert>
+
+    <select id="findByUserId" resultType="com.cloud.backend.entity.OperationLog">
+        SELECT * FROM t_operation_log WHERE user_id = #{userId}
+    </select>
+
+</mapper>

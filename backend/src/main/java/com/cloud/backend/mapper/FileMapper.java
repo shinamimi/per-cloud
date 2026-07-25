@@ -14,7 +14,7 @@ public interface FileMapper {
 
     List<File> findByUserIdAndParentId(Long userId, Long parentId);
 
-    List<File> findByUserIdAndPath(Long userId, String path);
+    File findByUserIdAndPath(Long userId, String path);
 
     int update(File file);
 

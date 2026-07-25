@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.FileMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.File"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_file (user_id, parent_id, name, path, size, mime_type, extension, file_hash, is_directory, object_name, status)
+        VALUES (#{userId}, #{parentId}, #{name}, #{path}, #{size}, #{mimeType}, #{extension}, #{fileHash}, #{isDirectory}, #{objectName}, #{status})
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file WHERE id = #{id}
+    </select>
+
+    <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+    </select>
+
+    <select id="findByUserIdAndPath" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE user_id = #{userId} AND path = #{path} AND status = 1
+    </select>
+
+    <update id="update" parameterType="com.cloud.backend.entity.File">
+        UPDATE t_file
+        SET name = #{name},
+            path = #{path},
+            size = #{size},
+            mime_type = #{mimeType},
+            extension = #{extension},
+            file_hash = #{fileHash},
+            is_directory = #{isDirectory},
+            object_name = #{objectName},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM t_file WHERE id = #{id}
+    </delete>
+
+    <update id="updateStatus">
+        UPDATE t_file SET status = #{status} WHERE id = #{id}
+    </update>
+
+</mapper>

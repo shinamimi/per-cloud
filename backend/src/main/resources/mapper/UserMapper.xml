@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.UserMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.User"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_user (username, password, email, nickname, avatar, role, quota, used_space, status)
+        VALUES (#{username}, #{password}, #{email}, #{nickname}, #{avatar}, #{role}, #{quota}, #{usedSpace}, #{status})
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user WHERE id = #{id}
+    </select>
+
+    <select id="findByUsername" parameterType="java.lang.String" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user WHERE username = #{username}
+    </select>
+
+    <select id="findByEmail" parameterType="java.lang.String" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user WHERE email = #{email}
+    </select>
+
+    <update id="update" parameterType="com.cloud.backend.entity.User">
+        UPDATE t_user
+        SET password = #{password},
+            nickname = #{nickname},
+            avatar = #{avatar},
+            role = #{role},
+            quota = #{quota},
+            used_space = #{usedSpace},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM t_user WHERE id = #{id}
+    </delete>
+
+</mapper>

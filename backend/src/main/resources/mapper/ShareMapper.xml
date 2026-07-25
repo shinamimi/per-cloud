@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.ShareMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.Share"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_share (user_id, file_id, share_token, access_password, status, expire_time, max_download, download_count)
+        VALUES (#{userId}, #{fileId}, #{shareToken}, #{accessPassword}, #{status}, #{expireTime}, #{maxDownload}, #{downloadCount})
+    </insert>
+
+    <select id="findByToken" parameterType="java.lang.String" resultType="com.cloud.backend.entity.Share">
+        SELECT * FROM t_share WHERE share_token = #{shareToken}
+    </select>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.Share">
+        SELECT * FROM t_share WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultType="com.cloud.backend.entity.Share">
+        SELECT * FROM t_share WHERE user_id = #{userId}
+    </select>
+
+    <update id="update" parameterType="com.cloud.backend.entity.Share">
+        UPDATE t_share
+        SET status = #{status},
+            download_count = #{downloadCount},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM t_share WHERE id = #{id}
+    </delete>
+
+</mapper>
