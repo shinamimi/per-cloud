@@ -36,3 +36,9 @@ file:
   storage-path: ${FILE_STORAGE_PATH}
   chunk-size: 10485760
   max-size: 536870912
+
+mail:
+  host: ${MAIL_HOST}
+  port: ${MAIL_PORT}
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}

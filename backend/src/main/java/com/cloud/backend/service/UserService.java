@@ -12,6 +12,8 @@ public interface UserService {
 
     User findByUsername(String username);
 
+    User findByAccount(String account);
+
     User findByEmail(String email);
 
     int update(User user);

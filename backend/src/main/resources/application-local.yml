@@ -46,3 +46,9 @@ file:
   storage-path: /tmp/cloud-storage
   chunk-size: 10485760
   max-size: 536870912
+
+mail:
+  host: ${MAIL_HOST:smtp.qq.com}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}

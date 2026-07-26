@@ -23,6 +23,10 @@
         SELECT * FROM t_user WHERE email = #{email}
     </select>
 
+    <select id="findByAccount" parameterType="java.lang.String" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user WHERE username = #{account} OR email = #{account} LIMIT 1
+    </select>
+
     <update id="update" parameterType="com.cloud.backend.entity.User">
         UPDATE t_user
         SET password = #{password},
