@@ -1,5 +1,6 @@
 package com.cloud.backend.entity;
 
+import com.cloud.backend.enums.ShareStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -16,7 +17,7 @@ public class Share {
 
     private String accessPassword;
 
-    private Integer status;
+    private ShareStatus status;
 
     private LocalDateTime expireTime;
 

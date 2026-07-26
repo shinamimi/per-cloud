@@ -25,7 +25,7 @@ public class JwtTokenUtil {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(loginUser.getUsername())
-                .claim("role", loginUser.getRole())
+                .claim("role", loginUser.getRole().getValue())
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + jwtProperties.getExpiration()))

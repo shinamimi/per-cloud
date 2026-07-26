@@ -5,6 +5,8 @@ import com.cloud.backend.dto.LoginResponse;
 import com.cloud.backend.dto.RegisterRequest;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.entity.User;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.JwtBlacklistService;
 import com.cloud.backend.service.UserService;
@@ -50,7 +52,7 @@ public class AuthController {
                 token,
                 loginUser.getUserId(),
                 loginUser.getUsername(),
-                loginUser.getRole()
+                loginUser.getRole().getValue()
         );
         return Result.success(response);
     }
@@ -69,8 +71,8 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setNickname(request.getNickname() != null ? request.getNickname() : request.getUsername());
-        user.setRole(0);
-        user.setStatus(1);
+        user.setRole(Role.USER);
+        user.setStatus(UserStatus.NORMAL);
 
         userService.register(user);
 
@@ -80,7 +82,7 @@ public class AuthController {
                 token,
                 user.getId(),
                 user.getUsername(),
-                user.getRole()
+                user.getRole().getValue()
         );
         return Result.success(response);
     }

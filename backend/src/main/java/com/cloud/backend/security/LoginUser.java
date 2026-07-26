@@ -1,6 +1,8 @@
 package com.cloud.backend.security;
 
 import com.cloud.backend.entity.User;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.UserStatus;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,8 +17,8 @@ public class LoginUser implements UserDetails {
     private final Long userId;
     private final String username;
     private final String password;
-    private final Integer role;
-    private final Integer status;
+    private final Role role;
+    private final UserStatus status;
 
     public LoginUser(User user) {
         this.userId = user.getId();
@@ -28,7 +30,7 @@ public class LoginUser implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String roleName = role != null && role == 1 ? "ROLE_ADMIN" : "ROLE_USER";
+        String roleName = role == Role.ADMIN ? "ROLE_ADMIN" : "ROLE_USER";
         return List.of(new SimpleGrantedAuthority(roleName));
     }
 
@@ -49,6 +51,6 @@ public class LoginUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return status != null && status == 1;
+        return status == UserStatus.NORMAL;
     }
 }
