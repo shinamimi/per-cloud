@@ -21,3 +21,8 @@ mybatis:
 
 logging:
   config: classpath:logback-spring.xml
+
+super-admin:
+  username: ${SUPER_ADMIN_USERNAME:root}
+  password: ${SUPER_ADMIN_PASSWORD:root123456}
+  email: ${SUPER_ADMIN_EMAIL:root@cloud.local}

@@ -46,4 +46,9 @@ public class ShareServiceImpl implements ShareService {
     public int removeById(Long id) {
         return shareMapper.deleteById(id);
     }
+
+    @Override
+    public List<Share> findAll() {
+        return shareMapper.findAll();
+    }
 }

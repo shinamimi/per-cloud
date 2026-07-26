@@ -4,6 +4,7 @@ import com.cloud.backend.entity.User;
 import com.cloud.backend.mapper.UserMapper;
 import com.cloud.backend.service.UserService;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -44,6 +45,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findByEmail(String email) {
         return userMapper.findByEmail(email);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return userMapper.findAll();
     }
 
     @Override

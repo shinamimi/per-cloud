@@ -51,4 +51,9 @@ public class FileServiceImpl implements FileService {
     public int updateStatus(Long id, Integer status) {
         return fileMapper.updateStatus(id, status);
     }
+
+    @Override
+    public List<File> findAll() {
+        return fileMapper.findAll();
+    }
 }

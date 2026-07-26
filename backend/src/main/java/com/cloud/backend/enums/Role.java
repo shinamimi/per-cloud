@@ -6,7 +6,9 @@ import lombok.Getter;
 public enum Role {
 
     USER(0),
-    ADMIN(1);
+    OPERATOR(10),
+    ADMIN(20),
+    SUPER_ADMIN(100);
 
     private final int value;
 

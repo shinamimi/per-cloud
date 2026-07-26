@@ -25,4 +25,9 @@ public class OperationLogServiceImpl implements OperationLogService {
     public List<OperationLog> listByUserId(Long userId) {
         return operationLogMapper.findByUserId(userId);
     }
+
+    @Override
+    public List<OperationLog> listAll() {
+        return operationLogMapper.findAll();
+    }
 }

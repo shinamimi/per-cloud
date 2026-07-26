@@ -30,7 +30,12 @@ public class LoginUser implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String roleName = role == Role.ADMIN ? "ROLE_ADMIN" : "ROLE_USER";
+        String roleName = switch (role) {
+            case SUPER_ADMIN -> "ROLE_SUPER_ADMIN";
+            case ADMIN -> "ROLE_ADMIN";
+            case OPERATOR -> "ROLE_OPERATOR";
+            default -> "ROLE_USER";
+        };
         return List.of(new SimpleGrantedAuthority(roleName));
     }
 

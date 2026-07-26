@@ -19,4 +19,6 @@ public interface FileService {
     int removeById(Long id);
 
     int updateStatus(Long id, Integer status);
+
+    List<File> findAll();
 }

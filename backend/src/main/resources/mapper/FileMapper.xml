@@ -48,4 +48,8 @@
         UPDATE t_file SET status = #{status} WHERE id = #{id}
     </update>
 
+    <select id="findAll" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file ORDER BY created_at DESC
+    </select>
+
 </mapper>

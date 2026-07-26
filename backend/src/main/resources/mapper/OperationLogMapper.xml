@@ -12,7 +12,11 @@
     </insert>
 
     <select id="findByUserId" resultType="com.cloud.backend.entity.OperationLog">
-        SELECT * FROM t_operation_log WHERE user_id = #{userId}
+        SELECT * FROM t_operation_log WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findAll" resultType="com.cloud.backend.entity.OperationLog">
+        SELECT * FROM t_operation_log ORDER BY created_at DESC
     </select>
 
 </mapper>

@@ -2,6 +2,7 @@ package com.cloud.backend.mapper;
 
 import com.cloud.backend.entity.File;
 import org.apache.ibatis.annotations.Mapper;
+import java.util.List;
 
 import java.util.List;
 
@@ -21,4 +22,6 @@ public interface FileMapper {
     int deleteById(Long id);
 
     int updateStatus(Long id, Integer status);
+
+    List<File> findAll();
 }

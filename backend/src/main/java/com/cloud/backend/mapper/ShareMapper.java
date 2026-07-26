@@ -2,6 +2,7 @@ package com.cloud.backend.mapper;
 
 import com.cloud.backend.entity.Share;
 import org.apache.ibatis.annotations.Mapper;
+import java.util.List;
 
 import java.util.List;
 
@@ -19,4 +20,6 @@ public interface ShareMapper {
     int update(Share share);
 
     int deleteById(Long id);
+
+    List<Share> findAll();
 }

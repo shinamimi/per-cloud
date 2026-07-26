@@ -35,4 +35,8 @@
         DELETE FROM t_share WHERE id = #{id}
     </delete>
 
+    <select id="findAll" resultType="com.cloud.backend.entity.Share">
+        SELECT * FROM t_share ORDER BY created_at DESC
+    </select>
+
 </mapper>

@@ -17,4 +17,6 @@ public interface ShareService {
     int update(Share share);
 
     int removeById(Long id);
+
+    List<Share> findAll();
 }

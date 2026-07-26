@@ -1,6 +1,7 @@
 package com.cloud.backend.service;
 
 import com.cloud.backend.entity.User;
+import java.util.List;
 
 public interface UserService {
 
@@ -15,6 +16,8 @@ public interface UserService {
     User findByAccount(String account);
 
     User findByEmail(String email);
+
+    List<User> findAll();
 
     int update(User user);
 

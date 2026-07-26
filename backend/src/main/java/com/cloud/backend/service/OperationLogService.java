@@ -9,4 +9,6 @@ public interface OperationLogService {
     void log(OperationLog operationLog);
 
     List<OperationLog> listByUserId(Long userId);
+
+    List<OperationLog> listAll();
 }
