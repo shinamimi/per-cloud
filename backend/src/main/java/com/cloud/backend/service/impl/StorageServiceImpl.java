@@ -9,6 +9,13 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * MinIO 对象存储实现。
+ *
+ * 设计思路：
+ * 基于 MinIO Java SDK，封装了文件的上传、下载、删除、复制、预签名 URL 等操作。
+ * 所有操作使用默认桶（properties.getBucket()），简化调用。
+ */
 @Service
 public class StorageServiceImpl implements StorageService {
 
@@ -108,6 +115,10 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
+    /**
+     * 获取对象元信息（大小、Content-Type、ETag）
+     * ETag 可以用作文件 MD5 校验
+     */
     @Override
     public ObjectInfo getObjectInfo(String objectName) {
         try {

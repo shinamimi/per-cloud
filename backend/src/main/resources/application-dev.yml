@@ -1,7 +1,11 @@
+# =============================================================================
+# Cloud Backend — dev 环境（集成测试 / Docker Compose）
+# 服务通过 docker-compose 的容器名访问（mysql / redis / minio）
+# 部分配置无默认值（如 MAIL_USERNAME），需要 .env 提供
+# =============================================================================
 spring:
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cloud}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-
     username: ${MYSQL_USER}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

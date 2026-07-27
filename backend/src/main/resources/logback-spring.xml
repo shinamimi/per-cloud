@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<!--
+  Logback 日志配置 —— 按 profile 分流日志输出。
 
+  设计思路：
+  - dev/local：同时输出到控制台和多个滚动文件
+    - 项目代码（com.cloud.backend）输出到 project.log
+    - MyBatis 输出到 mybatis.log
+    - Spring 框架输出到 spring.log
+    - ERROR 级别统一汇入 error.log
+    - 所有日志输出到 application.log
+  - prod：只输出文件（application.log + error.log），节省 IO
+
+  滚动策略：SizeAndTimeBasedRollingPolicy
+  - 每天一个文件，单文件 100MB 自动滚动
+  - 最多保留 30 天历史
+  - 各日志文件组有独立的总大小上限（totalSizeCap）
+-->
+<configuration>
     <property name="LOG_PREFIX" value="[cloud-backend]"/>
     <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
@@ -13,6 +29,7 @@
             </encoder>
         </appender>
 
+        <!-- 全量日志文件 -->
         <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/application.log</file>
             <encoder>
@@ -26,6 +43,7 @@
             </rollingPolicy>
         </appender>
 
+        <!-- ERROR 日志独立文件 -->
         <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/error.log</file>
             <filter class="ch.qos.logback.classic.filter.LevelFilter">
@@ -44,6 +62,7 @@
             </rollingPolicy>
         </appender>
 
+        <!-- 项目业务日志 -->
         <appender name="PROJECT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/project.log</file>
             <encoder>
@@ -60,6 +79,7 @@
             </filter>
         </appender>
 
+        <!-- MyBatis SQL 日志 -->
         <appender name="MYBATIS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/mybatis.log</file>
             <encoder>
@@ -76,6 +96,7 @@
             </filter>
         </appender>
 
+        <!-- Spring 框架日志 -->
         <appender name="SPRING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/spring.log</file>
             <encoder>
@@ -89,6 +110,7 @@
             </rollingPolicy>
         </appender>
 
+        <!-- 各 Logger 独立绑定 Appender -->
         <logger name="com.cloud.backend" level="INFO" additivity="false">
             <appender-ref ref="PROJECT_FILE"/>
             <appender-ref ref="ERROR_FILE"/>
@@ -111,6 +133,7 @@
 
     <springProfile name="prod">
 
+        <!-- 生产环境只保留全量日志和 ERROR 日志，减少 IO -->
         <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>${LOG_PATH}/application.log</file>
             <encoder>

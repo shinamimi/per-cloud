@@ -11,6 +11,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 
+/**
+ * MinIO 对象存储配置。
+ *
+ * 设计思路：
+ * 1. 读取 MinioProperties 配置，创建 MinioClient Bean，供 StorageServiceImpl 注入使用
+ * 2. 利用 ApplicationReadyEvent 在应用完全启动后（所有 Bean 就绪）自动创建桶
+ * 3. auto-create-bucket 通过 @ConditionalOnProperty 控制开关，方便生产环境关闭
+ *
+ * 为什么不用 @PostConstruct？
+ * 因为 MinioClient Bean 刚创建时网络可能未就绪，ApplicationReadyEvent 更稳妥。
+ */
 @Configuration
 public class MinioConfig {
 
@@ -30,6 +41,11 @@ public class MinioConfig {
                 .build();
     }
 
+    /**
+     * 启动后自动初始化存储桶。
+     * 实现原理：先检查桶是否存在，不存在则创建。
+     * 避免在业务层每次上传时都判断桶是否存在，减少重复代码。
+     */
     @EventListener(ApplicationReadyEvent.class)
     @ConditionalOnProperty(prefix = "minio", name = "auto-create-bucket", havingValue = "true", matchIfMissing = false)
     public void initBucket() {

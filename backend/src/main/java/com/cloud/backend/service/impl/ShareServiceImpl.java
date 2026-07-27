@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 分享服务实现 —— 委托 ShareMapper。
+ */
 @Service
 public class ShareServiceImpl implements ShareService {
 

@@ -7,6 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 文件服务实现 —— 委托 FileMapper 做数据访问。
+ * 业务校验（配额、重复文件名等）在 Controller 层处理。
+ */
 @Service
 public class FileServiceImpl implements FileService {
 

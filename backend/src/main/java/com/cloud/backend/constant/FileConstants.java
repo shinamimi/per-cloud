@@ -1,5 +1,8 @@
 package com.cloud.backend.constant;
 
+/**
+ * 文件相关常量 —— 单位换算、默认配额、分片大小、文件类型分类。
+ */
 public interface FileConstants {
 
     long KB = 1024;

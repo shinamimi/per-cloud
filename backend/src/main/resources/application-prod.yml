@@ -1,3 +1,7 @@
+# =============================================================================
+# Cloud Backend — prod 环境（生产）
+# 所有配置必须通过环境变量注入，无默认值，auto-create-bucket 关闭
+# =============================================================================
 spring:
   datasource:
     url: ${MYSQL_URL}
@@ -15,11 +19,11 @@ minio:
   access-key: ${MINIO_ROOT_USER}
   secret-key: ${MINIO_ROOT_PASSWORD}
   bucket: ${MINIO_BUCKET:cloud-storage}
-  auto-create-bucket: false
+  auto-create-bucket: false               # 生产环境关闭自动创建桶
   public-url: ${MINIO_PUBLIC_URL}
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET}                   # 生产环境必须设置强密钥！
   expiration: 86400000
   header: Authorization
   prefix: Bearer

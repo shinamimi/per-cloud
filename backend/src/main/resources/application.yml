@@ -1,11 +1,17 @@
+# =============================================================================
+# Cloud Backend — 公共配置
+# 所有环境都生效的配置，环境差异通过 spring.profiles.active 切换
+# =============================================================================
 spring:
 
   application:
     name: cloud-backend
 
+  # 默认激活 local 配置（本地开发），部署时通过 --spring.profiles.active=prod 覆盖
   profiles:
     active: local
 
+  # 优雅停机等待时间，确保正在处理的请求完成
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
@@ -14,14 +20,15 @@ mybatis:
   type-aliases-package: com.cloud.backend.entity
 
   configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: false
+    map-underscore-to-camel-case: true   # 数据库 user_name → 实体 User#userName
+    cache-enabled: false                  # 关闭二级缓存，避免数据一致性问题
     default-fetch-size: 100
     default-statement-timeout: 30
 
 logging:
-  config: classpath:logback-spring.xml
+  config: classpath:logback-spring.xml    # 独立 logback 配置，支持按 profile 切换
 
+# 超级管理员默认账号（仅首次启动时自动创建）
 super-admin:
   username: ${SUPER_ADMIN_USERNAME:root}
   password: ${SUPER_ADMIN_PASSWORD:root123456}

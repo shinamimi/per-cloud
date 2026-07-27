@@ -2,6 +2,16 @@ package com.cloud.backend.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+/**
+ * IP 地址获取工具。
+ *
+ * 设计思路：
+ * 反向代理（Nginx）环境下 request.getRemoteAddr() 获取到的是代理的 IP，
+ * 需要依次检查各种代理透传的请求头。
+ * - X-Forwarded-For：标准代理头（可能有多个 IP，取第一个）
+ * - X-Real-IP：Nginx 专有头
+ * - Proxy-Client-IP / WL-Proxy-Client-IP：其他代理
+ */
 public class IpUtil {
 
     private static final String UNKNOWN = "unknown";

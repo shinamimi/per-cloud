@@ -18,6 +18,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 认证控制器 —— 处理登录、注册、验证码、找回密码、登出等公开接口。
+ *
+ * 设计思路：
+ * 登录流程：校验参数 → 检查登录锁定 → AuthenticationManager.authenticate() 鉴权
+ *   → 成功则生成 Token → 返回 LoginResponse
+ * 注册流程：校验唯一性 → 校验验证码 → BCrypt 加密密码 → 入库 → 自动登录（返回 Token）
+ * 登出流程：将当前 Token 加入 Redis 黑名单，后续请求自动拦截
+ *
+ * 为什么手动调用 authenticationManager 而不是用 Security Filter 自动处理？
+ * 因为需要在登录成功/失败后做额外操作（记录失败次数、返回自定义字段等）。
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -49,6 +61,10 @@ public class AuthController {
         this.loginAttemptService = loginAttemptService;
     }
 
+    /**
+     * 登录 —— 支持用户名和邮箱登录（UserDetailsServiceImpl.findByAccount 支持两者）
+     * SecurityConfig 已配置 /api/auth/** 无需 Token，因此登录接口对未登录用户可访问
+     */
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         if (loginAttemptService.isLocked(request.getUsername())) {
@@ -81,6 +97,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * 发送验证码 —— 带 60 秒冷却限制
+     * 先检查冷却，再生成验证码，发送邮件后才设置冷却（防止生成失败后也需要等冷却）
+     */
     @PostMapping("/send-code")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
         if (captchaService.isOnCooldown(request.getEmail())) {
@@ -97,6 +117,10 @@ public class AuthController {
         return Result.success();
     }
 
+    /**
+     * 注册 —— 需要邮箱 + 验证码
+     * 注册成功后直接返回 Token（免登录）
+     */
     @PostMapping("/register")
     public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (userService.existsByUsername(request.getUsername())) {
@@ -130,6 +154,10 @@ public class AuthController {
         return Result.success(response);
     }
 
+    /**
+     * 忘记密码 —— 发送重置密码的验证码到邮箱
+     * 与 send-code 的区别：这里需要先确认邮箱已注册
+     */
     @PostMapping("/forgot-password")
     public Result<Void> forgotPassword(@Valid @RequestBody SendCodeRequest request) {
         User user = userService.findByEmail(request.getEmail());
@@ -146,6 +174,9 @@ public class AuthController {
         return Result.success();
     }
 
+    /**
+     * 重置密码 —— 验证码 + 新密码
+     */
     @PostMapping("/reset-password")
     public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail());
@@ -161,6 +192,10 @@ public class AuthController {
         return Result.success();
     }
 
+    /**
+     * 登出 —— 将 Token 加入黑名单
+     * 实现原理见 JwtBlacklistService：缓存当前 Token 到 Redis，TTL=Token 剩余有效期
+     */
     @PostMapping("/logout")
     public Result<Void> logout(@RequestHeader("Authorization") String authHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

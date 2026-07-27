@@ -1,25 +1,32 @@
+# =============================================================================
+# Cloud 云盘 — Docker Compose 开发环境
+# 启动 MySQL 8.4 + Redis 7.2 + MinIO（最新），三者共享 cloud-network 网络
+#
+# 设计思路：
+# 1. 容器名固定（cloud-mysql / cloud-redis / cloud-minio），方便后端 docker-compose
+#    环境 dev profile 中直接用容器名访问（如 jdbc:mysql://mysql:3306）
+# 2. 三个服务都有 healthcheck，后端依赖它们的健康状况（Spring Boot 启动时等待所有服务就绪）
+# 3. 使用 Docker Volume 持久化数据，docker compose down 不会丢失数据
+# 4. sql/ 目录映射到 mysql 的 /docker-entrypoint-initdb.d/，首次启动自动导入建表脚本
+# 5. MinIO 同时暴露 API 端口 9000 和控制台端口 9001
+# =============================================================================
 services:
   mysql:
     image: mysql:8.4
-    container_name: cloud-mysql #设置运行后的容器固定名称为 cloud-mysql。
-    restart: unless-stopped #重启策略：手动停止容器则不再自动重启；其余情况（宿主机重启、容器异常崩溃）自动重启。
-
+    container_name: cloud-mysql
+    restart: unless-stopped
     env_file:
       - ./docker/.env
-
     ports:
       - "3306:3306"
-
     volumes:
       - mysql-data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
-
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
-      interval: 10s #健康检测
-      timeout: 5s #单次健康检测超时时间 5 秒，超时判定检测失败。
-      retries: 10 #连续检测失败 10 次，判定容器不健康。
-
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - cloud-network
 
@@ -27,21 +34,16 @@ services:
     image: redis:7.2
     container_name: cloud-redis
     restart: unless-stopped
-
     ports:
       - "6379:6379"
-
-    command: ["redis-server", "--appendonly", "yes"] #容器启动执行命令，开启 Redis AOF 持久化，落地缓存数据。
-
-    volumes: #容器启动执行命令，开启 Redis AOF 持久化，落地缓存数据。
+    command: ["redis-server", "--appendonly", "yes"]  # 开启 AOF 持久化
+    volumes:
       - redis-data:/data
-
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
-
     networks:
       - cloud-network
 
@@ -49,34 +51,27 @@ services:
     image: minio/minio
     container_name: cloud-minio
     restart: unless-stopped
-
     env_file:
       - ./docker/.env
-
     command: server /data --console-address ":9001"
-
     ports:
-      - "9000:9000"
-      - "9001:9001"
-
+      - "9000:9000"  # API 端口
+      - "9001:9001"  # 管理控制台端口
     volumes:
       - minio-data:/data
-
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 10
-
     networks:
       - cloud-network
 
-
-volumes: #后为目录映射 ./mysql:/var/lib/mysql  不使用项目删除后 docker compose down 数据还在
+volumes:
   mysql-data:
   redis-data:
   minio-data:
 
 networks:
-  cloud-network: #自己定义网络（spring可以直接连接而不用 127.0.0.1）
+  cloud-network:
     driver: bridge

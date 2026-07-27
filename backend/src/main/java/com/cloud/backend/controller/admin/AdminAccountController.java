@@ -13,6 +13,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 管理员账号管理控制器 —— CRUD 管理员/运营人员。
+ *
+ * 路由权限：/api/admin/admins/** 需要 SUPER_ADMIN 角色。
+ * 超级管理员可以创建/删除/修改管理员和运营人员的角色。
+ */
 @RestController
 @RequestMapping("/api/admin/admins")
 public class AdminAccountController {
@@ -25,6 +31,7 @@ public class AdminAccountController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /** 列出所有管理员和运营人员（角色 >= ADMIN） */
     @GetMapping
     public Result<List<User>> listAdmins() {
         List<User> all = userService.findAll();
@@ -34,6 +41,7 @@ public class AdminAccountController {
         return Result.success(admins);
     }
 
+    /** 创建管理员/运营人员 */
     @PostMapping
     public Result<User> createAdmin(@RequestBody CreateAdminRequest request) {
         if (userService.existsByUsername(request.getUsername())) {
@@ -50,6 +58,7 @@ public class AdminAccountController {
         return Result.success(user);
     }
 
+    /** 删除管理员（禁用账号）—— 不允许删除自己或超级管理员 */
     @DeleteMapping("/{id}")
     public Result<Void> deleteAdmin(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
         if (id.equals(loginUser.getUserId())) {
@@ -67,6 +76,7 @@ public class AdminAccountController {
         return Result.success();
     }
 
+    /** 修改角色（如将 ADMIN 降级为 OPERATOR） */
     @PutMapping("/{id}/role")
     public Result<Void> updateRole(@PathVariable Long id, @RequestBody UpdateRoleRequest request) {
         User user = userService.findById(id);

@@ -4,8 +4,9 @@ import com.cloud.backend.entity.Share;
 import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
 
-import java.util.List;
-
+/**
+ * 分享 Mapper。
+ */
 @Mapper
 public interface ShareMapper {
 

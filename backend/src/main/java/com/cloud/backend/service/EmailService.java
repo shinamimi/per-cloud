@@ -9,6 +9,13 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+/**
+ * 邮件发送服务。
+ *
+ * 设计思路：
+ * 使用 Spring 的 JavaMailSender 发送 HTML 格式邮件。
+ * 目前只用于发送验证码，预留了 sendHtmlMail 方法给其他场景（如通知邮件）。
+ */
 @Service
 public class EmailService {
 
@@ -22,6 +29,7 @@ public class EmailService {
         this.mailProperties = mailProperties;
     }
 
+    /** 发送验证码邮件，HTML 模板渲染 */
     public void sendCaptchaMail(String to, String code, String purpose) {
         String subject = "Cloud 云盘 - " + purpose;
         String html = """

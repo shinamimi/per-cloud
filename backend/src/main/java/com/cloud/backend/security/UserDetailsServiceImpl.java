@@ -6,6 +6,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * UserDetailsService 实现 —— Spring Security 认证流程的数据源。
+ *
+ * 设计思路：
+ * findByAccount 支持用户名或邮箱登录（只要唯一即可）。
+ * 当登录或 JWT 过滤器中需要加载用户时，统一走这里，保证认证路径一致。
+ */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 

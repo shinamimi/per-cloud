@@ -5,6 +5,7 @@
 
 <mapper namespace="com.cloud.backend.mapper.OperationLogMapper">
 
+    <!-- operation / target_type 为枚举类型，MyBatis 默认的 EnumTypeHandler 存储 name() -->
     <insert id="insert" parameterType="com.cloud.backend.entity.OperationLog"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO t_operation_log (user_id, operation, target_type, target_id, detail, ip, user_agent)

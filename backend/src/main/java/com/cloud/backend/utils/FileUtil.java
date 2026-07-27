@@ -3,6 +3,14 @@ package com.cloud.backend.utils;
 import java.text.DecimalFormat;
 import java.util.Set;
 
+/**
+ * 文件处理工具 —— 扩展名提取、MIME 类型映射、类型判断、大小格式化。
+ *
+ * 设计思路：
+ * 集中管理文件类型相关的规则，避免散落在各个 Service 中。
+ * ALLOWED_EXTENSIONS 用于上传时的白名单校验。
+ * getMimeType 用于文件上传到 MinIO 时设置正确的 Content-Type。
+ */
 public class FileUtil {
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "bmp", "webp", "svg");
@@ -21,6 +29,7 @@ public class FileUtil {
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
     }
 
+    /** 根据扩展名返回 MIME Type，未知类型返回 application/octet-stream */
     public static String getMimeType(String extension) {
         if (extension == null || extension.isEmpty()) return "application/octet-stream";
         return switch (extension) {
@@ -62,6 +71,7 @@ public class FileUtil {
         return extension != null && ALLOWED_EXTENSIONS.contains(extension.toLowerCase());
     }
 
+    /** 将字节数转为可读的大小字符串（如 "1.5 MB"） */
     public static String formatSize(long bytes) {
         if (bytes <= 0) return "0 B";
         String[] units = {"B", "KB", "MB", "GB", "TB"};

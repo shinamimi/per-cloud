@@ -13,6 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 管理后台主控制器 —— 仪表盘、文件管理、分享管理、日志、设置。
+ *
+ * 路由权限：/api/admin/** 需要 ADMIN 或以上角色
+ * 实现原理：SecurityConfig 中配置 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+ * Spring Security 检查 LoginUser.getAuthorities() 是否包含 "ROLE_ADMIN" 或更高权限。
+ */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -35,6 +42,7 @@ public class AdminController {
         this.storageService = storageService;
     }
 
+    /** 仪表盘统计 —— 用户数、文件数、总容量、使用率 */
     @GetMapping("/dashboard/stats")
     public Result<Map<String, Object>> stats() {
         List<User> users = userService.findAll();
@@ -54,11 +62,13 @@ public class AdminController {
         return Result.success(stats);
     }
 
+    /** 文件列表 —— 查看所有用户的所有文件 */
     @GetMapping("/files")
     public Result<List<File>> listFiles() {
         return Result.success(fileService.findAll());
     }
 
+    /** 删除文件 —— 同步清理 MinIO 对象 */
     @DeleteMapping("/files/{id}")
     public Result<Void> deleteFile(@PathVariable Long id) {
         File file = fileService.findById(id);
@@ -73,11 +83,13 @@ public class AdminController {
         return Result.success();
     }
 
+    /** 分享列表 */
     @GetMapping("/shares")
     public Result<List<Share>> listShares() {
         return Result.success(shareService.findAll());
     }
 
+    /** 取消分享 */
     @PostMapping("/shares/{id}/cancel")
     public Result<Void> cancelShare(@PathVariable Long id) {
         Share share = shareService.findById(id);
@@ -89,11 +101,13 @@ public class AdminController {
         return Result.success();
     }
 
+    /** 操作日志列表 */
     @GetMapping("/logs")
     public Result<List<OperationLog>> listLogs() {
         return Result.success(operationLogService.listAll());
     }
 
+    /** 系统设置 —— 返回默认配额和分片大小等全局常量 */
     @GetMapping("/settings")
     public Result<Map<String, Object>> getSettings() {
         Map<String, Object> settings = new HashMap<>();

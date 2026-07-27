@@ -5,6 +5,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 登录失败锁定服务 —— 防止暴力密码枚举。
+ *
+ * 设计思路：
+ * 1. 每登录失败一次递增 Redis 计数器（TTL=15分钟），同一账号 5 次失败后锁定 15 分钟
+ * 2. 锁定期内 isLocked() 返回 true，AuthController 拒绝登录
+ * 3. 登录成功后清除计数和锁
+ *
+ * 为什么不用数据库存计数？Redis 带 TTL 自过期，免清理，且性能更好。
+ */
 @Service
 public class LoginAttemptService {
 
@@ -24,6 +34,7 @@ public class LoginAttemptService {
         return Boolean.TRUE.equals(redisTemplate.hasKey(LOCK_PREFIX + username));
     }
 
+    /** 登录失败时调用——累积失败次数，到达阈值则锁定 */
     public void loginFailed(String username) {
         String attemptKey = ATTEMPT_PREFIX + username;
         long attempts = redisTemplate.opsForValue().increment(attemptKey);
@@ -36,6 +47,7 @@ public class LoginAttemptService {
         }
     }
 
+    /** 登录成功后清除记录 */
     public void loginSucceeded(String username) {
         redisTemplate.delete(ATTEMPT_PREFIX + username);
         redisTemplate.delete(LOCK_PREFIX + username);

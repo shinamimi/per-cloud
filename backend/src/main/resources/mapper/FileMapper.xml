@@ -15,11 +15,13 @@
         SELECT * FROM t_file WHERE id = #{id}
     </select>
 
+    <!-- 按用户和父目录查找子文件和目录（仅 status=1 正常文件） -->
     <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
         WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
     </select>
 
+    <!-- 按用户和路径查找（用于防止同一目录下创建同名文件） -->
     <select id="findByUserIdAndPath" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
         WHERE user_id = #{userId} AND path = #{path} AND status = 1

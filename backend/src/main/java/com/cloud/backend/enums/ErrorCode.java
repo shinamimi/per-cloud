@@ -2,6 +2,20 @@ package com.cloud.backend.enums;
 
 import lombok.Getter;
 
+/**
+ * 全局错误码枚举 —— 统一所有 API 响应的 code 和 message。
+ *
+ * 设计思路：
+ * 分区规划错误码：
+ * - 2xx/4xx/5xx：HTTP 语义映射
+ * - 100xx：用户相关
+ * - 200xx：文件相关
+ * - 300xx：分享相关
+ * - 400xx：认证授权
+ * - 500xx：存储层
+ *
+ * 前端只需要关注 code 字段即可展示对应的国际化文案或弹窗。
+ */
 @Getter
 public enum ErrorCode {
 

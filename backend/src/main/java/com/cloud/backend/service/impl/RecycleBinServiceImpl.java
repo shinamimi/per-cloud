@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 回收站服务实现。
+ */
 @Service
 public class RecycleBinServiceImpl implements RecycleBinService {
 

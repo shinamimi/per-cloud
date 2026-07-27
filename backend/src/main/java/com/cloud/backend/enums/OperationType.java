@@ -2,6 +2,10 @@ package com.cloud.backend.enums;
 
 import lombok.Getter;
 
+/**
+ * 操作日志类型 —— 数据库 t_operation_log.type 字段是 VARCHAR，存枚举名称。
+ * 如 LOGIN、REGISTER、UPLOAD_FILE 等，用默认的 EnumTypeHandler 即可。
+ */
 @Getter
 public enum OperationType {
 

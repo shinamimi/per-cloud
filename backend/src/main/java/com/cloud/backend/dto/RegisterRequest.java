@@ -6,6 +6,12 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 注册请求体。
+ *
+ * 密码校验规则：8-20 位，必须同时包含字母和数字。
+ * 前端应做同样的校验提示，后端作为安全兜底。
+ */
 @Data
 public class RegisterRequest {
 

@@ -9,6 +9,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * 已登录但权限不足的全局处理器。
+ *
+ * 设计思路：
+ * 与 AuthenticationEntryPointImpl 的区别：
+ * - AuthenticationEntryPointImpl：未登录（未提供 Token 或 Token 无效）
+ * - AccessDeniedHandlerImpl：已登录但角色不符（如普通用户访问 /api/admin/**）
+ */
 @Component
 public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
 

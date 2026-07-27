@@ -6,6 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * 发送验证码请求体 —— 邮箱 + 验证码用途类型。
+ * captchaType 区分注册/找回密码，便于 CaptchaService 生成不同的 Redis Key。
+ */
 @Data
 public class SendCodeRequest {
 

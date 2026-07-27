@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 重置密码请求体 —— 需要验证码（找回密码流程的最后一步）。
+ */
 @Data
 public class ResetPasswordRequest {
 
