@@ -35,34 +35,25 @@ PageResponse<T>:
 
 ### 2.2 错误码体系
 
-| 范围 | 模块 | 码值 | 说明 |
-|------|------|------|------|
-| 200 | - | SUCCESS | 成功 |
-| 10000 | 通用 | BAD_REQUEST | 参数错误 |
-| 10001 | 通用 | UNAUTHORIZED | 未登录 |
-| 10002 | 通用 | FORBIDDEN | 无权限 |
-| 10003 | 通用 | NOT_FOUND | 资源不存在 |
-| 10500 | 通用 | INTERNAL_ERROR | 服务器内部错误 |
-| 10100 | 认证 | LOGIN_LOCKED | 账号已锁定 |
-| 10101 | 认证 | CAPTCHA_INVALID | 验证码错误 |
-| 10102 | 认证 | CAPTCHA_COOLDOWN | 验证码发送过于频繁 |
-| 10103 | 认证 | OLD_PASSWORD_INVALID | 旧密码不匹配 |
-| 10200 | 文件 | FILE_NAME_DUPLICATE | 文件名已存在 |
-| 10201 | 文件 | FILE_QUOTA_EXCEEDED | 空间配额不足 |
-| 10202 | 文件 | FILE_NOT_FOUND | 文件不存在 |
-| 10204 | 文件 | UPLOAD_INVALID | 上传参数错误 |
-| 10205 | 文件 | UPLOAD_CHUNK_MISSING | 分片缺失 |
-| 10206 | 文件 | UPLOAD_MERGE_FAILED | 分片合并失败 |
-| 10300 | 分享 | SHARE_EXPIRED | 分享已过期 |
-| 10301 | 分享 | SHARE_PASSWORD_REQUIRED | 需要提取码 |
-| 10302 | 分享 | SHARE_PASSWORD_INVALID | 提取码错误 |
-| 10400 | 团队 | TEAM_NAME_DUPLICATE | 团队名已存在 |
-| 10401 | 团队 | TEAM_NOT_FOUND | 团队不存在 |
-| 10402 | 团队 | TEAM_MEMBER_EXISTS | 成员已在团队中 |
-| 10403 | 团队 | TEAM_OWNER_CANNOT_LEAVE | 所有者不能退出团队 |
-| 10404 | 团队 | TEAM_QUOTA_EXCEEDED | 团队空间配额不足 |
-
-> 注：`PASSWORD_INVALID` 更名为 `OLD_PASSWORD_INVALID`（10103），避免与 10302 `SHARE_PASSWORD_INVALID` 混淆。
+| 码值 | 名称 | 说明 |
+|------|------|------|
+| 200 | SUCCESS | 操作成功 |
+| 400 | BAD_REQUEST | 请求参数错误 |
+| 401 | UNAUTHORIZED | 未登录或登录已过期 |
+| 403 | FORBIDDEN | 权限不足 |
+| 404 | NOT_FOUND | 请求资源不存在 |
+| 500 | INTERNAL_SERVER_ERROR | 服务器内部错误 |
+| 10001 | USER_NOT_FOUND | 用户不存在 |
+| 10002 | USER_ALREADY_EXISTS | 用户已存在 |
+| 10003 | WRONG_PASSWORD | 密码错误 |
+| 20001 | FILE_NOT_FOUND | 文件不存在 |
+| 20002 | FILE_UPLOAD_FAILED | 文件上传失败 |
+| 20003 | FILE_DOWNLOAD_FAILED | 文件下载失败 |
+| 30001 | SHARE_NOT_FOUND | 分享不存在或已过期 |
+| 30002 | SHARE_EXPIRED | 分享已过期 |
+| 40001 | INVALID_TOKEN | Token 无效 |
+| 40002 | TOKEN_EXPIRED | Token 已过期 |
+| 50001 | MINIO_ERROR | MinIO 存储异常 |
 
 ### 2.3 认证上下文
 
@@ -178,7 +169,7 @@ QuotaResponse:
 
 | 码值 | 场景 |
 |------|------|
-| OLD_PASSWORD_INVALID (10103) | 旧密码不匹配 |
+| WRONG_PASSWORD (10003) | 旧密码不匹配 |
 
 ---
 
