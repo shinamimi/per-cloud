@@ -17,6 +17,12 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
 
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:placeholder@local.dev}
+    password: ${MAIL_PASSWORD:placeholder}
+
 minio:
   endpoint: http://localhost:9000
   access-key: minioadmin
@@ -26,7 +32,7 @@ minio:
   public-url: http://localhost:9000
 
 jwt:
-  secret: my-secret-key-change-in-production   # 开发用弱密钥，生产务必通过环境变量覆盖
+  secret: kF5Wih0b8zNo4/UsEFR5yN8y5OfsHArdLr6xCSKfKTo=   # 开发用弱密钥，生产务必通过环境变量覆盖
   expiration: 86400000                         # 24小时，毫秒
   header: Authorization
   prefix: Bearer
@@ -47,5 +53,5 @@ file:
 mail:
   host: ${MAIL_HOST:smtp.qq.com}
   port: ${MAIL_PORT:587}
-  username: ${MAIL_USERNAME:}
-  password: ${MAIL_PASSWORD:}
+  username: ${MAIL_USERNAME:placeholder@local.dev}
+  password: ${MAIL_PASSWORD:placeholder}

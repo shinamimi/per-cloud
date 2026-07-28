@@ -1,5 +1,6 @@
 package com.cloud.backend.config;
 
+import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
@@ -71,6 +72,8 @@ public class SuperAdminInitializer implements ApplicationRunner {
         newAdmin.setNickname("Super Admin");
         newAdmin.setRole(Role.SUPER_ADMIN);
         newAdmin.setStatus(UserStatus.NORMAL);
+        newAdmin.setQuota(FileConstants.DEFAULT_QUOTA);
+        newAdmin.setUsedSpace(0L);
         userService.register(newAdmin);
         log.info("Super admin created: {}", superAdminUsername);
     }

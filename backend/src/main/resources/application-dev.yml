@@ -24,7 +24,7 @@ minio:
   public-url: http://${MINIO_HOST:minio}:${MINIO_API_PORT:9000}
 
 jwt:
-  secret: ${JWT_SECRET:my-secret-key-change-in-production}
+  secret: ${JWT_SECRET:kF5Wih0b8zNo4/UsEFR5yN8y5OfsHArdLr6xCSKfKTo=}
   expiration: 86400000
   header: Authorization
   prefix: Bearer
