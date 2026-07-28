@@ -42,6 +42,9 @@ Authorization: Bearer <JWT Token>
 | 10001 | USER_NOT_FOUND | 用户不存在 |
 | 10002 | USER_ALREADY_EXISTS | 用户已存在 |
 | 10003 | WRONG_PASSWORD | 密码错误 |
+| 10004 | EMAIL_ALREADY_EXISTS | 邮箱已被注册 |
+| 10005 | CAPTCHA_INVALID | 验证码错误或已过期 |
+| 10006 | CAPTCHA_COOLDOWN | 发送过于频繁 |
 | 20001 | FILE_NOT_FOUND | 文件不存在 |
 | 20002 | FILE_UPLOAD_FAILED | 文件上传失败 |
 | 20003 | FILE_DOWNLOAD_FAILED | 文件下载失败 |
@@ -49,6 +52,9 @@ Authorization: Bearer <JWT Token>
 | 30002 | SHARE_EXPIRED | 分享已过期 |
 | 40001 | INVALID_TOKEN | Token 无效 |
 | 40002 | TOKEN_EXPIRED | Token 已过期 |
+| 40003 | LOGIN_LOCKED | 账号已锁定 |
+| 40004 | ACCOUNT_DISABLED | 账号已被禁用 |
+| 40005 | WRONG_CREDENTIALS | 用户名或密码错误 |
 | 50001 | MINIO_ERROR | MinIO 存储异常 |
 
 ---
@@ -63,7 +69,7 @@ Authorization: Bearer <JWT Token>
 | POST | `/api/auth/register` | RegisterRequest | - | 邮箱验证码注册 |
 | POST | `/api/auth/logout` | - | - | 登出，Token 加入黑名单 |
 | POST | `/api/auth/send-code` | SendCodeRequest | - | 发送邮箱验证码 |
-| POST | `/api/auth/forgot-password` | ForgotPasswordRequest | - | 忘记密码 |
+| POST | `/api/auth/forgot-password` | SendCodeRequest | - | 发送重置验证码（校验邮箱存在） |
 | POST | `/api/auth/reset-password` | ResetPasswordRequest | - | 重置密码 |
 
 ### 输入/输出结构
@@ -77,27 +83,25 @@ LoginRequest:
 
 LoginResponse:
   token: string           # JWT Token
-  tokenType: string       # "Bearer"
-  expiresIn: long         # 过期时间（秒）
-  userInfo: UserProfile   # 基本用户信息
+  userId: long
+  username: string
+  role: int               # 0-USER 20-ADMIN 100-SUPER_ADMIN
 
 RegisterRequest:
   username: string        # 3-32 位
-  password: string        # 6-32 位
+  password: string        # 8-20 位，必须包含字母和数字
   email: string
   code: string            # 邮箱验证码
+  nickname: string (可选)
 
 SendCodeRequest:
   email: string
-
-ForgotPasswordRequest:
-  email: string
-  code: string
+  captchaType: string     # REGISTER / RESET_PASSWORD
 
 ResetPasswordRequest:
   email: string
   code: string
-  newPassword: string     # 6-32 位
+  newPassword: string     # 8-20 位，必须包含字母和数字
 
 UserProfile:
   id: long

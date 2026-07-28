@@ -3,6 +3,7 @@ package com.cloud.backend.controller;
 import com.cloud.backend.dto.*;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.CaptchaType;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.security.LoginUser;
@@ -12,7 +13,6 @@ import jakarta.validation.Valid;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -68,7 +68,12 @@ public class AuthController {
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         if (loginAttemptService.isLocked(request.getUsername())) {
-            return Result.fail("账号已锁定，请15分钟后再试");
+            return Result.fail(ErrorCode.LOGIN_LOCKED);
+        }
+        if (request.getCaptchaCode() != null && !request.getCaptchaCode().isEmpty()) {
+            if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaCode())) {
+                return Result.fail(ErrorCode.CAPTCHA_INVALID);
+            }
         }
         try {
             UsernamePasswordAuthenticationToken authToken =
@@ -86,14 +91,12 @@ public class AuthController {
                     loginUser.getRole().getValue()
             );
             return Result.success(response);
-        } catch (LockedException e) {
-            return Result.fail("账号已被禁用");
         } catch (DisabledException e) {
             loginAttemptService.loginFailed(request.getUsername());
-            return Result.fail("账号已被禁用");
+            return Result.fail(ErrorCode.ACCOUNT_DISABLED);
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(request.getUsername());
-            return Result.fail("用户名或密码错误");
+            return Result.fail(ErrorCode.WRONG_CREDENTIALS);
         }
     }
 
@@ -104,13 +107,14 @@ public class AuthController {
     @PostMapping("/send-code")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
         if (captchaService.isOnCooldown(request.getEmail())) {
-            return Result.fail("请60秒后再发送");
+            return Result.fail(ErrorCode.CAPTCHA_COOLDOWN);
         }
 
         String code = captchaService.generateAndStore(request.getEmail(), request.getCaptchaType());
         String purpose = switch (request.getCaptchaType()) {
             case REGISTER -> "注册验证";
             case RESET_PASSWORD -> "重置密码验证";
+            case LOGIN -> "登录验证";
         };
         emailService.sendCaptchaMail(request.getEmail(), code, purpose);
         captchaService.setCooldown(request.getEmail());
@@ -124,13 +128,13 @@ public class AuthController {
     @PostMapping("/register")
     public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (userService.existsByUsername(request.getUsername())) {
-            return Result.fail("用户名已存在");
+            return Result.fail(ErrorCode.USER_ALREADY_EXISTS);
         }
         if (userService.existsByEmail(request.getEmail())) {
-            return Result.fail("邮箱已被注册");
+            return Result.fail(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         if (!captchaService.verify(request.getEmail(), CaptchaType.REGISTER, request.getCode())) {
-            return Result.fail("验证码错误或已过期");
+            return Result.fail(ErrorCode.CAPTCHA_INVALID);
         }
 
         User user = new User();
@@ -162,10 +166,10 @@ public class AuthController {
     public Result<Void> forgotPassword(@Valid @RequestBody SendCodeRequest request) {
         User user = userService.findByEmail(request.getEmail());
         if (user == null) {
-            return Result.fail("该邮箱未注册");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         if (captchaService.isOnCooldown(request.getEmail())) {
-            return Result.fail("请60秒后再发送");
+            return Result.fail(ErrorCode.CAPTCHA_COOLDOWN);
         }
 
         String code = captchaService.generateAndStore(request.getEmail(), request.getCaptchaType());
@@ -181,10 +185,10 @@ public class AuthController {
     public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         User user = userService.findByEmail(request.getEmail());
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         if (!captchaService.verify(request.getEmail(), CaptchaType.RESET_PASSWORD, request.getCode())) {
-            return Result.fail("验证码错误或已过期");
+            return Result.fail(ErrorCode.CAPTCHA_INVALID);
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

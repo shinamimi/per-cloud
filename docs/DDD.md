@@ -46,6 +46,9 @@ PageResponse<T>:
 | 10001 | USER_NOT_FOUND | 用户不存在 |
 | 10002 | USER_ALREADY_EXISTS | 用户已存在 |
 | 10003 | WRONG_PASSWORD | 密码错误 |
+| 10004 | EMAIL_ALREADY_EXISTS | 邮箱已被注册 |
+| 10005 | CAPTCHA_INVALID | 验证码错误或已过期 |
+| 10006 | CAPTCHA_COOLDOWN | 发送过于频繁 |
 | 20001 | FILE_NOT_FOUND | 文件不存在 |
 | 20002 | FILE_UPLOAD_FAILED | 文件上传失败 |
 | 20003 | FILE_DOWNLOAD_FAILED | 文件下载失败 |
@@ -53,6 +56,9 @@ PageResponse<T>:
 | 30002 | SHARE_EXPIRED | 分享已过期 |
 | 40001 | INVALID_TOKEN | Token 无效 |
 | 40002 | TOKEN_EXPIRED | Token 已过期 |
+| 40003 | LOGIN_LOCKED | 账号已锁定 |
+| 40004 | ACCOUNT_DISABLED | 账号已被禁用 |
+| 40005 | WRONG_CREDENTIALS | 用户名或密码错误 |
 | 50001 | MINIO_ERROR | MinIO 存储异常 |
 
 ### 2.3 认证上下文

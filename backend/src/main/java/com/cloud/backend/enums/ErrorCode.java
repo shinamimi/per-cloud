@@ -30,6 +30,10 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(10002, "用户已存在"),
     WRONG_PASSWORD(10003, "密码错误"),
 
+    EMAIL_ALREADY_EXISTS(10004, "邮箱已被注册"),
+    CAPTCHA_INVALID(10005, "验证码错误或已过期"),
+    CAPTCHA_COOLDOWN(10006, "发送过于频繁"),
+
     FILE_NOT_FOUND(20001, "文件不存在"),
     FILE_UPLOAD_FAILED(20002, "文件上传失败"),
     FILE_DOWNLOAD_FAILED(20003, "文件下载失败"),
@@ -39,6 +43,9 @@ public enum ErrorCode {
 
     INVALID_TOKEN(40001, "Token 无效"),
     TOKEN_EXPIRED(40002, "Token 已过期"),
+    LOGIN_LOCKED(40003, "账号已锁定"),
+    ACCOUNT_DISABLED(40004, "账号已被禁用"),
+    WRONG_CREDENTIALS(40005, "用户名或密码错误"),
 
     MINIO_ERROR(50001, "MinIO 存储异常");
 

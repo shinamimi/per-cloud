@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * 登录请求体 —— 用户名 + 密码。
- * 使用 @NotBlank 避免前端传入空字符串导致空指针。
+ * 登录请求体 —— 用户名 + 密码 + 可选验证码。
+ * captchaCode 验证码用于防暴力破解（MVP 阶段可选，不传则跳过验证码校验）。
  */
 @Data
 public class LoginRequest {
@@ -15,4 +15,8 @@ public class LoginRequest {
 
     @NotBlank(message = "密码不能为空")
     private String password;
+
+    private String captchaId;
+
+    private String captchaCode;
 }

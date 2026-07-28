@@ -11,5 +11,6 @@ import lombok.Getter;
 public enum CaptchaType {
 
     REGISTER,
-    RESET_PASSWORD;
+    RESET_PASSWORD,
+    LOGIN;
 }

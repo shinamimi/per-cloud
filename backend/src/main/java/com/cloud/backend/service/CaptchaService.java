@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  *
  * 设计思路：
  * 1. 验证码使用 SecureRandom 生成 6 位数字，存入 Redis，过期时间 5 分钟
- * 2. 验证码区分注册(reigster)、登录(login)、找回密码(forgot_password)、修改密码(reset_password)四种场景
+ * 2. 验证码区分三种场景：注册(REGISTER)、登录(LOGIN)、重置密码(RESET_PASSWORD)
  *    通过 CaptchaType 区分 Key（如 captcha:REGISTER:xxx@email.com）
  * 3. 防刷机制：每个邮箱 60 秒冷却期（Cooldown），冷却期内拒绝生成新验证码
  * 4. 验证通过后立即删除 Key，验证码只能使用一次
@@ -50,6 +50,25 @@ public class CaptchaService {
         }
         redisTemplate.delete(key);
         return stored.equals(code);
+    }
+
+    /** 通过 captchaId 验证（登录场景，captchaId 作为 Redis Key） */
+    public boolean verify(String captchaId, String code) {
+        String key = CAPTCHA_PREFIX + "LOGIN:" + captchaId;
+        String stored = redisTemplate.opsForValue().get(key);
+        if (stored == null) {
+            return false;
+        }
+        redisTemplate.delete(key);
+        return stored.equals(code);
+    }
+
+    /** 生成验证码并存入 Redis，使用 captchaId 作为 Key */
+    public String generateAndStore(String captchaId) {
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        String key = CAPTCHA_PREFIX + "LOGIN:" + captchaId;
+        redisTemplate.opsForValue().set(key, code, CAPTCHA_TTL_SECONDS, TimeUnit.SECONDS);
+        return code;
     }
 
     /** 是否处于冷却期 */
