@@ -2,6 +2,7 @@ package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.entity.User;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.security.LoginUser;
@@ -45,7 +46,7 @@ public class AdminAccountController {
     @PostMapping
     public Result<User> createAdmin(@RequestBody CreateAdminRequest request) {
         if (userService.existsByUsername(request.getUsername())) {
-            return Result.fail("用户名已存在");
+            return Result.fail(ErrorCode.USER_ALREADY_EXISTS);
         }
         User user = new User();
         user.setUsername(request.getUsername());
@@ -62,14 +63,14 @@ public class AdminAccountController {
     @DeleteMapping("/{id}")
     public Result<Void> deleteAdmin(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
         if (id.equals(loginUser.getUserId())) {
-            return Result.fail("不能删除自己");
+            return Result.fail(ErrorCode.BAD_REQUEST, "不能删除自己");
         }
         User user = userService.findById(id);
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         if (user.getRole() == Role.SUPER_ADMIN) {
-            return Result.fail("不能删除超级管理员");
+            return Result.fail(ErrorCode.BAD_REQUEST, "不能删除超级管理员");
         }
         user.setStatus(UserStatus.DISABLED);
         userService.update(user);
@@ -81,7 +82,7 @@ public class AdminAccountController {
     public Result<Void> updateRole(@PathVariable Long id, @RequestBody UpdateRoleRequest request) {
         User user = userService.findById(id);
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         user.setRole(request.getRole());
         userService.update(user);

@@ -18,10 +18,17 @@ spring:
       password: ${REDIS_PASSWORD:}
 
   mail:
-    host: ${MAIL_HOST:smtp.qq.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:placeholder@local.dev}
-    password: ${MAIL_PASSWORD:placeholder}
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:placeholder@local.dev}
+    password: ${SMTP_PASSWORD:placeholder}
+    from: ${SMTP_FROM}
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
 
 minio:
   endpoint: http://localhost:9000
@@ -49,9 +56,3 @@ file:
   storage-path: /tmp/cloud-storage
   chunk-size: 10485760     # 10MB，分片上传的片段大小
   max-size: 536870912      # 512MB，单文件大小上限
-
-mail:
-  host: ${MAIL_HOST:smtp.qq.com}
-  port: ${MAIL_PORT:587}
-  username: ${MAIL_USERNAME:placeholder@local.dev}
-  password: ${MAIL_PASSWORD:placeholder}

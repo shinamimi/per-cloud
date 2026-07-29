@@ -3,6 +3,8 @@ package com.cloud.backend.exception;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.enums.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,8 +25,11 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusinessException(BusinessException e) {
+        log.warn("Business exception: code={}, message={}", e.getErrorCode(), e.getMessage());
         return Result.fail(e.getErrorCode(), e.getMessage());
     }
 
@@ -34,6 +39,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining(", "));
+        log.warn("Validation failed: {}", message);
         return Result.fail(ErrorCode.BAD_REQUEST, message);
     }
 
@@ -42,12 +48,14 @@ public class GlobalExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
                 .collect(Collectors.joining(", "));
+        log.warn("Constraint violation: {}", message);
         return Result.fail(ErrorCode.BAD_REQUEST, message);
     }
 
     /** 兜底异常处理器 —— 捕获所有未处理异常，返回 500 */
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
-        return Result.fail(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
+        log.error("Unhandled exception", e);
+        return Result.fail(ErrorCode.INTERNAL_ERROR, e.getMessage());
     }
 }

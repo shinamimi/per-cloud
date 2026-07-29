@@ -59,7 +59,6 @@
 | 有效期设置 | 支持限时分享（1天/7天/30天/永久） |
 | 提取码 | 可选访问密码 |
 | 分享预览 | 分享页面可预览文件内容（图片/文本） |
-| 分享下载 | 从分享链接下载文件，记录下载次数 |
 | 我的分享 | 查看已创建的分享列表，可取消分享 |
 
 #### 2.1.3 团队空间
@@ -92,13 +91,14 @@
 | 文件管理 | 全局文件浏览、删除 |
 | 分享管理 | 分享列表、强制取消分享 |
 | 审计日志 | 操作日志查询、过滤 |
-| 管理员管理 | 创建/删除 ADMIN、修改角色（OPERATOR 已预留，暂未启用） |
+| 管理员管理 | 创建/删除 ADMIN/OPERATOR、修改角色 |
 | 团队管理 | 全局团队列表、强制解散 |
 
 ---
 
 ### 2.2 v0.2 规划（MVP 后）
 
+- 回收站管理界面（浏览、恢复、彻底删除）
 - Office 文档在线预览（对接 KkFileView 或 OnlyOffice）
 - 视频/音频在线播放
 - 移动端适配
@@ -266,7 +266,6 @@ CREATE TABLE t_team_member (
 | POST | `/api/files/upload/chunk` | 上传分片 |
 | POST | `/api/files/upload/merge` | 合并分片 |
 | POST | `/api/files/upload/sec` | 秒传（按 Hash） |
-| GET | `/api/files/upload/progress/{uploadId}` | 查询已上传分片（断点续传） |
 | GET | `/api/files/download/{id}` | 下载文件 |
 | POST | `/api/files/download/batch` | 批量打包下载 |
 | PUT | `/api/files/{id}/rename` | 重命名 |
@@ -286,7 +285,6 @@ CREATE TABLE t_team_member (
 | GET | `/api/shares/access/{token}` | 访问分享（验证后获取文件信息） |
 | POST | `/api/shares/access/{token}/verify` | 验证提取码 |
 | GET | `/api/shares/access/{token}/file/{fileId}/preview` | 分享内文件预览 |
-| GET | `/api/shares/access/{token}/file/{fileId}/download` | 分享内文件下载 |
 
 #### 团队空间
 
@@ -308,7 +306,8 @@ CREATE TABLE t_team_member (
 
 | 路径 | 说明 |
 |------|------|
-| `/ws/progress` | 统一进度订阅端点（消息内 taskId 区分上传/打包） |
+| `/ws/upload/progress/{uploadId}` | 上传进度订阅 |
+| `/ws/package/progress/{taskId}` | 打包下载进度订阅 |
 
 ### 5.2 管理端 API
 

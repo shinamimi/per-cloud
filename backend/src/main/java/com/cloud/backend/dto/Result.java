@@ -53,7 +53,7 @@ public class Result<T> {
 
     public static <T> Result<T> fail(String message) {
         Result<T> result = new Result<>();
-        result.setCode(ErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        result.setCode(ErrorCode.INTERNAL_ERROR.getCode());
         result.setMessage(message);
         return result;
     }

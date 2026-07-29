@@ -3,51 +3,68 @@ package com.cloud.backend.enums;
 import lombok.Getter;
 
 /**
- * 全局错误码枚举 —— 统一所有 API 响应的 code 和 message。
+ * 全局错误码枚举 —— 与 DDD.md 2.2 节保持一致。
  *
  * 设计思路：
- * 分区规划错误码：
- * - 2xx/4xx/5xx：HTTP 语义映射
- * - 100xx：用户相关
- * - 200xx：文件相关
- * - 300xx：分享相关
- * - 400xx：认证授权
- * - 500xx：存储层
+ * 按 DDD.md 的区域划分：
+ * - 200: SUCCESS
+ * - 10000-10003, 10500: 通用错误
+ * - 10100-10199: 认证授权
+ * - 10200-10299: 文件管理
+ * - 10300-10399: 分享管理
+ * - 10400-10499: 团队空间
  *
- * 前端只需要关注 code 字段即可展示对应的国际化文案或弹窗。
+ * 前端只需判断 code !== 200 即为失败，根据具体 code 展示对应文案。
  */
 @Getter
 public enum ErrorCode {
 
-    SUCCESS(200, "操作成功"),
-    BAD_REQUEST(400, "请求参数错误"),
-    UNAUTHORIZED(401, "未登录或登录已过期"),
-    FORBIDDEN(403, "权限不足"),
-    NOT_FOUND(404, "请求资源不存在"),
-    INTERNAL_SERVER_ERROR(500, "服务器内部错误"),
+    /* ==================== 通用 ==================== */
+    SUCCESS(200, "成功"),
+    BAD_REQUEST(10000, "请求参数错误"),
+    UNAUTHORIZED(10001, "未登录"),
+    FORBIDDEN(10002, "无权限"),
+    NOT_FOUND(10003, "资源不存在"),
+    INTERNAL_ERROR(10500, "服务器内部错误"),
 
-    USER_NOT_FOUND(10001, "用户不存在"),
-    USER_ALREADY_EXISTS(10002, "用户已存在"),
-    WRONG_PASSWORD(10003, "密码错误"),
+    /* ==================== 认证 (10100-10199) ==================== */
+    LOGIN_LOCKED(10100, "账号已锁定"),
+    CAPTCHA_INVALID(10101, "验证码错误"),
+    CAPTCHA_COOLDOWN(10102, "验证码发送过于频繁"),
+    OLD_PASSWORD_INVALID(10103, "旧密码不匹配"),
+    USER_NOT_FOUND(10104, "用户不存在"),
+    USER_ALREADY_EXISTS(10105, "用户名已存在"),
+    EMAIL_ALREADY_EXISTS(10106, "邮箱已被注册"),
+    WRONG_CREDENTIALS(10107, "用户名或密码错误"),
+    ACCOUNT_DISABLED(10108, "账号已被禁用"),
+    INVALID_TOKEN(10109, "Token 无效"),
+    TOKEN_EXPIRED(10110, "Token 已过期"),
 
-    EMAIL_ALREADY_EXISTS(10004, "邮箱已被注册"),
-    CAPTCHA_INVALID(10005, "验证码错误或已过期"),
-    CAPTCHA_COOLDOWN(10006, "发送过于频繁"),
+    /* ==================== 文件 (10200-10299) ==================== */
+    FILE_NAME_DUPLICATE(10200, "文件名已存在"),
+    FILE_QUOTA_EXCEEDED(10201, "空间配额不足"),
+    FILE_NOT_FOUND(10202, "文件不存在"),
+    UPLOAD_INVALID(10203, "上传参数错误"),
+    UPLOAD_CHUNK_MISSING(10204, "分片缺失"),
+    UPLOAD_MERGE_FAILED(10205, "分片合并失败"),
+    FILE_UPLOAD_FAILED(10206, "文件上传失败"),
+    FILE_DOWNLOAD_FAILED(10207, "文件下载失败"),
 
-    FILE_NOT_FOUND(20001, "文件不存在"),
-    FILE_UPLOAD_FAILED(20002, "文件上传失败"),
-    FILE_DOWNLOAD_FAILED(20003, "文件下载失败"),
+    /* ==================== 分享 (10300-10399) ==================== */
+    SHARE_EXPIRED(10300, "分享已过期"),
+    SHARE_PASSWORD_REQUIRED(10301, "需要提取码"),
+    SHARE_PASSWORD_INVALID(10302, "提取码错误"),
+    SHARE_NOT_FOUND(10303, "分享不存在"),
 
-    SHARE_NOT_FOUND(30001, "分享不存在或已过期"),
-    SHARE_EXPIRED(30002, "分享已过期"),
+    /* ==================== 团队 (10400-10499) ==================== */
+    TEAM_NAME_DUPLICATE(10400, "团队名已存在"),
+    TEAM_NOT_FOUND(10401, "团队不存在"),
+    TEAM_MEMBER_EXISTS(10402, "成员已在团队中"),
+    TEAM_OWNER_CANNOT_LEAVE(10403, "所有者不能退出团队"),
+    TEAM_QUOTA_EXCEEDED(10404, "团队空间配额不足"),
 
-    INVALID_TOKEN(40001, "Token 无效"),
-    TOKEN_EXPIRED(40002, "Token 已过期"),
-    LOGIN_LOCKED(40003, "账号已锁定"),
-    ACCOUNT_DISABLED(40004, "账号已被禁用"),
-    WRONG_CREDENTIALS(40005, "用户名或密码错误"),
-
-    MINIO_ERROR(50001, "MinIO 存储异常");
+    /* ==================== 存储 ==================== */
+    MINIO_ERROR(10501, "MinIO 存储异常");
 
     private final int code;
     private final String message;

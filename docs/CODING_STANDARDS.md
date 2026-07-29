@@ -164,4 +164,4 @@ src/
 - 所有表使用 InnoDB + utf8mb4
 - 使用 `DATETIME` 而非 `TIMESTAMP`
 - 状态字段用 TINYINT 而非 VARCHAR
-- 逻辑删除（status 字段）而非物理删除（例外：回收站"彻底删除"操作需物理删除 MinIO 对象及回收站记录）
+- 逻辑删除（status 字段）而非物理删除

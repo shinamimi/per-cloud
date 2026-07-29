@@ -42,7 +42,7 @@
 | mime_type | VARCHAR(128) | DEFAULT NULL | MIME 类型 |
 | extension | VARCHAR(32) | DEFAULT NULL | 文件扩展名 |
 | file_hash | VARCHAR(64) | DEFAULT NULL | SHA256，用于秒传 |
-| object_name | VARCHAR(1024) | DEFAULT NULL | MinIO 对象路径 |
+| object_name | VARCHAR(512) | DEFAULT NULL | MinIO 对象路径 |
 | is_directory | TINYINT(1) | NOT NULL, DEFAULT 0 | 是否目录 |
 | status | TINYINT | NOT NULL, DEFAULT 1 | 0-已删除 1-正常 |
 | team_id | BIGINT | DEFAULT NULL | **新增**，所属团队（NULL=个人文件） |
@@ -83,7 +83,7 @@
 | user_id | BIGINT | NOT NULL | |
 | file_id | BIGINT | NOT NULL | |
 | original_name | VARCHAR(255) | NOT NULL | |
-| object_name | VARCHAR(1024) | DEFAULT NULL | MinIO 对象路径 |
+| object_name | VARCHAR(512) | DEFAULT NULL | MinIO 对象路径 |
 | parent_id | BIGINT | NOT NULL | 原父目录 |
 | size | BIGINT | DEFAULT 0 | |
 | mime_type | VARCHAR(128) | DEFAULT NULL | |
@@ -215,12 +215,3 @@ TargetType:    USER, FILE, SHARE, TEAM
 - MVP 阶段所有表在同一 MySQL 实例，不拆分
 - t_operation_log 写入频繁但数据量可控（家庭使用），暂不分表
 - 后续用户量增长时可按 user_id 分表或迁移至时序数据库
-
----
-
-## 6. 定时任务清单
-
-| 任务 | 频率 | 说明 |
-|------|------|------|
-| UploadCleanupTask | 每小时 | 清理 Redis 中超 2 小时未更新的 uploadId、对应的 MinIO 临时分片 |
-| RecycleBinCleanupTask | 每天 | 扫描 t_recycle_bin 中 expire_time < now() 的记录，物理删除 MinIO 对象后删除回收站记录 |

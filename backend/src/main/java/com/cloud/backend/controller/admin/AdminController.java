@@ -3,6 +3,7 @@ package com.cloud.backend.controller.admin;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.entity.File;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.Share;
 import com.cloud.backend.entity.User;
@@ -73,7 +74,7 @@ public class AdminController {
     public Result<Void> deleteFile(@PathVariable Long id) {
         File file = fileService.findById(id);
         if (file == null) {
-            return Result.fail("文件不存在");
+            return Result.fail(ErrorCode.FILE_NOT_FOUND);
         }
         String objectName = file.getObjectName();
         if (objectName != null && !objectName.isEmpty()) {
@@ -94,7 +95,7 @@ public class AdminController {
     public Result<Void> cancelShare(@PathVariable Long id) {
         Share share = shareService.findById(id);
         if (share == null) {
-            return Result.fail("分享不存在");
+            return Result.fail(ErrorCode.SHARE_NOT_FOUND);
         }
         share.setStatus(com.cloud.backend.enums.ShareStatus.CANCELED);
         shareService.update(share);

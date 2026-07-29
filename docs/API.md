@@ -31,31 +31,13 @@ Authorization: Bearer <JWT Token>
 
 ### 1.3 错误码
 
-| 码值 | 名称 | 说明 |
-|------|------|------|
-| 200 | SUCCESS | 操作成功 |
-| 400 | BAD_REQUEST | 请求参数错误 |
-| 401 | UNAUTHORIZED | 未登录或登录已过期 |
-| 403 | FORBIDDEN | 权限不足 |
-| 404 | NOT_FOUND | 请求资源不存在 |
-| 500 | INTERNAL_SERVER_ERROR | 服务器内部错误 |
-| 10001 | USER_NOT_FOUND | 用户不存在 |
-| 10002 | USER_ALREADY_EXISTS | 用户已存在 |
-| 10003 | WRONG_PASSWORD | 密码错误 |
-| 10004 | EMAIL_ALREADY_EXISTS | 邮箱已被注册 |
-| 10005 | CAPTCHA_INVALID | 验证码错误或已过期 |
-| 10006 | CAPTCHA_COOLDOWN | 发送过于频繁 |
-| 20001 | FILE_NOT_FOUND | 文件不存在 |
-| 20002 | FILE_UPLOAD_FAILED | 文件上传失败 |
-| 20003 | FILE_DOWNLOAD_FAILED | 文件下载失败 |
-| 30001 | SHARE_NOT_FOUND | 分享不存在或已过期 |
-| 30002 | SHARE_EXPIRED | 分享已过期 |
-| 40001 | INVALID_TOKEN | Token 无效 |
-| 40002 | TOKEN_EXPIRED | Token 已过期 |
-| 40003 | LOGIN_LOCKED | 账号已锁定 |
-| 40004 | ACCOUNT_DISABLED | 账号已被禁用 |
-| 40005 | WRONG_CREDENTIALS | 用户名或密码错误 |
-| 50001 | MINIO_ERROR | MinIO 存储异常 |
+| 范围 | 模块 | 错误码示例 |
+|------|------|-----------|
+| 10000-10099 | 通用 | BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, INTERNAL_ERROR |
+| 10100-10199 | 认证 | LOGIN_LOCKED, CAPTCHA_INVALID, CAPTCHA_COOLDOWN |
+| 10200-10299 | 文件 | FILE_NAME_DUPLICATE, FILE_QUOTA_EXCEEDED, FILE_NOT_FOUND, UPLOAD_INVALID, UPLOAD_CHUNK_MISSING, UPLOAD_MERGE_FAILED |
+| 10300-10399 | 分享 | SHARE_EXPIRED, SHARE_PASSWORD_REQUIRED, SHARE_PASSWORD_INVALID |
+| 10400-10499 | 团队 | TEAM_NAME_DUPLICATE, TEAM_NOT_FOUND, TEAM_MEMBER_EXISTS, TEAM_OWNER_CANNOT_LEAVE, TEAM_QUOTA_EXCEEDED |
 
 ---
 
@@ -69,7 +51,7 @@ Authorization: Bearer <JWT Token>
 | POST | `/api/auth/register` | RegisterRequest | - | 邮箱验证码注册 |
 | POST | `/api/auth/logout` | - | - | 登出，Token 加入黑名单 |
 | POST | `/api/auth/send-code` | SendCodeRequest | - | 发送邮箱验证码 |
-| POST | `/api/auth/forgot-password` | SendCodeRequest | - | 发送重置验证码（校验邮箱存在） |
+| POST | `/api/auth/forgot-password` | ForgotPasswordRequest | - | 忘记密码 |
 | POST | `/api/auth/reset-password` | ResetPasswordRequest | - | 重置密码 |
 
 ### 输入/输出结构
@@ -83,25 +65,27 @@ LoginRequest:
 
 LoginResponse:
   token: string           # JWT Token
-  userId: long
-  username: string
-  role: int               # 0-USER 20-ADMIN 100-SUPER_ADMIN
+  tokenType: string       # "Bearer"
+  expiresIn: long         # 过期时间（秒）
+  userInfo: UserProfile   # 基本用户信息
 
 RegisterRequest:
   username: string        # 3-32 位
-  password: string        # 8-20 位，必须包含字母和数字
+  password: string        # 6-32 位
   email: string
   code: string            # 邮箱验证码
-  nickname: string (可选)
 
 SendCodeRequest:
   email: string
-  captchaType: string     # REGISTER / RESET_PASSWORD
+
+ForgotPasswordRequest:
+  email: string
+  code: string
 
 ResetPasswordRequest:
   email: string
   code: string
-  newPassword: string     # 8-20 位，必须包含字母和数字
+  newPassword: string     # 6-32 位
 
 UserProfile:
   id: long
@@ -298,7 +282,6 @@ FilePreviewResponse:
 | GET | `/api/shares/access/{token}` | - | ShareAccessResponse | 获取分享文件信息 |
 | POST | `/api/shares/access/{token}/verify` | ShareVerifyRequest | - | 验证提取码 |
 | GET | `/api/shares/access/{token}/file/{fileId}/preview` | - | FilePreviewResponse | 分享内预览 |
-| GET | `/api/shares/access/{token}/file/{fileId}/download` | - | Blob | 从分享链接下载文件 |
 
 ### 5.3 输入/输出结构
 
@@ -371,7 +354,7 @@ RecycleBinItem:
 
 | 方法 | 路径 | 输入 | 输出 | 说明 |
 |------|------|------|------|------|
-| POST | `/api/teams` | TeamCreateRequest | TeamDetail | 创建团队 |
+| POST | `/api/teams` | TeamCreateRequest | TeamInfo | 创建团队 |
 | GET | `/api/teams` | - | List\<TeamListItem\> | 我的团队列表 |
 | GET | `/api/teams/{id}` | - | TeamDetail | 团队详情 |
 | PUT | `/api/teams/{id}` | TeamUpdateRequest | - | 更新团队信息 |
@@ -447,7 +430,6 @@ TeamMemberInfo:
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/admin/dashboard/stats` | 系统统计 |
-| GET | `/api/admin/settings` | 系统设置 |
 
 ### 8.2 用户管理
 
@@ -476,7 +458,7 @@ TeamMemberInfo:
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/admin/logs` | userId?, operation?, targetType?, startTime?, endTime?, page, size | PageResponse\<OperationLog\> | 操作日志（支持过滤） |
+| GET | `/api/admin/logs` | 操作日志（支持过滤） |
 
 ### 8.6 管理员管理（限 SUPER_ADMIN）
 
@@ -493,19 +475,6 @@ TeamMemberInfo:
 |------|------|------|
 | GET | `/api/admin/teams` | 全局团队列表 |
 | DELETE | `/api/admin/teams/{id}` | 强制解散团队 |
-
-### 8.8 日志查询过滤参数
-
-```
-LogFilterRequest:
-  userId: long (可选)
-  operation: string (可选)
-  targetType: string (可选)
-  startTime: datetime (可选)
-  endTime: datetime (可选)
-  page: int (默认 1)
-  size: int (默认 20, max 100)
-```
 
 ---
 

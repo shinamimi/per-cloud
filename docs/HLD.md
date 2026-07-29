@@ -59,7 +59,7 @@
 | M2 | 用户管理 | `service/UserService` | Service 层完成 | UserController（个人中心） |
 | M3 | 文件管理 | `service/FileService`, `service/StorageService` | Service 层完成 | FileController 全套 |
 | M4 | 分享管理 | `service/ShareService` | Service 层完成 | ShareController, GuestShareController |
-| M5 | 回收站 | `service/RecycleBinService` | Service 层完成 | RecycleBinController（回收站列表/恢复/彻底删除） |
+| M5 | 回收站 | `service/RecycleBinService` | Service 层完成 | v0.2: 用户端管理接口 |
 | M6 | 团队空间 | 无 | 从零新建 | entity/mapper/service/controller |
 | M7 | 管理后台 | `controller/admin/` | Controller 部分完成 | 新增团队管理接口 |
 | M8 | 操作审计 | `service/OperationLogService` | 已完成 | 无需新增 |
@@ -227,7 +227,6 @@
 | POST | `/api/files/upload/chunk` | 上传分片 | 写入 MinIO 临时目录 |
 | POST | `/api/files/upload/merge` | 合并分片 | 合并后写 t_file |
 | POST | `/api/files/upload/sec` | 秒传 | 按 file_hash 匹配 |
-| GET | `/api/files/upload/progress/{uploadId}` | 查询已上传分片 | 返回已上传的分片编号列表，用于断点续传 |
 | GET | `/api/files/download/{id}` | 下载单文件 | 预签名 URL 或流式 |
 | POST | `/api/files/download/batch` | 批量打包下载 | 异步创建打包任务 |
 | PUT | `/api/files/{id}/rename` | 重命名 | |
@@ -315,7 +314,6 @@ files/team/{teamId}/{fileId}/{objectName}   ← 团队空间文件
 | GET | `/api/shares/access/{token}` | 获取分享文件信息 | 公开 |
 | POST | `/api/shares/access/{token}/verify` | 验证提取码 | 公开 |
 | GET | `/api/shares/access/{token}/file/{fileId}/preview` | 分享内预览 | 公开 |
-| GET | `/api/shares/access/{token}/file/{fileId}/download` | 分享内下载 | 公开 |
 
 **分享 Token 设计**:
 - 使用 UUID 作为 share_token
@@ -324,39 +322,25 @@ files/team/{teamId}/{fileId}/{objectName}   ← 团队空间文件
 
 **存储**: MySQL (t_share)
 
-**下载计数**: 每次从分享下载文件时自增 `t_share.download_count`
-
-**依赖关系**: M3 (文件查询、预览、下载), M8 (日志), M10
+**依赖关系**: M3 (文件查询、预览), M8 (日志), M10
 
 ---
 
 ### 4.5 M5 — 回收站模块
 
-**职责**: 文件软删除的存储记录 + 用户端回收站管理 + 过期记录自动清理
+**职责**: 回收站数据存储（硬删除时保存记录，供 v0.2 恢复使用）
 
 **现有实现**:
 - `entity/RecycleBin`: 回收站实体（含 expire_time, original_name, parent_id 用于恢复）
 - `service/RecycleBinService`: save, removeById, listByUserId
 
-**需要新增**:
-- `controller/RecycleBinController`: 回收站列表/恢复/彻底删除
-
-**核心逻辑**:
-- 删除文件：写 t_recycle_bin + 标记 t_file.status=DELETED（不物理删除 MinIO 对象）
-- 恢复文件：还原 t_file.status=NORMAL + 删除 t_recycle_bin 记录
-- 彻底删除：物理删除 MinIO 对象 + 删除 t_recycle_bin 记录
-
-**新增接口**:
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/recycle-bin` | 回收站列表 |
-| POST | `/api/recycle-bin/{id}/restore` | 恢复文件 |
-| DELETE | `/api/recycle-bin/{id}` | 彻底删除 |
+**现有说明**:
+- MVP 删除 = 标记删除（写 t_recycle_bin + 删除 t_file 记录）+ 物理删除 MinIO 对象
+- 删除顺序：先写入回收站记录（保存 objectName），再物理删除 MinIO 对象
+- v0.2 补充用户端回收站管理界面（列表/恢复/彻底删除）
+- RecycleBinController 不在 MVP 范围内，回收站存储逻辑在 FileController.delete 中内联调用 RecycleBinService
 
 **存储**: MySQL (t_recycle_bin)
-
-**定时清理**: RecycleBinCleanupTask 每天扫描 `expire_time < now()` 的记录，物理删除 MinIO 对象后删除回收站记录
 
 **依赖关系**: M3 (文件查询), M8 (日志), M10
 
@@ -403,7 +387,7 @@ files/team/{teamId}/{fileId}/{objectName}   ← 团队空间文件
 | 解散团队 | OWNER |
 | 邀请/移除成员 | OWNER, ADMIN |
 | 上传/修改团队文件 | OWNER, ADMIN, MEMBER |
-| 删除团队文件 | OWNER, ADMIN, MEMBER (仅自己的文件) |
+| 删除团队文件 | OWNER, ADMIN |
 | 退出团队 | MEMBER, ADMIN (OWNER 不可退出) |
 
 **存储**: MySQL (t_team, t_team_member, t_file.team_id)
@@ -488,24 +472,26 @@ OPERATOR    → 只读操作（日志查看等）（可选，当前未启用）
 
 **需要新建**:
 - `config/WebSocketConfig`: WebSocket 端点配置
-- `handler/ProgressHandler`: 统一进度推送 Handler（消息内 taskId 区分上传/打包任务）
+- `handler/UploadProgressHandler`: 上传进度推送
+- `handler/PackageProgressHandler`: 打包下载进度推送
 
 **端点设计**:
 
 | 路径 | 说明 | 认证方式 |
 |------|------|---------|
-| `/ws/progress` | 统一进度推送端点（消息内 taskId 区分任务类型） | Token 参数校验 |
+| `/ws/upload/progress/{uploadId}` | 订阅上传进度 | Token 参数校验 |
+| `/ws/package/progress/{taskId}` | 订阅打包进度 | Token 参数校验 |
 
 **推送消息格式**:
 
 ```json
 {
   "type": "upload_progress",
-  "taskId": "xxx",
-  "current": 5,
-  "total": 20,
+  "uploadId": "xxx",
+  "currentChunk": 5,
+  "totalChunks": 20,
   "percentage": 25,
-  "status": "processing"
+  "status": "uploading"
 }
 ```
 
@@ -557,7 +543,7 @@ t_operation_log → 操作日志表
 ### 5.2 新增表
 
 ```
-t_team          → 团队表（owner_id, name, description, quota, used_space, status）
+t_team          → 团队表（owner_id, name, description, status）
 t_team_member   → 团队成员表（team_id, user_id, role, status）
 ```
 
@@ -633,7 +619,7 @@ ShareDialog.vue      → 创建分享弹窗
 │              │                    │ TransferQueue, DirectoryTree │
 │ M4 分享管理   │ ShareController,   │ SharePage, ShareAccessPage  │
 │              │ GuestShareController│                             │
-│ M5 回收站     │ RecycleBinController│ RecycleBinPage               │
+│ M5 回收站     │ RecycleBinController│ RecycleBinPage (v0.2)      │
 │ M6 团队空间   │ TeamController,    │ TeamPage, TeamFilePage      │
 │              │ TeamFileController  │                             │
 │ M7 管理后台   │ AdminController,   │ AdminPage/Dashboard,        │

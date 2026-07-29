@@ -2,6 +2,7 @@ package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.entity.User;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.service.LoginAttemptService;
 import com.cloud.backend.service.UserService;
@@ -39,7 +40,7 @@ public class AdminUserController {
     public Result<Void> updateStatus(@PathVariable Long id, @RequestBody StatusRequest request) {
         User user = userService.findById(id);
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         user.setStatus(request.getStatus());
         userService.update(user);
@@ -51,7 +52,7 @@ public class AdminUserController {
     public Result<Void> updateQuota(@PathVariable Long id, @RequestBody QuotaRequest request) {
         User user = userService.findById(id);
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         user.setQuota(request.getQuota());
         userService.update(user);
@@ -63,7 +64,7 @@ public class AdminUserController {
     public Result<Void> unlock(@PathVariable Long id) {
         User user = userService.findById(id);
         if (user == null) {
-            return Result.fail("用户不存在");
+            return Result.fail(ErrorCode.USER_NOT_FOUND);
         }
         loginAttemptService.loginSucceeded(user.getUsername());
         return Result.success();

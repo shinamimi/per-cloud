@@ -144,6 +144,8 @@ public class AuthController {
         user.setNickname(request.getNickname() != null ? request.getNickname() : request.getUsername());
         user.setRole(Role.USER);
         user.setStatus(UserStatus.NORMAL);
+        user.setQuota(com.cloud.backend.constant.FileConstants.DEFAULT_QUOTA);
+        user.setUsedSpace(0L);
 
         userService.register(user);
 
