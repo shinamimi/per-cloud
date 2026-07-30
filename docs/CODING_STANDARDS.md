@@ -11,57 +11,128 @@
 
 ```
 com.cloud.backend
-├── config/          # 配置类（Security、MinIO、JWT、WebSocket）
-├── constant/        # 常量接口
-├── controller/      # 控制器
-│   └── admin/       # 管理端控制器
-├── dto/             # 请求/响应 DTO
-├── entity/          # 数据库实体
-├── enums/           # 枚举
-├── exception/       # 异常 + 全局处理器
-├── handler/         # WebSocket Handler
-├── interceptor/     # WebSocket / 请求拦截器
-├── mapper/          # MyBatis Mapper 接口
-├── security/        # Spring Security 组件
-├── service/         # 服务接口
-│   ├── user/        # 用户服务
+backend/src/main/java/com/cloud/backend/
+├── annotation/          # 自定义标记注解（横切关注点）
+├── aspect/              # AOP 切面实现（日志、权限拦截等）
+├── authorization/       # 业务权限校验规则
+├── bo/                  # 业务对象（多表组合查询结果）
+├── config/              # 应用配置（装配 Bean、设定框架行为）
+├── constant/            # 常量
+├── controller/          # HTTP 控制器（请求入口）
+│   └── admin/           # 管理后台控制器
+├── dao/                 # 复杂 SQL 查询接口（多表 join）
+├── dto/                 # 请求/响应数据传输对象（前后端传递）
+│   └── admin/           # 管理后台 DTO
+├── entity/              # 数据库实体映射（字段一一对应表）
+├── enums/               # 枚举集中管理
+├── event/               # 领域事件与监听器
+├── exception/           # 异常体系
+├── mapper/              # MyBatis Mapper（单表 CRUD）
+├── security/            # Spring Security 框架集成
+├── service/             # 业务服务
+│   ├── file/            # 文件领域
 │   │   └── impl/
-│   ├── file/        # 文件服务
+│   ├── share/           # 分享领域
 │   │   └── impl/
-│   ├── share/       # 分享服务
+│   ├── system/          # 系统服务（认证、邮件、验证码等）
 │   │   └── impl/
-│   └── system/      # 基础设施服务
+│   └── user/            # 用户领域
 │       └── impl/
-└── utils/           # 工具类
+└── utils/               # 工具类
 ```
 
 ### 1.2 命名规范
 
+#### 1.2.1 通用规则
+
 | 元素 | 规范 | 示例 |
 |------|------|------|
 | 类名 | PascalCase | `FileService`, `UserController` |
-| 方法名 | camelCase | `findById()`, `uploadFile()` |
+| 方法名 | camelCase，动词开头 | `findById()`, `uploadFile()` |
 | 变量名 | camelCase | `userId`, `parentId` |
-| 常量 | UPPER_SNAKE | `DEFAULT_QUOTA`, `ROOT_PARENT_ID` |
-| 包名 | 全小写 | `com.cloud.backend.service` |
-| Mapper XML | 与接口同名 | `FileMapper.xml` |
+| 常量 | UPPER_SNAKE_CASE | `DEFAULT_QUOTA`, `ROOT_PARENT_ID` |
+| 包名 | 全小写，按领域划分 | `service.file`, `controller.admin` |
+| 配置文件 | kebab-case | `application-dev.yml`, `logback-spring.xml` |
 
-### 1.3 API 设计
+#### 1.2.2 子域词表
+
+| 子域 | 范围 |
+|------|------|
+| `Auth` | 认证（登录/注册/登出/验证码） |
+| `User` | 用户自身管理 |
+| `File` | 文件操作 |
+| `Share` | 分享 |
+| `RecycleBin` | 回收站 |
+| `Team` | 团队空间 |
+| `System` | 系统服务（邮件、验证码、日志等） |
+| `Dashboard` | 仪表盘 |
+| `Admin` | 后台管理前缀（与子域组合，如 `AdminUser`） |
+
+#### 1.2.3 各层命名
+
+| 包 | 模式 | 示例 |
+|----|------|------|
+| `entity/` | `{表名单词}` | `User`、`File`、`Share`、`Team` |
+| `mapper/` | `{Entity}Mapper` | `UserMapper`、`FileMapper`、`ShareMapper` |
+| `mapper/xml` | `{Entity}Mapper.xml` | `UserMapper.xml`、`FileMapper.xml` |
+| `controller/` | `{子域}Controller` | `AuthController`、`FileController`、`UserController` |
+| `controller/admin/` | `Admin{子域}Controller` | `AdminUserController`、`AdminFileController` |
+| `service/` | `{子域}Service` | `AuthService`、`FileService`、`UserService` |
+| `service/impl/` | `{子域}ServiceImpl` | `AuthServiceImpl`、`FileServiceImpl` |
+| `dao/` | `{子域}{用途}Dao` | `FileStatsDao`、`DashboardStatsDao` |
+| `bo/` | `{子域}{用途}BO` | `FileDetailBO`、`UserQuotaBO`、`DashboardStatsBO` |
+| `dto/` | `PageQuery` / `PageResult`（分页固定命名） | `PageQuery`、`PageResult` |
+| `dto/request/` | `{动作}Request` 或 `{子域}{动作}Request` | `LoginRequest`、`UploadInitRequest` |
+| `dto/response/` | `{子域}{描述}Response` | `UserProfileResponse`、`QuotaResponse` |
+| `dto/admin/` | `Admin{动作}Request` / `Admin{动作}Response` | `AdminCreateUserRequest` |
+| `enums/` | `{领域}Enum` | `RoleEnum`、`UserStatusEnum`、`FileStatusEnum` |
+| `constant/` | `{领域}Constants` | `FileConstants`、`RedisConstants`、`SecurityConstants` |
+| `config/` (配置类) | `{技术/领域}Config` | `SecurityConfig`、`RedisConfig`、`WebMvcConfig` |
+| `config/` (属性类) | `{技术/领域}Properties` | `JwtProperties`、`MinioProperties`、`MailProperties` |
+| `event/` (事件) | `{子域}{动作}Event` | `UserRegisterEvent`、`FileUploadEvent`、`ShareCreateEvent` |
+| `event/` (监听器) | `{子域}{动作}Listener` | `OperationLogListener`、`QuotaListener` |
+| `annotation/` | `{用途}`（无前缀后缀，纯业务含义） | `OperationLog`、`RequirePermission`、`CurrentUser` |
+| `aspect/` | `{用途}Aspect` | `OperationLogAspect`、`PermissionAspect`、`RepeatSubmitAspect` |
+| `authorization/` | `{子域}Authorization` | `FileAuthorization`、`ShareAuthorization`、`TeamAuthorization` |
+| `exception/` | `{异常类型}Exception` | `BusinessException`、`NotFoundException`、`ForbiddenException` |
+| `exception/` (全局处理) | `GlobalExceptionHandler` | `GlobalExceptionHandler` |
+| `utils/` | `{技术/领域}Util` | `JwtUtil`、`IpUtil`、`DateUtil`、`HashUtil`、`FileUtil` |
+
+#### 1.2.4 方法命名（全项目统一）
+
+| 操作 | 方法名 |
+|------|--------|
+| 查询单个 | `findById()`、`findByXxx()` |
+| 查询列表 | `list()`、`listByXxx()` |
+| 分页查询 | `page()` |
+| 新增 | `create()` |
+| 保存 | `save()` |
+| 修改 | `update()` |
+| 物理删除 | `delete()` |
+| 逻辑删除 | `remove()` |
+| 恢复 | `restore()` |
+| 上传 | `upload()` |
+| 下载 | `download()` |
+| 校验 | `validate()` |
+| 检查 | `check()` |
+| 判断 | `isXxx()`、`hasXxx()` |
+
+#### 1.2.4 API 路径
 
 | 规则 | 说明 |
 |------|------|
-| 基础路径 | `/api/{模块}`，如 `/api/files`, `/api/shares` |
+| 基础路径 | `/api/{模块}`，如 `/api/files` |
 | 风格 | RESTful：`GET /api/files`, `POST /api/files/directory`, `PUT /api/files/{id}/rename`, `DELETE /api/files/{id}` |
 | 管理端 | `/api/admin/{模块}`，如 `/api/admin/users` |
 | 响应 | 统一返回 `Result<T>` |
 
-### 1.4 实体设计
+### 1.3 实体设计
 
 - 使用 Lombok `@Data`
 - 数据库字段下划线 → 实体驼峰（MyBatis `map-underscore-to-camel-case: true`）
 - 枚举存储为 TINYINT（自定义 `value` 字段，禁用 `ordinal()`），在 `MyBatisTypeHandlerConfig` 中注册
 
-### 1.5 异常处理
+### 1.4 异常处理
 
 | 机制 | 说明 |
 |------|------|
@@ -69,7 +140,7 @@ com.cloud.backend
 | 参数校验 | `@Valid` + `jakarta.validation` 注解 |
 | 全局处理 | `GlobalExceptionHandler` 统一捕获返回 `Result` |
 
-### 1.6 操作日志
+### 1.5 操作日志
 
 - 关键操作直接注入 `OperationLogService` 记录，不引入 BaseController 继承
 - 记录范围：登录、上传、下载、删除、分享、创建团队等
