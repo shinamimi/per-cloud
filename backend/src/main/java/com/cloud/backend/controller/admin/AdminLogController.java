@@ -1,7 +1,7 @@
 package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
-import com.cloud.backend.entity.OperationLog;
+import com.cloud.backend.dto.admin.AdminLogResponse;
 import com.cloud.backend.service.system.OperationLogService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,12 @@ public class AdminLogController {
     }
 
     @GetMapping
-    public Result<List<OperationLog>> listLogs() {
-        return Result.success(operationLogService.listAll());
+    public Result<List<AdminLogResponse>> listLogs() {
+        List<AdminLogResponse> logs = operationLogService.listAll().stream()
+                .map(l -> new AdminLogResponse(l.getId(), l.getUserId(), l.getOperation(),
+                        l.getTargetType(), l.getTargetId(), l.getDetail(), l.getIp(),
+                        l.getCreatedAt()))
+                .toList();
+        return Result.success(logs);
     }
 }

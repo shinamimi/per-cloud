@@ -1,6 +1,6 @@
 package com.cloud.backend.service.share.impl;
 
-import com.cloud.backend.entity.OperationLog;
+import com.cloud.backend.annotation.Log;
 import com.cloud.backend.entity.Share;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.OperationType;
@@ -8,11 +8,8 @@ import com.cloud.backend.enums.ShareStatus;
 import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.ShareMapper;
-import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.share.ShareService;
 import com.cloud.backend.service.system.OperationLogService;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -65,6 +62,8 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
+    @Log(operation = OperationType.CANCEL_SHARE, target = TargetType.SHARE,
+         targetId = "#id", detail = "'管理员取消分享'")
     public void adminCancelShare(Long id) {
         Share share = shareMapper.findById(id);
         if (share == null) {
@@ -72,21 +71,5 @@ public class ShareServiceImpl implements ShareService {
         }
         share.setStatus(ShareStatus.CANCELED);
         shareMapper.update(share);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.CANCEL_SHARE);
-        log.setTargetType(TargetType.SHARE);
-        log.setTargetId(id);
-        log.setDetail("管理员取消分享");
-        operationLogService.log(log);
-    }
-
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof LoginUser loginUser) {
-            return loginUser.getUserId();
-        }
-        return null;
     }
 }

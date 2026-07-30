@@ -1,7 +1,7 @@
 package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
-import com.cloud.backend.entity.Share;
+import com.cloud.backend.dto.admin.AdminShareResponse;
 import com.cloud.backend.service.share.ShareService;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +18,13 @@ public class AdminShareController {
     }
 
     @GetMapping
-    public Result<List<Share>> listShares() {
-        return Result.success(shareService.findAll());
+    public Result<List<AdminShareResponse>> listShares() {
+        List<AdminShareResponse> shares = shareService.findAll().stream()
+                .map(s -> new AdminShareResponse(s.getId(), s.getUserId(), s.getFileId(),
+                        s.getShareToken(), s.getStatus(), s.getExpireTime(), s.getMaxDownload(),
+                        s.getDownloadCount(), s.getCreatedAt(), s.getUpdatedAt()))
+                .toList();
+        return Result.success(shares);
     }
 
     @PostMapping("/{id}/cancel")

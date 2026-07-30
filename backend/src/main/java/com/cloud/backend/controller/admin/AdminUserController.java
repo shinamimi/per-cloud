@@ -1,9 +1,9 @@
 package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
+import com.cloud.backend.dto.admin.AdminUserResponse;
 import com.cloud.backend.dto.admin.StatusRequest;
 import com.cloud.backend.dto.admin.QuotaRequest;
-import com.cloud.backend.entity.User;
 import com.cloud.backend.service.user.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +20,13 @@ public class AdminUserController {
     }
 
     @GetMapping
-    public Result<List<User>> listUsers() {
-        return Result.success(userService.findAll());
+    public Result<List<AdminUserResponse>> listUsers() {
+        List<AdminUserResponse> users = userService.findAll().stream()
+                .map(u -> new AdminUserResponse(u.getId(), u.getUsername(), u.getEmail(),
+                        u.getNickname(), u.getAvatar(), u.getRole(), u.getQuota(),
+                        u.getUsedSpace(), u.getStatus(), u.getCreatedAt()))
+                .toList();
+        return Result.success(users);
     }
 
     @PutMapping("/{id}/status")

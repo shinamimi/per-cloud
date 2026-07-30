@@ -1,5 +1,8 @@
 package com.cloud.backend.service.file.impl;
 
+import com.cloud.backend.annotation.Log;
+import com.cloud.backend.authorization.AuthorizationPolicy;
+import com.cloud.backend.dao.FileDao;
 import com.cloud.backend.dto.FileQuery;
 import com.cloud.backend.entity.File;
 import com.cloud.backend.entity.OperationLog;
@@ -8,12 +11,9 @@ import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.FileMapper;
-import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.file.FileService;
 import com.cloud.backend.service.file.StorageService;
 import com.cloud.backend.service.system.OperationLogService;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,12 +22,14 @@ import java.util.List;
 public class FileServiceImpl implements FileService {
 
     private final FileMapper fileMapper;
+    private final FileDao fileDao;
     private final StorageService storageService;
     private final OperationLogService operationLogService;
 
-    public FileServiceImpl(FileMapper fileMapper, StorageService storageService,
+    public FileServiceImpl(FileMapper fileMapper, FileDao fileDao, StorageService storageService,
                            OperationLogService operationLogService) {
         this.fileMapper = fileMapper;
+        this.fileDao = fileDao;
         this.storageService = storageService;
         this.operationLogService = operationLogService;
     }
@@ -70,7 +72,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public List<File> search(FileQuery query) {
-        return fileMapper.search(query);
+        return fileDao.search(query);
     }
 
     @Override
@@ -90,19 +92,11 @@ public class FileServiceImpl implements FileService {
         fileMapper.deleteById(id);
 
         OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
+        log.setUserId(AuthorizationPolicy.getCurrentUserId());
         log.setOperation(OperationType.DELETE_FILE);
         log.setTargetType(TargetType.FILE);
         log.setTargetId(id);
         log.setDetail("管理员删除文件: " + file.getName());
         operationLogService.log(log);
-    }
-
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof LoginUser loginUser) {
-            return loginUser.getUserId();
-        }
-        return null;
     }
 }

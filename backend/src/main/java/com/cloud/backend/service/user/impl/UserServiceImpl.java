@@ -1,5 +1,6 @@
 package com.cloud.backend.service.user.impl;
 
+import com.cloud.backend.annotation.Log;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
@@ -10,12 +11,9 @@ import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.UserMapper;
-import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.system.LoginAttemptService;
 import com.cloud.backend.service.system.OperationLogService;
 import com.cloud.backend.service.user.UserService;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -96,6 +94,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#result.id", detail = "'创建管理员: ' + #username")
     public User createAdmin(String username, String password, String email, String nickname, Role role) {
         if (existsByUsername(username)) {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
@@ -109,20 +109,12 @@ public class UserServiceImpl implements UserService {
         user.setStatus(UserStatus.NORMAL);
         user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
-        User saved = register(user);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
-        log.setTargetId(saved.getId());
-        log.setDetail("创建管理员: " + username);
-        operationLogService.log(log);
-
-        return saved;
+        return register(user);
     }
 
     @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#id", detail = "'修改用户状态为: ' + #status.name()")
     public void updateUserStatus(Long id, UserStatus status) {
         User user = userMapper.findById(id);
         if (user == null) {
@@ -130,17 +122,11 @@ public class UserServiceImpl implements UserService {
         }
         user.setStatus(status);
         userMapper.update(user);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
-        log.setTargetId(id);
-        log.setDetail("修改用户状态为: " + status.name());
-        operationLogService.log(log);
     }
 
     @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#id", detail = "'修改配额: ' + #quota")
     public void updateUserQuota(Long id, Long quota) {
         User user = userMapper.findById(id);
         if (user == null) {
@@ -148,31 +134,17 @@ public class UserServiceImpl implements UserService {
         }
         user.setQuota(quota);
         userMapper.update(user);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
-        log.setTargetId(id);
-        log.setDetail("修改配额: " + quota);
-        operationLogService.log(log);
     }
 
     @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#id", detail = "'解锁登录锁定'")
     public void unlockUser(Long id) {
         User user = userMapper.findById(id);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         loginAttemptService.loginSucceeded(user.getUsername());
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
-        log.setTargetId(id);
-        log.setDetail("解锁登录锁定");
-        operationLogService.log(log);
     }
 
     @Override
@@ -200,6 +172,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#id", detail = "'修改角色为: ' + #role.name()")
     public void updateAdminRole(Long id, Role role) {
         User user = userMapper.findById(id);
         if (user == null) {
@@ -207,21 +181,5 @@ public class UserServiceImpl implements UserService {
         }
         user.setRole(role);
         userMapper.update(user);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(getCurrentUserId());
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
-        log.setTargetId(id);
-        log.setDetail("修改角色为: " + role.name());
-        operationLogService.log(log);
-    }
-
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof LoginUser loginUser) {
-            return loginUser.getUserId();
-        }
-        return null;
     }
 }
