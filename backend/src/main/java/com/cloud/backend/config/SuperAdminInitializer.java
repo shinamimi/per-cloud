@@ -13,20 +13,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * 超级管理员初始化器。
- *
- * 设计思路：
- * 1. 使用 ApplicationRunner（而非 @PostConstruct），确保 Spring Security 和数据库相关 Bean 已完全初始化
- * 2. 环境变量驱动：通过 SUPER_ADMIN_USERNAME / PASSWORD / EMAIL 三个环境变量配置管理员
- * 3. 首次启动自动创建超级管理员，后续启动跳过
- * 4. 如果环境变量密码变了，自动更新数据库密码（方便忘记密码时重置）
- *
- * 实现原理：
- * - findByUsername 查用户 → 不存在则创建
- * - 已存在且角色是 SUPER_ADMIN → 检查密码是否变化，变则更新
- * - 已存在但角色不是 SUPER_ADMIN → 跳过（防止占用普通用户账号）
- */
 @Component
 public class SuperAdminInitializer implements ApplicationRunner {
 
@@ -67,7 +53,7 @@ public class SuperAdminInitializer implements ApplicationRunner {
 
         User newAdmin = new User();
         newAdmin.setUsername(superAdminUsername);
-        newAdmin.setPassword(passwordEncoder.encode(superAdminPassword));
+        newAdmin.setPassword(superAdminPassword);
         newAdmin.setEmail(superAdminEmail);
         newAdmin.setNickname("Super Admin");
         newAdmin.setRole(Role.SUPER_ADMIN);

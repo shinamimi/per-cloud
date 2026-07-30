@@ -1,15 +1,15 @@
 package com.cloud.backend.service.share.impl;
 
 import com.cloud.backend.entity.Share;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.ShareStatus;
+import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.ShareMapper;
 import com.cloud.backend.service.share.ShareService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * 分享服务实现 —— 委托 ShareMapper。
- */
 @Service
 public class ShareServiceImpl implements ShareService {
 
@@ -53,5 +53,15 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public List<Share> findAll() {
         return shareMapper.findAll();
+    }
+
+    @Override
+    public void adminCancelShare(Long id) {
+        Share share = shareMapper.findById(id);
+        if (share == null) {
+            throw new BusinessException(ErrorCode.SHARE_NOT_FOUND);
+        }
+        share.setStatus(ShareStatus.CANCELED);
+        shareMapper.update(share);
     }
 }

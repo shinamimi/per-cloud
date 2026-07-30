@@ -1,23 +1,24 @@
 package com.cloud.backend.service.file.impl;
 
 import com.cloud.backend.entity.File;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.service.file.FileService;
+import com.cloud.backend.service.file.StorageService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * 文件服务实现 —— 委托 FileMapper 做数据访问。
- * 业务校验（配额、重复文件名等）在 Controller 层处理。
- */
 @Service
 public class FileServiceImpl implements FileService {
 
     private final FileMapper fileMapper;
+    private final StorageService storageService;
 
-    public FileServiceImpl(FileMapper fileMapper) {
+    public FileServiceImpl(FileMapper fileMapper, StorageService storageService) {
         this.fileMapper = fileMapper;
+        this.storageService = storageService;
     }
 
     @Override
@@ -59,5 +60,17 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<File> findAll() {
         return fileMapper.findAll();
+    }
+
+    @Override
+    public void adminDeleteFile(Long id) {
+        File file = fileMapper.findById(id);
+        if (file == null) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+        }
+        if (file.getObjectName() != null && !file.getObjectName().isEmpty()) {
+            storageService.delete(file.getObjectName());
+        }
+        fileMapper.deleteById(id);
     }
 }

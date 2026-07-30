@@ -4,37 +4,24 @@ import com.cloud.backend.dto.Result;
 import com.cloud.backend.dto.admin.CreateAdminRequest;
 import com.cloud.backend.dto.admin.UpdateRoleRequest;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.user.UserService;
-import lombok.Data;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 管理员账号管理控制器 —— CRUD 管理员/运营人员。
- *
- * 路由权限：/api/admin/admins/** 需要 SUPER_ADMIN 角色。
- * 超级管理员可以创建/删除/修改管理员和运营人员的角色。
- */
 @RestController
 @RequestMapping("/api/admin/admins")
 public class AdminAccountController {
 
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
 
-    public AdminAccountController(UserService userService, PasswordEncoder passwordEncoder) {
+    public AdminAccountController(UserService userService) {
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    /** 列出所有管理员和运营人员（角色 >= ADMIN） */
     @GetMapping
     public Result<List<User>> listAdmins() {
         List<User> all = userService.findAll();
@@ -44,50 +31,23 @@ public class AdminAccountController {
         return Result.success(admins);
     }
 
-    /** 创建管理员/运营人员 */
     @PostMapping
     public Result<User> createAdmin(@RequestBody CreateAdminRequest request) {
-        if (userService.existsByUsername(request.getUsername())) {
-            return Result.fail(ErrorCode.USER_ALREADY_EXISTS);
-        }
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        user.setNickname(request.getNickname());
-        user.setRole(request.getRole());
-        user.setStatus(UserStatus.NORMAL);
-        userService.register(user);
+        User user = userService.createAdmin(
+                request.getUsername(), request.getPassword(),
+                request.getEmail(), request.getNickname(), request.getRole());
         return Result.success(user);
     }
 
-    /** 删除管理员（禁用账号）—— 不允许删除自己或超级管理员 */
     @DeleteMapping("/{id}")
     public Result<Void> deleteAdmin(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
-        if (id.equals(loginUser.getUserId())) {
-            return Result.fail(ErrorCode.BAD_REQUEST, "不能删除自己");
-        }
-        User user = userService.findById(id);
-        if (user == null) {
-            return Result.fail(ErrorCode.USER_NOT_FOUND);
-        }
-        if (user.getRole() == Role.SUPER_ADMIN) {
-            return Result.fail(ErrorCode.BAD_REQUEST, "不能删除超级管理员");
-        }
-        user.setStatus(UserStatus.DISABLED);
-        userService.update(user);
+        userService.deleteAdmin(id, loginUser.getUserId());
         return Result.success();
     }
 
-    /** 修改角色（如将 ADMIN 降级为 OPERATOR） */
     @PutMapping("/{id}/role")
     public Result<Void> updateRole(@PathVariable Long id, @RequestBody UpdateRoleRequest request) {
-        User user = userService.findById(id);
-        if (user == null) {
-            return Result.fail(ErrorCode.USER_NOT_FOUND);
-        }
-        user.setRole(request.getRole());
-        userService.update(user);
+        userService.updateAdminRole(id, request.getRole());
         return Result.success();
     }
 }
