@@ -279,7 +279,81 @@ markAsDeleted(userId, file) {
 
 ---
 
-## 11. 开放问题决策建议
+## 11. 包层级定义
+
+### 11.1 总览
+
+```
+backend/src/main/java/com/cloud/backend/
+├── annotation/          # 自定义标记注解（横切关注点）
+├── aspect/              # AOP 切面实现（日志、权限拦截等）
+├── authorization/       # 业务权限校验规则
+├── bo/                  # 业务对象（多表组合查询结果）
+├── config/              # 应用配置（装配 Bean、设定框架行为）
+├── constant/            # 常量
+├── controller/          # HTTP 控制器（请求入口）
+│   └── admin/           # 管理后台控制器
+├── dao/                 # 复杂 SQL 查询接口（多表 join）
+├── dto/                 # 请求/响应数据传输对象（前后端传递）
+│   └── admin/           # 管理后台 DTO
+├── entity/              # 数据库实体映射（字段一一对应表）
+├── enums/               # 枚举集中管理
+├── event/               # 领域事件与监听器
+├── exception/           # 异常体系
+├── mapper/              # MyBatis Mapper（单表 CRUD）
+├── security/            # Spring Security 框架集成
+├── service/             # 业务服务
+│   ├── file/            # 文件领域
+│   │   └── impl/
+│   ├── share/           # 分享领域
+│   │   └── impl/
+│   ├── system/          # 系统服务（认证、邮件、验证码等）
+│   │   └── impl/
+│   └── user/            # 用户领域
+│       └── impl/
+└── utils/               # 工具类
+```
+
+### 11.2 各包定义
+
+| 包 | 放什么 | 不放什么 | 为什么存在 |
+|----|--------|---------|-----------|
+| `annotation/` | 自定义注解定义（如 `@Log`、`@RequireRole`），仅含注解声明 + `@Target`/`@Retention` | 注解的实现逻辑（放在 `aspect/`）；校验注解（放在 `validator/`） | 集中管理所有横切标记，让人一眼知道有哪些注解可用 |
+| `aspect/` | AOP 切面类，含 `@Around`/`@Before`/`@After` 实现（如 `LogAspect` 拦截 `@Log` 写入操作日志） | 切面中调用的业务逻辑（放在 `service/`）；注解定义（放在 `annotation/`） | 将日志记录、权限拦截等横切逻辑从 Service 中剥离，消除重复 |
+| `authorization/` | 业务权限校验规则类，返回 boolean（如 `AuthorizationPolicy.canManageFile(loginUser, targetUserId)`） | 框架安全配置（放在 `config/` 或 `security/`） | 将"什么角色能做什么"的规则与框架机制解耦，规则变化不影响基础设施 |
+| `bo/` | 多表 join 查询的强类型结果对象（如 `AdminDashboardStatsBO`：含 userCount、fileCount、totalSize 等） | 单表实体（放在 `entity/`）；请求/响应 DTO（放在 `dto/`） | 跨表查询结果不属于任何单张表，用 `Map` 返回导致字段名无约束 |
+| `config/` | `@Configuration` 注解的应用配置类，用于声明 `@Bean`、装配框架组件或初始化数据 | 业务逻辑（放在 `service/`） | 集中管理 Bean 定义，避免散落在各包中难以查找 |
+| `constant/` | 静态常量类（如 `FileConstants.DEFAULT_QUOTA`） | 枚举（放在 `enums/`） | 避免魔术数字散落在代码中 |
+| `controller/` | `@RestController` 控制器，处理 HTTP 请求映射，调用 Service，返回 DTO | 业务逻辑（放在 `service/`） | 职责单一：仅做请求解析 + 响应组装 |
+| `dao/` | 复杂 SQL 查询接口（多表 join、统计查询等），加 `@Mapper` 注解 | 单表 CRUD（放在 `mapper/`） | 与 `mapper/` 分离，避免单表 Mapper 被复杂查询污染 |
+| `dto/` | 请求参数类（如 `LoginRequest`）和响应类（如 `LoginResponse`），仅用于网络传输 | 业务逻辑；实体（放在 `entity/`） | 前后端契约，类型安全，与数据库表解耦 |
+| `entity/` | 数据库表 → Java 类的一一映射，字段名与列名对应 | 非数据表 POJO（放在 `bo/`） | ORM 基础，MyBatis 结果映射的目标类型 |
+| `enums/` | 所有枚举类型集中管理（`Role`、`FileStatus`、`OperationType` 等） | 常量值（放在 `constant/`） | 单点查找所有枚举，避免散落 |
+| `event/` | 领域事件类（如 `UserRegisteredEvent`）和事件监听器（如 `UserEventListener`） | 事件中调用的业务逻辑（放在 `service/`） | 通过事件解耦，注册后发邮件、初始化空间等操作不侵入注册流程 |
+| `exception/` | 自定义异常（`BusinessException`）、错误码枚举（`ErrorCode`）、全局异常处理器（`GlobalExceptionHandler`） | 业务判断逻辑（放在 `service/`） | 统一异常处理，避免每个 Controller 写 try-catch |
+| `mapper/` | MyBatis Mapper 接口，一个实体对应一个 Mapper，仅含单表 CRUD | 多表 join/统计查询（放在 `dao/`） | 职责单一：单表操作不膨胀 |
+| `security/` | Spring Security 集成代码：`LoginUser`（UserDetails 实现）、`JwtAuthenticationFilter`（OncePerRequestFilter）、`AuthenticationEntryPointImpl`、`AccessDeniedHandlerImpl` | 业务权限规则（放在 `authorization/`）；Bean 配置（放在 `config/`） | 隔离框架 SPI 实现，更换安全框架时只改此包 |
+| `service/` | 业务接口 + 实现，按领域分子包（`file/`、`share/`、`system/`、`user/`） | 框架集成代码（放在 `security/`） | 业务逻辑集中层，领域内聚 |
+| `utils/` | 无状态的静态工具方法（如 `IpUtil`、`EncryptUtil`） | 有状态服务（放在 `service/`） | 工具方法随处可用，无依赖 |
+
+### 11.3 package-dependency 约束（不可违反）
+
+```
+controller → service, dto       # Controller 只能调 Service 和 DTO
+service    → mapper, dao, bo    # Service 可调 Mapper、DAO、BO
+service    → entity             # Service 可返回/接收 Entity（内部使用）
+service    → authorization      # Service 可在操作前调用权限校验
+service  → service              # 允许跨领域 Service 调用
+mapper     → entity             # Mapper 只处理实体
+dao        → bo                 # DAO 返回业务对象
+dto        → entity ✗           # DTO 不能依赖 Entity（Entity 不能直接暴露给前端）
+controller → entity ✗           # Controller 不能直接返回 Entity
+controller → mapper ✗           # Controller 不能直接调 Mapper
+```
+
+---
+
+## 12. 开放问题决策建议
 
 | 问题 | 建议 | 理由 |
 |------|------|------|
