@@ -1,5 +1,6 @@
 package com.cloud.backend.mapper;
 
+import com.cloud.backend.dto.FileQuery;
 import com.cloud.backend.entity.File;
 import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
@@ -28,6 +29,8 @@ public interface FileMapper {
     int deleteById(Long id);
 
     int updateStatus(Long id, Integer status);
+
+    List<File> search(FileQuery query);
 
     List<File> findAll();
 }

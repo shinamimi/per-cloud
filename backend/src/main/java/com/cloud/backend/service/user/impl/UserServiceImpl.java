@@ -1,14 +1,21 @@
 package com.cloud.backend.service.user.impl;
 
 import com.cloud.backend.constant.FileConstants;
+import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.UserMapper;
+import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.system.LoginAttemptService;
+import com.cloud.backend.service.system.OperationLogService;
 import com.cloud.backend.service.user.UserService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,11 +27,15 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
+    private final OperationLogService operationLogService;
 
-    public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder, LoginAttemptService loginAttemptService) {
+    public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder,
+                           LoginAttemptService loginAttemptService,
+                           OperationLogService operationLogService) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptService = loginAttemptService;
+        this.operationLogService = operationLogService;
     }
 
     @Override
@@ -98,7 +109,17 @@ public class UserServiceImpl implements UserService {
         user.setStatus(UserStatus.NORMAL);
         user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
-        return register(user);
+        User saved = register(user);
+
+        OperationLog log = new OperationLog();
+        log.setUserId(getCurrentUserId());
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(saved.getId());
+        log.setDetail("创建管理员: " + username);
+        operationLogService.log(log);
+
+        return saved;
     }
 
     @Override
@@ -109,6 +130,14 @@ public class UserServiceImpl implements UserService {
         }
         user.setStatus(status);
         userMapper.update(user);
+
+        OperationLog log = new OperationLog();
+        log.setUserId(getCurrentUserId());
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(id);
+        log.setDetail("修改用户状态为: " + status.name());
+        operationLogService.log(log);
     }
 
     @Override
@@ -119,6 +148,14 @@ public class UserServiceImpl implements UserService {
         }
         user.setQuota(quota);
         userMapper.update(user);
+
+        OperationLog log = new OperationLog();
+        log.setUserId(getCurrentUserId());
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(id);
+        log.setDetail("修改配额: " + quota);
+        operationLogService.log(log);
     }
 
     @Override
@@ -128,6 +165,14 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         loginAttemptService.loginSucceeded(user.getUsername());
+
+        OperationLog log = new OperationLog();
+        log.setUserId(getCurrentUserId());
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(id);
+        log.setDetail("解锁登录锁定");
+        operationLogService.log(log);
     }
 
     @Override
@@ -144,6 +189,14 @@ public class UserServiceImpl implements UserService {
         }
         user.setStatus(UserStatus.DISABLED);
         userMapper.update(user);
+
+        OperationLog log = new OperationLog();
+        log.setUserId(currentUserId);
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(id);
+        log.setDetail("禁用管理员: " + user.getUsername());
+        operationLogService.log(log);
     }
 
     @Override
@@ -154,5 +207,21 @@ public class UserServiceImpl implements UserService {
         }
         user.setRole(role);
         userMapper.update(user);
+
+        OperationLog log = new OperationLog();
+        log.setUserId(getCurrentUserId());
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(id);
+        log.setDetail("修改角色为: " + role.name());
+        operationLogService.log(log);
+    }
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof LoginUser loginUser) {
+            return loginUser.getUserId();
+        }
+        return null;
     }
 }

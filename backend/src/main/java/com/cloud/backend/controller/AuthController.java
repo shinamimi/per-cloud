@@ -1,11 +1,8 @@
 package com.cloud.backend.controller;
 
 import com.cloud.backend.dto.*;
-import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.service.system.AuthService;
-import com.cloud.backend.service.system.CaptchaService;
 import com.cloud.backend.service.system.JwtBlacklistService;
-import com.cloud.backend.service.system.EmailService;
 import com.cloud.backend.utils.IpUtil;
 import com.cloud.backend.utils.JwtTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,19 +14,13 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final CaptchaService captchaService;
-    private final EmailService emailService;
     private final JwtBlacklistService jwtBlacklistService;
     private final JwtTokenUtil jwtTokenUtil;
 
     public AuthController(AuthService authService,
-                          CaptchaService captchaService,
-                          EmailService emailService,
                           JwtBlacklistService jwtBlacklistService,
                           JwtTokenUtil jwtTokenUtil) {
         this.authService = authService;
-        this.captchaService = captchaService;
-        this.emailService = emailService;
         this.jwtBlacklistService = jwtBlacklistService;
         this.jwtTokenUtil = jwtTokenUtil;
     }
@@ -42,17 +33,7 @@ public class AuthController {
 
     @PostMapping("/send-code")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
-        if (captchaService.isOnCooldown(request.getEmail())) {
-            return Result.fail(ErrorCode.CAPTCHA_COOLDOWN);
-        }
-        String code = captchaService.generateAndStore(request.getEmail(), request.getCaptchaType());
-        String purpose = switch (request.getCaptchaType()) {
-            case REGISTER -> "注册验证";
-            case RESET_PASSWORD -> "重置密码验证";
-            case LOGIN -> "登录验证";
-        };
-        emailService.sendCaptchaMail(request.getEmail(), code, purpose);
-        captchaService.setCooldown(request.getEmail());
+        authService.sendCode(request);
         return Result.success();
     }
 

@@ -5,12 +5,14 @@ import com.cloud.backend.dto.LoginRequest;
 import com.cloud.backend.dto.LoginResponse;
 import com.cloud.backend.dto.RegisterRequest;
 import com.cloud.backend.dto.ResetPasswordRequest;
+import com.cloud.backend.dto.SendCodeRequest;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.CaptchaType;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.security.LoginUser;
@@ -78,6 +80,8 @@ public class AuthServiceImpl implements AuthService {
             OperationLog log = new OperationLog();
             log.setUserId(loginUser.getUserId());
             log.setOperation(OperationType.LOGIN);
+            log.setTargetType(TargetType.USER);
+            log.setTargetId(loginUser.getUserId());
             log.setIp(ip);
             operationLogService.log(log);
 
@@ -121,10 +125,27 @@ public class AuthServiceImpl implements AuthService {
         OperationLog log = new OperationLog();
         log.setUserId(user.getId());
         log.setOperation(OperationType.REGISTER);
+        log.setTargetType(TargetType.USER);
+        log.setTargetId(user.getId());
         log.setIp(ip);
         operationLogService.log(log);
 
         return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole().getValue());
+    }
+
+    @Override
+    public void sendCode(SendCodeRequest request) {
+        if (captchaService.isOnCooldown(request.getEmail())) {
+            throw new BusinessException(ErrorCode.CAPTCHA_COOLDOWN);
+        }
+        String code = captchaService.generateAndStore(request.getEmail(), request.getCaptchaType());
+        String purpose = switch (request.getCaptchaType()) {
+            case REGISTER -> "注册验证";
+            case RESET_PASSWORD -> "重置密码验证";
+            case LOGIN -> "登录验证";
+        };
+        emailService.sendCaptchaMail(request.getEmail(), code, purpose);
+        captchaService.setCooldown(request.getEmail());
     }
 
     @Override

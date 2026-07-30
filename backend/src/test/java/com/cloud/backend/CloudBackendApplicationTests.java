@@ -2,6 +2,7 @@ package com.cloud.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * 启动上下文测试 —— 验证 Spring 容器能否正常加载。
@@ -9,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * 如果配置或依赖有问题会在此处报错。
  */
 @SpringBootTest
+@ActiveProfiles("test")
 class CloudBackendApplicationTests {
 
 	@Test

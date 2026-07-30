@@ -18,11 +18,11 @@ spring:
       password: ${REDIS_PASSWORD:}
 
   mail:
-    host: ${SMTP_HOST}
+    host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:587}
     username: ${SMTP_USERNAME:placeholder@local.dev}
     password: ${SMTP_PASSWORD:placeholder}
-    from: ${SMTP_FROM}
+    from: ${SMTP_FROM:noreply@local.dev}
     properties:
       mail:
         smtp:
