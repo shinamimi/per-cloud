@@ -1,11 +1,13 @@
 package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
+import com.cloud.backend.dto.admin.StatusRequest;
+import com.cloud.backend.dto.admin.QuotaRequest;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.UserStatus;
-import com.cloud.backend.service.LoginAttemptService;
-import com.cloud.backend.service.UserService;
+import com.cloud.backend.service.system.LoginAttemptService;
+import com.cloud.backend.service.user.UserService;
 import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,15 +70,5 @@ public class AdminUserController {
         }
         loginAttemptService.loginSucceeded(user.getUsername());
         return Result.success();
-    }
-
-    @Data
-    public static class StatusRequest {
-        private UserStatus status;
-    }
-
-    @Data
-    public static class QuotaRequest {
-        private Long quota;
     }
 }

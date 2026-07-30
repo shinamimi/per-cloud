@@ -1,8 +1,8 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.system.impl;
 
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.mapper.OperationLogMapper;
-import com.cloud.backend.service.OperationLogService;
+import com.cloud.backend.service.system.OperationLogService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

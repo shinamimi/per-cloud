@@ -1,7 +1,7 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.file.impl;
 
 import com.cloud.backend.config.MinioProperties;
-import com.cloud.backend.service.StorageService;
+import com.cloud.backend.service.file.StorageService;
 import io.minio.*;
 import io.minio.http.Method;
 import org.springframework.stereotype.Service;

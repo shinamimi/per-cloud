@@ -1,4 +1,4 @@
-package com.cloud.backend.service;
+package com.cloud.backend.service.system;
 
 import com.cloud.backend.enums.CaptchaType;
 import org.springframework.data.redis.core.StringRedisTemplate;

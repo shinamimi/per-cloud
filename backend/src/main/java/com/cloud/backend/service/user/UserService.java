@@ -1,4 +1,4 @@
-package com.cloud.backend.service;
+package com.cloud.backend.service.user;
 
 import com.cloud.backend.entity.User;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.cloud.backend.service;
+package com.cloud.backend.service.system;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;

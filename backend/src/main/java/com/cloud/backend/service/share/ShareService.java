@@ -1,4 +1,4 @@
-package com.cloud.backend.service;
+package com.cloud.backend.service.share;
 
 import com.cloud.backend.entity.Share;
 

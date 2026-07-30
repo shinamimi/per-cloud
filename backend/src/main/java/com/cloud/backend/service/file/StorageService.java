@@ -1,4 +1,4 @@
-package com.cloud.backend.service;
+package com.cloud.backend.service.file;
 
 import java.io.InputStream;
 

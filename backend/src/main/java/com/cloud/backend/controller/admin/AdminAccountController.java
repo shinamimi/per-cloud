@@ -1,12 +1,14 @@
 package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
+import com.cloud.backend.dto.admin.CreateAdminRequest;
+import com.cloud.backend.dto.admin.UpdateRoleRequest;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.security.LoginUser;
-import com.cloud.backend.service.UserService;
+import com.cloud.backend.service.user.UserService;
 import lombok.Data;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -87,19 +89,5 @@ public class AdminAccountController {
         user.setRole(request.getRole());
         userService.update(user);
         return Result.success();
-    }
-
-    @Data
-    public static class CreateAdminRequest {
-        private String username;
-        private String password;
-        private String email;
-        private String nickname;
-        private Role role;
-    }
-
-    @Data
-    public static class UpdateRoleRequest {
-        private Role role;
     }
 }

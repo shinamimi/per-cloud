@@ -1,8 +1,8 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.user.impl;
 
 import com.cloud.backend.entity.User;
 import com.cloud.backend.mapper.UserMapper;
-import com.cloud.backend.service.UserService;
+import com.cloud.backend.service.user.UserService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,8 +1,8 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.file.impl;
 
 import com.cloud.backend.entity.RecycleBin;
 import com.cloud.backend.mapper.RecycleBinMapper;
-import com.cloud.backend.service.RecycleBinService;
+import com.cloud.backend.service.file.RecycleBinService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

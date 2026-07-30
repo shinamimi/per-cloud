@@ -1,8 +1,8 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.share.impl;
 
 import com.cloud.backend.entity.Share;
 import com.cloud.backend.mapper.ShareMapper;
-import com.cloud.backend.service.ShareService;
+import com.cloud.backend.service.share.ShareService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

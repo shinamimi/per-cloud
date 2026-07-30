@@ -1,7 +1,7 @@
 package com.cloud.backend.security;
 
 import com.cloud.backend.enums.ErrorCode;
-import com.cloud.backend.service.JwtBlacklistService;
+import com.cloud.backend.service.system.JwtBlacklistService;
 import com.cloud.backend.utils.JwtTokenUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

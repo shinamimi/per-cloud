@@ -19,11 +19,9 @@
 ```
 
 - `code = 200` 表示成功，其他值表示失败
-- 分页响应包含 `records`, `total`, `page`, `size`
+- 分页响应含 `records`, `total`, `page`, `size`
 
 ### 1.2 认证方式
-
-所有需要登录的接口在 HTTP Header 中携带：
 
 ```
 Authorization: Bearer <JWT Token>
@@ -31,8 +29,8 @@ Authorization: Bearer <JWT Token>
 
 ### 1.3 错误码
 
-| 范围 | 模块 | 错误码示例 |
-|------|------|-----------|
+| 范围 | 模块 | 错误码 |
+|------|------|--------|
 | 10000-10099 | 通用 | BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, INTERNAL_ERROR |
 | 10100-10199 | 认证 | LOGIN_LOCKED, CAPTCHA_INVALID, CAPTCHA_COOLDOWN |
 | 10200-10299 | 文件 | FILE_NAME_DUPLICATE, FILE_QUOTA_EXCEEDED, FILE_NOT_FOUND, UPLOAD_INVALID, UPLOAD_CHUNK_MISSING, UPLOAD_MERGE_FAILED |
@@ -41,7 +39,7 @@ Authorization: Bearer <JWT Token>
 
 ---
 
-## 2. 认证（M1）
+## 2. 认证模块
 
 所有接口公开，无需认证。
 
@@ -54,7 +52,7 @@ Authorization: Bearer <JWT Token>
 | POST | `/api/auth/forgot-password` | ForgotPasswordRequest | - | 忘记密码 |
 | POST | `/api/auth/reset-password` | ResetPasswordRequest | - | 重置密码 |
 
-### 输入/输出结构
+### 请求/响应结构
 
 ```
 LoginRequest:
@@ -64,19 +62,20 @@ LoginRequest:
   captchaCode: string (可选)
 
 LoginResponse:
-  token: string           # JWT Token
-  tokenType: string       # "Bearer"
-  expiresIn: long         # 过期时间（秒）
-  userInfo: UserProfile   # 基本用户信息
+  token: string
+  userId: long
+  username: string
+  role: int               # 0-USER 10-OPERATOR 20-ADMIN 100-SUPER_ADMIN
 
 RegisterRequest:
   username: string        # 3-32 位
-  password: string        # 6-32 位
+  password: string        # 8-20 位，必须包含字母和数字
   email: string
   code: string            # 邮箱验证码
 
 SendCodeRequest:
   email: string
+  captchaType: string     # REGISTER / RESET_PASSWORD / LOGIN
 
 ForgotPasswordRequest:
   email: string
@@ -85,7 +84,7 @@ ForgotPasswordRequest:
 ResetPasswordRequest:
   email: string
   code: string
-  newPassword: string     # 6-32 位
+  newPassword: string     # 8-20 位，必须包含字母和数字
 
 UserProfile:
   id: long
@@ -102,7 +101,7 @@ UserProfile:
 
 ---
 
-## 3. 用户管理（M2）
+## 3. 用户管理
 
 需要登录。
 
@@ -113,7 +112,7 @@ UserProfile:
 | PUT | `/api/users/me/password` | PasswordUpdateRequest | - | 修改密码 |
 | GET | `/api/users/me/quota` | - | QuotaResponse | 获取空间使用情况 |
 
-### 输入/输出结构
+### 请求/响应结构
 
 ```
 UserUpdateRequest:
@@ -122,7 +121,7 @@ UserUpdateRequest:
 
 PasswordUpdateRequest:
   oldPassword: string
-  newPassword: string (6-32 位)
+  newPassword: string (8-20 位，必须包含字母和数字)
 
 UserProfileResponse:
   id: long
@@ -137,14 +136,14 @@ UserProfileResponse:
   createdAt: datetime
 
 QuotaResponse:
-  quota: long                # 总配额（字节）
-  usedSpace: long            # 已用空间（字节）
+  quota: long            # 总配额（字节）
+  usedSpace: long        # 已用空间（字节）
   usagePercent: double
 ```
 
 ---
 
-## 4. 文件管理（M3）
+## 4. 文件管理
 
 需要登录。
 
@@ -167,7 +166,7 @@ QuotaResponse:
 | 方法 | 路径 | 输入 | 输出 | 说明 |
 |------|------|------|------|------|
 | POST | `/api/files/upload/init` | UploadInitRequest | UploadInitResponse | 初始化上传 |
-| POST | `/api/files/upload/chunk` | FormData (MultipartFile + uploadId + chunkNumber + totalChunks) | - | 上传分片 |
+| POST | `/api/files/upload/chunk` | FormData | - | 上传分片 |
 | POST | `/api/files/upload/merge` | UploadMergeRequest | FileNode | 合并分片 |
 | POST | `/api/files/upload/sec` | UploadSecRequest | FileNode | 秒传 |
 | GET | `/api/files/upload/progress/{uploadId}` | - | UploadProgressResponse | 查询已上传分片 |
@@ -179,7 +178,7 @@ QuotaResponse:
 | GET | `/api/files/download/{id}` | - | Blob | 下载单文件 |
 | POST | `/api/files/download/batch` | BatchDownloadRequest | - | 批量打包下载（异步） |
 
-### 4.4 输入/输出结构
+### 4.4 请求/响应结构
 
 ```
 DirectoryCreateRequest:
@@ -199,15 +198,6 @@ UploadInitResponse:
   chunkSize: int (默认 5MB)
   totalChunks: int
 
-UploadProgressResponse:
-  uploadId: string
-  fileName: string
-  fileSize: long
-  mimeType: string
-  uploadedChunks: int[] (从 1 开始)
-  parentId: long
-  teamId: long (可选)
-
 UploadMergeRequest:
   uploadId: string
   fileName: string
@@ -221,24 +211,19 @@ UploadSecRequest:
   parentId: long
   teamId: long (可选)
 
-FileRenameRequest:
-  name: string (max 255)
-
-FileMoveRequest:
-  targetParentId: long
-
-FileCopyRequest:
-  targetParentId: long
-
-FileSearchRequest:
-  keyword: string (必填)
-  parentId: long (可选)
+UploadProgressResponse:
+  uploadId: string
+  fileName: string
+  fileSize: long
+  mimeType: string
+  uploadedChunks: int[]
+  parentId: long
   teamId: long (可选)
-  page: int (默认 1)
-  size: int (默认 20, max 100)
 
-BatchDownloadRequest:
-  fileIds: long[]
+FileRenameRequest:  { name: string (max 255) }
+FileMoveRequest:    { targetParentId: long }
+FileCopyRequest:    { targetParentId: long }
+BatchDownloadRequest: { fileIds: long[] }
 
 FileNode:
   id: long
@@ -258,16 +243,16 @@ FileTree:
   children: FileTree[]
 
 FilePreviewResponse:
-  type: string (IMAGE / TEXT / UNSUPPORTED)
-  url: string (图片预览)
-  content: string (文本预览)
+  type: string     # IMAGE / TEXT / UNSUPPORTED
+  url: string      # 图片预览
+  content: string  # 文本预览
 ```
 
 ---
 
-## 5. 分享管理（M4）
+## 5. 分享管理
 
-### 5.1 用户端接口（需要登录）
+### 5.1 用户端接口（需登录）
 
 | 方法 | 路径 | 输入 | 输出 | 说明 |
 |------|------|------|------|------|
@@ -283,13 +268,13 @@ FilePreviewResponse:
 | POST | `/api/shares/access/{token}/verify` | ShareVerifyRequest | - | 验证提取码 |
 | GET | `/api/shares/access/{token}/file/{fileId}/preview` | - | FilePreviewResponse | 分享内预览 |
 
-### 5.3 输入/输出结构
+### 5.3 请求/响应结构
 
 ```
 ShareCreateRequest:
   fileId: long
-  expireTime: datetime (可选，null 表示永久)
-  accessPassword: string (可选, max 6 位)
+  expireTime: datetime (可选，null 永久)
+  accessPassword: string (可选, max 6)
   teamId: long (可选)
 
 ShareCreateResponse:
@@ -304,12 +289,11 @@ ShareListItem:
   shareToken: string
   shareUrl: string
   expireTime: datetime
-  status: int (0-正常 1-已过期 2-已取消)
+  status: int       # 0-正常 1-已过期 2-已取消
   downloadCount: int
   createdAt: datetime
 
-ShareVerifyRequest:
-  password: string
+ShareVerifyRequest:  { password: string }
 
 ShareAccessResponse:
   shareToken: string
@@ -322,7 +306,7 @@ ShareAccessResponse:
 
 ---
 
-## 6. 回收站（M5）
+## 6. 回收站
 
 需要登录。
 
@@ -332,7 +316,7 @@ ShareAccessResponse:
 | POST | `/api/recycle-bin/{id}/restore` | - | - | 恢复文件 |
 | DELETE | `/api/recycle-bin/{id}` | - | - | 彻底删除 |
 
-### 输入/输出结构
+### 请求/响应结构
 
 ```
 RecycleBinItem:
@@ -346,7 +330,7 @@ RecycleBinItem:
 
 ---
 
-## 7. 团队空间（M6）
+## 7. 团队空间
 
 需要登录。
 
@@ -373,7 +357,7 @@ RecycleBinItem:
 
 > 团队文件的上传/下载/移动/复制/删除复用 `/api/files` 接口，添加 `teamId` 参数。
 
-### 7.3 输入/输出结构
+### 7.3 请求/响应结构
 
 ```
 TeamCreateRequest:
@@ -421,7 +405,7 @@ TeamMemberInfo:
 
 ---
 
-## 8. 管理后台（M7）
+## 8. 管理后台
 
 需要 ADMIN 及以上角色。
 
@@ -460,7 +444,7 @@ TeamMemberInfo:
 |------|------|------|
 | GET | `/api/admin/logs` | 操作日志（支持过滤） |
 
-### 8.6 管理员管理（限 SUPER_ADMIN）
+### 8.6 管理员管理（仅 SUPER_ADMIN）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -478,13 +462,13 @@ TeamMemberInfo:
 
 ---
 
-## 9. WebSocket 通信（M9）
+## 9. WebSocket 通信
 
 ### 9.1 端点
 
 | 路径 | 说明 | 认证方式 |
-|------|------|---------|
-| `/ws/progress` | 统一进度推送端点 | Token 参数（`?token=xxx`） |
+|------|------|----------|
+| `/ws/progress` | 统一进度推送 | Token 参数（`?token=xxx`） |
 
 ### 9.2 消息格式
 
@@ -502,9 +486,8 @@ TeamMemberInfo:
 
 ### 9.3 通信模型
 
-- 每个用户建立一条 WebSocket 连接
-- 消息体内 `taskId` 区分不同任务（uploadId / packageTaskId）
-- 服务端主动推送进度消息，客户端无需轮询
+- 每个用户一条 WebSocket 连接，消息体内 `taskId` 区分不同任务
+- 服务端主动推送进度，客户端无需轮询
 
 ---
 

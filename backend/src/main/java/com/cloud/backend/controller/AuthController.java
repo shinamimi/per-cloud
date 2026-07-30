@@ -6,8 +6,13 @@ import com.cloud.backend.enums.CaptchaType;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.security.LoginUser;
-import com.cloud.backend.service.*;
+import com.cloud.backend.service.user.UserService;
+import com.cloud.backend.service.system.CaptchaService;
+import com.cloud.backend.service.system.EmailService;
+import com.cloud.backend.service.system.JwtBlacklistService;
+import com.cloud.backend.service.system.LoginAttemptService;
 import com.cloud.backend.utils.JwtTokenUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -144,7 +149,7 @@ public class AuthController {
         user.setNickname(request.getNickname() != null ? request.getNickname() : request.getUsername());
         user.setRole(Role.USER);
         user.setStatus(UserStatus.NORMAL);
-        user.setQuota(com.cloud.backend.constant.FileConstants.DEFAULT_QUOTA);
+        user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
 
         userService.register(user);

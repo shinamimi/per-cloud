@@ -1,7 +1,7 @@
 package com.cloud.backend.security;
 
 import com.cloud.backend.entity.User;
-import com.cloud.backend.service.UserService;
+import com.cloud.backend.service.user.UserService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,8 @@
-package com.cloud.backend.service.impl;
+package com.cloud.backend.service.file.impl;
 
 import com.cloud.backend.entity.File;
 import com.cloud.backend.mapper.FileMapper;
-import com.cloud.backend.service.FileService;
+import com.cloud.backend.service.file.FileService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

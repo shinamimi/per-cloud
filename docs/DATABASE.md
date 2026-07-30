@@ -2,13 +2,26 @@
 
 > 版本: v0.1
 > 更新日期: 2026-07-28
-> 状态: Draft
+> 表总数: 7
 
 ---
 
-## 1. 现有表
+## 1. 模块划分
 
-### 1.1 t_user — 用户表
+| 前缀 | 模块 | 表数量 | 说明 |
+|------|------|--------|------|
+| t_user | 用户 | 1 | 用户信息、角色、配额 |
+| t_file | 文件 | 1 | 文件目录树、元信息 |
+| t_share | 分享 | 1 | 分享链接、有效期 |
+| t_recycle_bin | 回收站 | 1 | 删除记录 |
+| t_operation_log | 审计日志 | 1 | 操作记录 |
+| t_team | 团队 | 2 | 团队 + 成员关联 |
+
+---
+
+## 2. 用户模块
+
+### 2.1 t_user — 用户表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -30,7 +43,11 @@
 - UNIQUE KEY uk_username (username)
 - UNIQUE KEY uk_email (email)
 
-### 1.2 t_file — 文件表
+---
+
+## 3. 文件模块
+
+### 3.1 t_file — 文件表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -40,12 +57,12 @@
 | name | VARCHAR(255) | NOT NULL | 文件名/目录名 |
 | size | BIGINT | DEFAULT 0 | 文件大小（目录=0） |
 | mime_type | VARCHAR(128) | DEFAULT NULL | MIME 类型 |
-| extension | VARCHAR(32) | DEFAULT NULL | 文件扩展名 |
-| file_hash | VARCHAR(64) | DEFAULT NULL | SHA256，用于秒传 |
+| extension | VARCHAR(32) | DEFAULT NULL | 扩展名 |
+| file_hash | VARCHAR(64) | DEFAULT NULL | SHA256（秒传用） |
 | object_name | VARCHAR(512) | DEFAULT NULL | MinIO 对象路径 |
 | is_directory | TINYINT(1) | NOT NULL, DEFAULT 0 | 是否目录 |
 | status | TINYINT | NOT NULL, DEFAULT 1 | 0-已删除 1-正常 |
-| team_id | BIGINT | DEFAULT NULL | **新增**，所属团队（NULL=个人文件） |
+| team_id | BIGINT | DEFAULT NULL | 所属团队（NULL=个人） |
 | created_at | DATETIME | NOT NULL | |
 | updated_at | DATETIME | NOT NULL | |
 
@@ -53,9 +70,13 @@
 - PRIMARY KEY (id)
 - INDEX idx_user_parent (user_id, parent_id, status)
 - INDEX idx_hash (file_hash, status)
-- INDEX idx_team (team_id, parent_id, status) **新增**
+- INDEX idx_team (team_id, parent_id, status)
 
-### 1.3 t_share — 分享表
+---
+
+## 4. 分享模块
+
+### 4.1 t_share — 分享表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -67,7 +88,7 @@
 | expire_time | DATETIME | DEFAULT NULL | 过期时间（NULL=永久） |
 | status | TINYINT | NOT NULL, DEFAULT 0 | 0-正常 1-已过期 2-已取消 |
 | download_count | INT | NOT NULL, DEFAULT 0 | 下载次数 |
-| team_id | BIGINT | DEFAULT NULL | **新增**，所属团队（NULL=个人文件分享） |
+| team_id | BIGINT | DEFAULT NULL | 所属团队（NULL=个人） |
 | created_at | DATETIME | NOT NULL | |
 
 索引：
@@ -75,7 +96,11 @@
 - UNIQUE KEY uk_token (share_token)
 - INDEX idx_user (user_id)
 
-### 1.4 t_recycle_bin — 回收站表
+---
+
+## 5. 回收站模块
+
+### 5.1 t_recycle_bin — 回收站表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -88,19 +113,23 @@
 | size | BIGINT | DEFAULT 0 | |
 | mime_type | VARCHAR(128) | DEFAULT NULL | |
 | deleted_time | DATETIME | NOT NULL | 删除时间 |
-| expire_time | DATETIME | NOT NULL | 过期时间（30 天后） |
+| expire_time | DATETIME | NOT NULL | 过期时间（30 天） |
 
 索引：
 - PRIMARY KEY (id)
 - INDEX idx_user (user_id)
 
-### 1.5 t_operation_log — 操作日志表
+---
+
+## 6. 审计日志模块
+
+### 6.1 t_operation_log — 操作日志表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
 | id | BIGINT | PK, AUTO_INCREMENT | |
 | user_id | BIGINT | NOT NULL | |
-| operation | VARCHAR(32) | NOT NULL | 操作类型（OperationType 枚举值） |
+| operation | VARCHAR(32) | NOT NULL | 操作类型（枚举值） |
 | target_type | VARCHAR(32) | DEFAULT NULL | 目标类型 |
 | target_id | BIGINT | DEFAULT NULL | 目标 ID |
 | detail | VARCHAR(512) | DEFAULT NULL | 操作详情 |
@@ -115,9 +144,9 @@
 
 ---
 
-## 2. 新增表
+## 7. 团队模块
 
-### 2.1 t_team — 团队表
+### 7.1 t_team — 团队表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -136,7 +165,7 @@
 - PRIMARY KEY (id)
 - INDEX idx_owner (owner_id)
 
-### 2.2 t_team_member — 团队成员表
+### 7.2 t_team_member — 团队成员表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -154,64 +183,37 @@
 
 ---
 
-## 3. 表关系
+## 8. 表关系
 
 ```
-t_user (1) ──< t_file (N)         # 用户拥有文件
-t_user (1) ──< t_share (N)        # 用户创建分享
-t_user (1) ──< t_recycle_bin (N)  # 用户删除记录
-t_user (1) ──< t_operation_log (N) # 用户操作日志
-t_user (1) ──< t_team_member (N)   # 用户加入团队
-t_team (1) ──< t_team_member (N)   # 团队包含成员
-t_team (1) ──< t_file (N)         # 团队拥有文件（通过 team_id）
-t_team (1) ──< t_share (N)        # 团队文件分享
-```
-
----
-
-## 4. 枚举值
-
-### 4.1 用户
-
-```
-Role:         USER(0), OPERATOR(10), ADMIN(20), SUPER_ADMIN(100)
-UserStatus:   DISABLED(0), NORMAL(1)
-```
-
-### 4.2 文件
-
-```
-FileStatus:   DELETED(0), NORMAL(1)
-```
-
-### 4.3 分享
-
-```
-ShareStatus:  NORMAL(0), EXPIRED(1), CANCELED(2)
-```
-
-### 4.4 团队
-
-```
-TeamMemberRole:  MEMBER(0), ADMIN(10), OWNER(20)
-TeamStatus:      DISSOLVED(0), NORMAL(1)
-```
-
-### 4.5 操作日志
-
-```
-OperationType: LOGIN, REGISTER, LOGOUT,
-               UPLOAD, DOWNLOAD, DELETE, RENAME, MOVE, COPY,
-               SHARE, CANCEL_SHARE,
-               TEAM_CREATE, TEAM_DISSOLVE, TEAM_INVITE, TEAM_REMOVE, TEAM_LEAVE,
-               ADMIN_OPERATION
-TargetType:    USER, FILE, SHARE, TEAM
+t_user (1) ──< t_file (N)           # 用户拥有文件
+t_user (1) ──< t_share (N)          # 用户创建分享
+t_user (1) ──< t_recycle_bin (N)    # 用户删除记录
+t_user (1) ──< t_operation_log (N)  # 用户操作日志
+t_user (1) ──< t_team_member (N)    # 用户加入团队
+t_team (1) ──< t_team_member (N)    # 团队包含成员
+t_team (1) ──< t_file (N)           # 团队拥有文件
+t_team (1) ──< t_share (N)          # 团队文件分享
 ```
 
 ---
 
-## 5. 分表策略说明
+## 9. 枚举值
+
+| 分类 | 枚举名 | 值 |
+|------|--------|----|
+| 用户角色 | Role | USER(0), OPERATOR(10), ADMIN(20), SUPER_ADMIN(100) |
+| 用户状态 | UserStatus | DISABLED(0), NORMAL(1) |
+| 文件状态 | FileStatus | DELETED(0), NORMAL(1) |
+| 分享状态 | ShareStatus | NORMAL(0), EXPIRED(1), CANCELED(2) |
+| 成员角色 | TeamMemberRole | MEMBER(0), ADMIN(10), OWNER(20) |
+| 团队状态 | TeamStatus | DISSOLVED(0), NORMAL(1) |
+| 操作类型 | OperationType | LOGIN, REGISTER, UPLOAD_FILE, DOWNLOAD_FILE, DELETE_FILE, RESTORE_FILE, CREATE_SHARE, CANCEL_SHARE, UPDATE_USER |
+
+---
+
+## 10. 分表策略
 
 - MVP 阶段所有表在同一 MySQL 实例，不拆分
-- t_operation_log 写入频繁但数据量可控（家庭使用），暂不分表
-- 后续用户量增长时可按 user_id 分表或迁移至时序数据库
+- t_operation_log 写入频繁但数据量可控，暂不分表
+- 后续按 user_id 分表或迁移至时序数据库

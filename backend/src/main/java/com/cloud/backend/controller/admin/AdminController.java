@@ -1,13 +1,18 @@
 package com.cloud.backend.controller.admin;
 
-import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.entity.File;
-import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.Share;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.service.*;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.ShareStatus;
+import com.cloud.backend.constant.FileConstants;
+import com.cloud.backend.service.user.UserService;
+import com.cloud.backend.service.file.FileService;
+import com.cloud.backend.service.file.StorageService;
+import com.cloud.backend.service.share.ShareService;
+import com.cloud.backend.service.system.OperationLogService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -97,7 +102,7 @@ public class AdminController {
         if (share == null) {
             return Result.fail(ErrorCode.SHARE_NOT_FOUND);
         }
-        share.setStatus(com.cloud.backend.enums.ShareStatus.CANCELED);
+        share.setStatus(ShareStatus.CANCELED);
         shareService.update(share);
         return Result.success();
     }
