@@ -1,6 +1,6 @@
 package com.cloud.backend.security;
 
-import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.ErrorCodeEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
@@ -25,7 +25,7 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write("{\"code\":" + ErrorCode.UNAUTHORIZED.getCode()
-                + ",\"message\":\"" + ErrorCode.UNAUTHORIZED.getMessage() + "\",\"data\":null}");
+        response.getWriter().write("{\"code\":" + ErrorCodeEnum.UNAUTHORIZED.getCode()
+                + ",\"message\":\"" + ErrorCodeEnum.UNAUTHORIZED.getMessage() + "\",\"data\":null}");
     }
 }

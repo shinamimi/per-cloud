@@ -1,7 +1,7 @@
 package com.cloud.backend.annotation;
 
-import com.cloud.backend.enums.OperationType;
-import com.cloud.backend.enums.TargetType;
+import com.cloud.backend.enums.OperationTypeEnum;
+import com.cloud.backend.enums.TargetTypeEnum;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Log {
-    OperationType operation();
-    TargetType target();
+    OperationTypeEnum operation();
+    TargetTypeEnum target();
     String targetId() default "";
     String detail() default "";
 }

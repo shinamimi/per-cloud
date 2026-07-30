@@ -1,6 +1,6 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.FileStatus;
+import com.cloud.backend.enums.FileStatusEnum;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -29,7 +29,7 @@ public class File {
     private String fileHash;
     private Integer isDirectory;
     private String objectName;
-    private FileStatus status;
+    private FileStatusEnum status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

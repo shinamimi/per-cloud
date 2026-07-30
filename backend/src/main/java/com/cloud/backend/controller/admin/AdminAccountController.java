@@ -4,7 +4,7 @@ import com.cloud.backend.dto.Result;
 import com.cloud.backend.dto.admin.AdminUserResponse;
 import com.cloud.backend.dto.admin.CreateAdminRequest;
 import com.cloud.backend.dto.admin.UpdateRoleRequest;
-import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.RoleEnum;
 import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.user.UserService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +25,7 @@ public class AdminAccountController {
     @GetMapping
     public Result<List<AdminUserResponse>> listAdmins() {
         List<AdminUserResponse> admins = userService.findAll().stream()
-                .filter(u -> u.getRole().getValue() >= Role.ADMIN.getValue())
+                .filter(u -> u.getRole().getValue() >= RoleEnum.ADMIN.getValue())
                 .map(u -> new AdminUserResponse(u.getId(), u.getUsername(), u.getEmail(),
                         u.getNickname(), u.getAvatar(), u.getRole(), u.getQuota(),
                         u.getUsedSpace(), u.getStatus(), u.getCreatedAt()))

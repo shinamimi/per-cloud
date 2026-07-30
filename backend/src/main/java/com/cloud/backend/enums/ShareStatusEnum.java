@@ -7,7 +7,7 @@ import lombok.Getter;
  * NORMAL=0 生效中，EXPIRED=1 已过期，CANCELED=2 已取消。
  */
 @Getter
-public enum ShareStatus {
+public enum ShareStatusEnum {
 
     NORMAL(0),
     EXPIRED(1),
@@ -15,12 +15,12 @@ public enum ShareStatus {
 
     private final int value;
 
-    ShareStatus(int value) {
+    ShareStatusEnum(int value) {
         this.value = value;
     }
 
-    public static ShareStatus fromValue(int value) {
-        for (ShareStatus status : ShareStatus.values()) {
+    public static ShareStatusEnum fromValue(int value) {
+        for (ShareStatusEnum status : ShareStatusEnum.values()) {
             if (status.value == value) {
                 return status;
             }

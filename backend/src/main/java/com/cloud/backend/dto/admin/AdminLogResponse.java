@@ -1,7 +1,7 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.OperationType;
-import com.cloud.backend.enums.TargetType;
+import com.cloud.backend.enums.OperationTypeEnum;
+import com.cloud.backend.enums.TargetTypeEnum;
 
 import java.time.LocalDateTime;
 
@@ -9,14 +9,14 @@ public class AdminLogResponse {
 
     private Long id;
     private Long userId;
-    private OperationType operation;
-    private TargetType targetType;
+    private OperationTypeEnum operation;
+    private TargetTypeEnum targetType;
     private Long targetId;
     private String detail;
     private String ip;
     private LocalDateTime createdAt;
 
-    public AdminLogResponse(Long id, Long userId, OperationType operation, TargetType targetType,
+    public AdminLogResponse(Long id, Long userId, OperationTypeEnum operation, TargetTypeEnum targetType,
                             Long targetId, String detail, String ip, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
@@ -30,8 +30,8 @@ public class AdminLogResponse {
 
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
-    public OperationType getOperation() { return operation; }
-    public TargetType getTargetType() { return targetType; }
+    public OperationTypeEnum getOperation() { return operation; }
+    public TargetTypeEnum getTargetTypeEnum() { return targetType; }
     public Long getTargetId() { return targetId; }
     public String getDetail() { return detail; }
     public String getIp() { return ip; }

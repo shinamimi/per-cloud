@@ -1,7 +1,7 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.UserStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -12,14 +12,14 @@ public class AdminUserResponse {
     private String email;
     private String nickname;
     private String avatar;
-    private Role role;
+    private RoleEnum role;
     private Long quota;
     private Long usedSpace;
-    private UserStatus status;
+    private UserStatusEnum status;
     private LocalDateTime createdAt;
 
     public AdminUserResponse(Long id, String username, String email, String nickname, String avatar,
-                             Role role, Long quota, Long usedSpace, UserStatus status, LocalDateTime createdAt) {
+                             RoleEnum role, Long quota, Long usedSpace, UserStatusEnum status, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -37,9 +37,9 @@ public class AdminUserResponse {
     public String getEmail() { return email; }
     public String getNickname() { return nickname; }
     public String getAvatar() { return avatar; }
-    public Role getRole() { return role; }
+    public RoleEnum getRoleEnum() { return role; }
     public Long getQuota() { return quota; }
     public Long getUsedSpace() { return usedSpace; }
-    public UserStatus getStatus() { return status; }
+    public UserStatusEnum getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -17,7 +17,7 @@ import lombok.Getter;
  * 前端只需判断 code !== 200 即为失败，根据具体 code 展示对应文案。
  */
 @Getter
-public enum ErrorCode {
+public enum ErrorCodeEnum {
 
     /* ==================== 通用 ==================== */
     SUCCESS(200, "成功"),
@@ -69,7 +69,7 @@ public enum ErrorCode {
     private final int code;
     private final String message;
 
-    ErrorCode(int code, String message) {
+    ErrorCodeEnum(int code, String message) {
         this.code = code;
         this.message = message;
     }

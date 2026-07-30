@@ -1,6 +1,6 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.RoleEnum;
 import lombok.Data;
 
 @Data
@@ -9,5 +9,5 @@ public class CreateAdminRequest {
     private String password;
     private String email;
     private String nickname;
-    private Role role;
+    private RoleEnum role;
 }

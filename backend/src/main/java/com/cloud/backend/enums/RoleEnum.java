@@ -15,7 +15,7 @@ import lombok.Getter;
  * 但由于枚举声明顺序与 value 递增一致，代码中用 getValue() 而非 ordinal() 判断大小）。
  */
 @Getter
-public enum Role {
+public enum RoleEnum {
 
     USER(0),
     OPERATOR(10),
@@ -24,12 +24,12 @@ public enum Role {
 
     private final int value;
 
-    Role(int value) {
+    RoleEnum(int value) {
         this.value = value;
     }
 
-    public static Role fromValue(int value) {
-        for (Role role : Role.values()) {
+    public static RoleEnum fromValue(int value) {
+        for (RoleEnum role : RoleEnum.values()) {
             if (role.value == value) {
                 return role;
             }

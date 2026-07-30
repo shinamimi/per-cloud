@@ -21,6 +21,6 @@ public class AuthorizationPolicy {
 
     public static boolean isAdmin(LoginUser loginUser) {
         return loginUser != null && loginUser.getRole() != null
-                && loginUser.getRole().getValue() >= com.cloud.backend.enums.Role.ADMIN.getValue();
+                && loginUser.getRole().getValue() >= com.cloud.backend.enums.RoleEnum.ADMIN.getValue();
     }
 }

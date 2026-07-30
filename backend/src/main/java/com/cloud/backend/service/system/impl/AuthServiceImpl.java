@@ -8,12 +8,12 @@ import com.cloud.backend.dto.ResetPasswordRequest;
 import com.cloud.backend.dto.SendCodeRequest;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.CaptchaType;
-import com.cloud.backend.enums.ErrorCode;
-import com.cloud.backend.enums.OperationType;
-import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.TargetType;
-import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.enums.CaptchaTypeEnum;
+import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.OperationTypeEnum;
+import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.UserStatusEnum;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.system.AuthService;
@@ -60,11 +60,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request, String ip) {
         if (loginAttemptService.isLocked(request.getUsername())) {
-            throw new BusinessException(ErrorCode.LOGIN_LOCKED);
+            throw new BusinessException(ErrorCodeEnum.LOGIN_LOCKED);
         }
         if (request.getCaptchaCode() != null && !request.getCaptchaCode().isEmpty()) {
             if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaCode())) {
-                throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
+                throw new BusinessException(ErrorCodeEnum.CAPTCHA_INVALID);
             }
         }
         try {
@@ -79,8 +79,8 @@ public class AuthServiceImpl implements AuthService {
 
             OperationLog log = new OperationLog();
             log.setUserId(loginUser.getUserId());
-            log.setOperation(OperationType.LOGIN);
-            log.setTargetType(TargetType.USER);
+            log.setOperation(OperationTypeEnum.LOGIN);
+            log.setTargetType(TargetTypeEnum.USER);
             log.setTargetId(loginUser.getUserId());
             log.setIp(ip);
             operationLogService.log(log);
@@ -88,23 +88,23 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(token, loginUser.getUserId(), loginUser.getUsername(), loginUser.getRole().getValue());
         } catch (DisabledException e) {
             loginAttemptService.loginFailed(request.getUsername());
-            throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
+            throw new BusinessException(ErrorCodeEnum.ACCOUNT_DISABLED);
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(request.getUsername());
-            throw new BusinessException(ErrorCode.WRONG_CREDENTIALS);
+            throw new BusinessException(ErrorCodeEnum.WRONG_CREDENTIALS);
         }
     }
 
     @Override
     public LoginResponse register(RegisterRequest request, String ip) {
         if (userService.existsByUsername(request.getUsername())) {
-            throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCodeEnum.USER_ALREADY_EXISTS);
         }
         if (userService.existsByEmail(request.getEmail())) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCodeEnum.EMAIL_ALREADY_EXISTS);
         }
-        if (!captchaService.verify(request.getEmail(), CaptchaType.REGISTER, request.getCode())) {
-            throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
+        if (!captchaService.verify(request.getEmail(), CaptchaTypeEnum.REGISTER, request.getCode())) {
+            throw new BusinessException(ErrorCodeEnum.CAPTCHA_INVALID);
         }
 
         User user = new User();
@@ -112,8 +112,8 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(request.getPassword());
         user.setEmail(request.getEmail());
         user.setNickname(request.getNickname() != null ? request.getNickname() : request.getUsername());
-        user.setRole(Role.USER);
-        user.setStatus(UserStatus.NORMAL);
+        user.setRole(RoleEnum.USER);
+        user.setStatus(UserStatusEnum.NORMAL);
         user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
 
@@ -124,8 +124,8 @@ public class AuthServiceImpl implements AuthService {
 
         OperationLog log = new OperationLog();
         log.setUserId(user.getId());
-        log.setOperation(OperationType.REGISTER);
-        log.setTargetType(TargetType.USER);
+        log.setOperation(OperationTypeEnum.REGISTER);
+        log.setTargetType(TargetTypeEnum.USER);
         log.setTargetId(user.getId());
         log.setIp(ip);
         operationLogService.log(log);
@@ -136,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void sendCode(SendCodeRequest request) {
         if (captchaService.isOnCooldown(request.getEmail())) {
-            throw new BusinessException(ErrorCode.CAPTCHA_COOLDOWN);
+            throw new BusinessException(ErrorCodeEnum.CAPTCHA_COOLDOWN);
         }
         String code = captchaService.generateAndStore(request.getEmail(), request.getCaptchaType());
         String purpose = switch (request.getCaptchaType()) {
@@ -151,24 +151,24 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void sendForgotPasswordCode(String email) {
         if (!userService.existsByEmail(email)) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         if (captchaService.isOnCooldown(email)) {
-            throw new BusinessException(ErrorCode.CAPTCHA_COOLDOWN);
+            throw new BusinessException(ErrorCodeEnum.CAPTCHA_COOLDOWN);
         }
-        String code = captchaService.generateAndStore(email, CaptchaType.RESET_PASSWORD);
+        String code = captchaService.generateAndStore(email, CaptchaTypeEnum.RESET_PASSWORD);
         emailService.sendCaptchaMail(email, code, "重置密码验证");
         captchaService.setCooldown(email);
     }
 
     @Override
     public void resetPassword(ResetPasswordRequest request) {
-        if (!captchaService.verify(request.getEmail(), CaptchaType.RESET_PASSWORD, request.getCode())) {
-            throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
+        if (!captchaService.verify(request.getEmail(), CaptchaTypeEnum.RESET_PASSWORD, request.getCode())) {
+            throw new BusinessException(ErrorCodeEnum.CAPTCHA_INVALID);
         }
         User user = userService.findByEmail(request.getEmail());
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         userService.updatePassword(user.getId(), request.getNewPassword());
     }

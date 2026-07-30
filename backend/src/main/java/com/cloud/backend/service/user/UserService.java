@@ -1,8 +1,8 @@
 package com.cloud.backend.service.user;
 
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.UserStatusEnum;
 
 import java.util.List;
 
@@ -28,9 +28,9 @@ public interface UserService {
 
     void updatePassword(Long id, String rawPassword);
 
-    User createAdmin(String username, String password, String email, String nickname, Role role);
+    User createAdmin(String username, String password, String email, String nickname, RoleEnum role);
 
-    void updateUserStatus(Long id, UserStatus status);
+    void updateUserStatus(Long id, UserStatusEnum status);
 
     void updateUserQuota(Long id, Long quota);
 
@@ -38,5 +38,5 @@ public interface UserService {
 
     void deleteAdmin(Long id, Long currentUserId);
 
-    void updateAdminRole(Long id, Role role);
+    void updateAdminRole(Long id, RoleEnum role);
 }

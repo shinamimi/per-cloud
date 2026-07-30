@@ -8,19 +8,19 @@ import lombok.Getter;
  * LoginUser.isEnabled() 基于此判断。
  */
 @Getter
-public enum UserStatus {
+public enum UserStatusEnum {
 
     DISABLED(0),
     NORMAL(1);
 
     private final int value;
 
-    UserStatus(int value) {
+    UserStatusEnum(int value) {
         this.value = value;
     }
 
-    public static UserStatus fromValue(int value) {
-        for (UserStatus status : UserStatus.values()) {
+    public static UserStatusEnum fromValue(int value) {
+        for (UserStatusEnum status : UserStatusEnum.values()) {
             if (status.value == value) {
                 return status;
             }

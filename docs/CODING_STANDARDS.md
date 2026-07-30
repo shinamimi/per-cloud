@@ -66,6 +66,9 @@ backend/src/main/java/com/cloud/backend/
 | `Team` | 团队空间 |
 | `System` | 系统服务（邮件、验证码、日志等） |
 | `Dashboard` | 仪表盘 |
+| `Log` | 操作日志 |
+| `Settings` | 系统设置 |
+| `Account` | 管理员账号管理 |
 | `Admin` | 后台管理前缀（与子域组合，如 `AdminUser`） |
 
 #### 1.2.3 各层命名

@@ -1,6 +1,6 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.FileStatus;
+import com.cloud.backend.enums.FileStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -15,12 +15,12 @@ public class AdminFileResponse {
     private String mimeType;
     private String extension;
     private Integer isDirectory;
-    private FileStatus status;
+    private FileStatusEnum status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public AdminFileResponse(Long id, Long userId, Long parentId, String name, String path, Long size,
-                             String mimeType, String extension, Integer isDirectory, FileStatus status,
+                             String mimeType, String extension, Integer isDirectory, FileStatusEnum status,
                              LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.userId = userId;
@@ -45,7 +45,7 @@ public class AdminFileResponse {
     public String getMimeType() { return mimeType; }
     public String getExtension() { return extension; }
     public Integer getIsDirectory() { return isDirectory; }
-    public FileStatus getStatus() { return status; }
+    public FileStatusEnum getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

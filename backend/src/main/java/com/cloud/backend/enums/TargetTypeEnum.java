@@ -7,7 +7,7 @@ import lombok.Getter;
  * 配合 operation_log.target_id 显式操作对象 ID，方便审计追溯。
  */
 @Getter
-public enum TargetType {
+public enum TargetTypeEnum {
 
     USER,
     FILE,

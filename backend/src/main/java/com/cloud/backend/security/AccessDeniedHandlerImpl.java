@@ -1,6 +1,6 @@
 package com.cloud.backend.security;
 
-import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.ErrorCodeEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,7 +26,7 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
                        AccessDeniedException accessDeniedException) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write("{\"code\":" + ErrorCode.FORBIDDEN.getCode()
-                + ",\"message\":\"" + ErrorCode.FORBIDDEN.getMessage() + "\",\"data\":null}");
+        response.getWriter().write("{\"code\":" + ErrorCodeEnum.FORBIDDEN.getCode()
+                + ",\"message\":\"" + ErrorCodeEnum.FORBIDDEN.getMessage() + "\",\"data\":null}");
     }
 }

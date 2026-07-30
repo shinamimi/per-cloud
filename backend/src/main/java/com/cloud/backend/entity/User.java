@@ -1,7 +1,7 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.UserStatusEnum;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -25,10 +25,10 @@ public class User {
     private String email;
     private String nickname;
     private String avatar;
-    private Role role;
+    private RoleEnum role;
     private Long quota;
     private Long usedSpace;
-    private UserStatus status;
+    private UserStatusEnum status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

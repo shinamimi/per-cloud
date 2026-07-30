@@ -4,11 +4,11 @@ import com.cloud.backend.annotation.Log;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.ErrorCode;
-import com.cloud.backend.enums.OperationType;
-import com.cloud.backend.enums.Role;
-import com.cloud.backend.enums.TargetType;
-import com.cloud.backend.enums.UserStatus;
+import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.OperationTypeEnum;
+import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.UserStatusEnum;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.UserMapper;
 import com.cloud.backend.service.system.LoginAttemptService;
@@ -87,18 +87,18 @@ public class UserServiceImpl implements UserService {
     public void updatePassword(Long id, String rawPassword) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         user.setPassword(passwordEncoder.encode(rawPassword));
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
          targetId = "#result.id", detail = "'创建管理员: ' + #username")
-    public User createAdmin(String username, String password, String email, String nickname, Role role) {
+    public User createAdmin(String username, String password, String email, String nickname, RoleEnum role) {
         if (existsByUsername(username)) {
-            throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCodeEnum.USER_ALREADY_EXISTS);
         }
         User user = new User();
         user.setUsername(username);
@@ -106,43 +106,43 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setNickname(nickname);
         user.setRole(role);
-        user.setStatus(UserStatus.NORMAL);
+        user.setStatus(UserStatusEnum.NORMAL);
         user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
         return register(user);
     }
 
     @Override
-    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
          targetId = "#id", detail = "'修改用户状态为: ' + #status.name()")
-    public void updateUserStatus(Long id, UserStatus status) {
+    public void updateUserStatus(Long id, UserStatusEnum status) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         user.setStatus(status);
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
          targetId = "#id", detail = "'修改配额: ' + #quota")
     public void updateUserQuota(Long id, Long quota) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         user.setQuota(quota);
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
          targetId = "#id", detail = "'解锁登录锁定'")
     public void unlockUser(Long id) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         loginAttemptService.loginSucceeded(user.getUsername());
     }
@@ -150,34 +150,34 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteAdmin(Long id, Long currentUserId) {
         if (id.equals(currentUserId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能删除自己");
+            throw new BusinessException(ErrorCodeEnum.BAD_REQUEST, "不能删除自己");
         }
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
-        if (user.getRole() == Role.SUPER_ADMIN) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能删除超级管理员");
+        if (user.getRole() == RoleEnum.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCodeEnum.BAD_REQUEST, "不能删除超级管理员");
         }
-        user.setStatus(UserStatus.DISABLED);
+        user.setStatus(UserStatusEnum.DISABLED);
         userMapper.update(user);
 
         OperationLog log = new OperationLog();
         log.setUserId(currentUserId);
-        log.setOperation(OperationType.UPDATE_USER);
-        log.setTargetType(TargetType.USER);
+        log.setOperation(OperationTypeEnum.UPDATE_USER);
+        log.setTargetType(TargetTypeEnum.USER);
         log.setTargetId(id);
         log.setDetail("禁用管理员: " + user.getUsername());
         operationLogService.log(log);
     }
 
     @Override
-    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
          targetId = "#id", detail = "'修改角色为: ' + #role.name()")
-    public void updateAdminRole(Long id, Role role) {
+    public void updateAdminRole(Long id, RoleEnum role) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
         }
         user.setRole(role);
         userMapper.update(user);
