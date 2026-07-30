@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.TeamMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.Team"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_team (name, owner_id, avatar, description, status, quota, used_space)
+        VALUES (#{name}, #{ownerId}, #{avatar}, #{description}, #{status}, #{quota}, #{usedSpace})
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.Team">
+        SELECT * FROM t_team WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultType="com.cloud.backend.entity.Team">
+        SELECT * FROM t_team ORDER BY created_at DESC
+    </select>
+
+    <update id="update" parameterType="com.cloud.backend.entity.Team">
+        UPDATE t_team
+        SET name = #{name},
+            avatar = #{avatar},
+            description = #{description},
+            quota = #{quota},
+            used_space = #{usedSpace},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="dissolve" parameterType="java.lang.Long">
+        UPDATE t_team SET status = 0, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+</mapper>

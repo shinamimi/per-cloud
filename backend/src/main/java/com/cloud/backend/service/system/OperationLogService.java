@@ -1,5 +1,6 @@
 package com.cloud.backend.service.system;
 
+import com.cloud.backend.dto.admin.LogFilterRequest;
 import com.cloud.backend.entity.OperationLog;
 
 import java.util.List;
@@ -15,4 +16,6 @@ public interface OperationLogService {
     List<OperationLog> listByUserId(Long userId);
 
     List<OperationLog> listAll();
+
+    List<OperationLog> listByFilter(LogFilterRequest filter);
 }

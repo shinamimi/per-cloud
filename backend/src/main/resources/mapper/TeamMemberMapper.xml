@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.TeamMemberMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.TeamMember"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_team_member (team_id, user_id, role, status)
+        VALUES (#{teamId}, #{userId}, #{role}, #{status})
+    </insert>
+
+    <select id="findByTeamId" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.TeamMember">
+        SELECT * FROM t_team_member WHERE team_id = #{teamId} AND status = 1
+    </select>
+
+    <select id="countByTeamId" parameterType="java.lang.Long" resultType="long">
+        SELECT COUNT(*) FROM t_team_member WHERE team_id = #{teamId} AND status = 1
+    </select>
+
+</mapper>

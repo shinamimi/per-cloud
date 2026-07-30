@@ -11,5 +11,6 @@ public enum TargetTypeEnum {
 
     USER,
     FILE,
-    SHARE;
+    SHARE,
+    TEAM;
 }

@@ -20,4 +20,17 @@
         SELECT * FROM t_operation_log ORDER BY created_at DESC
     </select>
 
+    <select id="findByFilter" parameterType="com.cloud.backend.dto.admin.LogFilterRequest"
+            resultType="com.cloud.backend.entity.OperationLog">
+        SELECT * FROM t_operation_log
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="operation != null">AND operation = #{operation}</if>
+            <if test="targetType != null">AND target_type = #{targetType}</if>
+            <if test="startTime != null">AND created_at &gt;= #{startTime}</if>
+            <if test="endTime != null">AND created_at &lt;= #{endTime}</if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
 </mapper>

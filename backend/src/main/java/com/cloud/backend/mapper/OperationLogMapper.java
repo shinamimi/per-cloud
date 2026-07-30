@@ -1,5 +1,6 @@
 package com.cloud.backend.mapper;
 
+import com.cloud.backend.dto.admin.LogFilterRequest;
 import com.cloud.backend.entity.OperationLog;
 import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
@@ -15,4 +16,6 @@ public interface OperationLogMapper {
     List<OperationLog> findByUserId(Long userId);
 
     List<OperationLog> findAll();
+
+    List<OperationLog> findByFilter(LogFilterRequest filter);
 }

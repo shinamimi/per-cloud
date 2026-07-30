@@ -17,5 +17,11 @@ public enum OperationTypeEnum {
     RESTORE_FILE,
     CREATE_SHARE,
     CANCEL_SHARE,
-    UPDATE_USER;
+    UPDATE_USER,
+
+    TEAM_CREATE,
+    TEAM_DISSOLVE,
+    TEAM_INVITE,
+    TEAM_REMOVE,
+    TEAM_LEAVE;
 }
