@@ -1,7 +1,7 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.RoleEnum;
-import com.cloud.backend.enums.UserStatusEnum;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.UserStatus;
 
 import java.time.LocalDateTime;
 
@@ -12,14 +12,20 @@ public class AdminUserResponse {
     private String email;
     private String nickname;
     private String avatar;
-    private RoleEnum role;
+    private Role role;
     private Long quota;
+    private Long totalQuota;
+    private Long adminBonusQuota;
+    private Long rewardQuota;
     private Long usedSpace;
-    private UserStatusEnum status;
+    private Boolean isVip;
+    private UserStatus status;
     private LocalDateTime createdAt;
 
     public AdminUserResponse(Long id, String username, String email, String nickname, String avatar,
-                             RoleEnum role, Long quota, Long usedSpace, UserStatusEnum status, LocalDateTime createdAt) {
+                             Role role, Long quota, Long totalQuota, Long adminBonusQuota,
+                             Long rewardQuota, Long usedSpace, Boolean isVip,
+                             UserStatus status, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -27,7 +33,11 @@ public class AdminUserResponse {
         this.avatar = avatar;
         this.role = role;
         this.quota = quota;
+        this.totalQuota = totalQuota;
+        this.adminBonusQuota = adminBonusQuota;
+        this.rewardQuota = rewardQuota;
         this.usedSpace = usedSpace;
+        this.isVip = isVip;
         this.status = status;
         this.createdAt = createdAt;
     }
@@ -37,9 +47,13 @@ public class AdminUserResponse {
     public String getEmail() { return email; }
     public String getNickname() { return nickname; }
     public String getAvatar() { return avatar; }
-    public RoleEnum getRoleEnum() { return role; }
+    public Role getRole() { return role; }
     public Long getQuota() { return quota; }
+    public Long getTotalQuota() { return totalQuota; }
+    public Long getAdminBonusQuota() { return adminBonusQuota; }
+    public Long getRewardQuota() { return rewardQuota; }
     public Long getUsedSpace() { return usedSpace; }
-    public UserStatusEnum getStatus() { return status; }
+    public Boolean getIsVip() { return isVip; }
+    public UserStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

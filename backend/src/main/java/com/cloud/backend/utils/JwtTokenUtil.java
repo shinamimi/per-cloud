@@ -8,7 +8,7 @@ public interface JwtTokenUtil {
 
     String getUsernameFromToken(String token);
 
-    Integer getRoleEnumFromToken(String token);
+    Integer getRoleFromToken(String token);
 
     boolean validateToken(String token);
 

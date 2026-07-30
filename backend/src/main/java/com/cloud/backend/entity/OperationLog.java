@@ -1,7 +1,7 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.OperationTypeEnum;
-import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.enums.TargetType;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -21,8 +21,8 @@ public class OperationLog {
 
     private Long id;
     private Long userId;
-    private OperationTypeEnum operation;
-    private TargetTypeEnum targetType;
+    private OperationType operation;
+    private TargetType targetType;
     private Long targetId;
     private String detail;
     private String ip;

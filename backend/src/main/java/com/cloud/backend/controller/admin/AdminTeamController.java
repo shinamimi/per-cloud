@@ -2,7 +2,7 @@ package com.cloud.backend.controller.admin;
 
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.dto.admin.AdminTeamResponse;
-import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.security.LoginUser;
 import com.cloud.backend.service.team.TeamService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -1,6 +1,6 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.ShareStatusEnum;
+import com.cloud.backend.enums.ShareStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -21,7 +21,7 @@ public class Share {
     private Long fileId;
     private String shareToken;
     private String accessPassword;
-    private ShareStatusEnum status;
+    private ShareStatus status;
     private LocalDateTime expireTime;
     private Integer maxDownload;
     private Integer downloadCount;

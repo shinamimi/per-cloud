@@ -1,6 +1,6 @@
 package com.cloud.backend.security;
 
-import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.service.system.JwtBlacklistService;
 import com.cloud.backend.utils.JwtTokenUtil;
 import jakarta.servlet.FilterChain;
@@ -57,12 +57,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         if (!jwtTokenUtil.validateToken(token)) {
-            handleInvalidToken(response, ErrorCodeEnum.TOKEN_EXPIRED.getCode(), "Token 已过期或无效");
+            handleInvalidToken(response, ErrorCode.TOKEN_EXPIRED.getCode(), "Token 已过期或无效");
             return;
         }
 
         if (jwtBlacklistService.isBlacklisted(token)) {
-            handleInvalidToken(response, ErrorCodeEnum.UNAUTHORIZED.getCode(), "Token 已注销");
+            handleInvalidToken(response, ErrorCode.UNAUTHORIZED.getCode(), "Token 已注销");
             return;
         }
 

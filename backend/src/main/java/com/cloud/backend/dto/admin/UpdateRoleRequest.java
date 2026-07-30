@@ -1,9 +1,9 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.RoleEnum;
+import com.cloud.backend.enums.Role;
 import lombok.Data;
 
 @Data
 public class UpdateRoleRequest {
-    private RoleEnum role;
+    private Role role;
 }

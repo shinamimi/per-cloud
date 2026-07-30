@@ -8,7 +8,7 @@ import lombok.Getter;
  * 不同场景的验证码即使发给同一个邮箱也不会互相覆盖。
  */
 @Getter
-public enum CaptchaTypeEnum {
+public enum CaptchaType {
 
     REGISTER,
     RESET_PASSWORD,

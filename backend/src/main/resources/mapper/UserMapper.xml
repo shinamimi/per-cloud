@@ -8,8 +8,10 @@
     <!-- useGeneratedKeys + keyProperty：插入后自动回写自增 ID -->
     <insert id="insert" parameterType="com.cloud.backend.entity.User"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_user (username, password, email, nickname, avatar, role, quota, used_space, status)
-        VALUES (#{username}, #{password}, #{email}, #{nickname}, #{avatar}, #{role}, #{quota}, #{usedSpace}, #{status})
+        INSERT INTO t_user (username, password, email, nickname, avatar, role, quota, used_space, status,
+                            is_vip, admin_bonus_quota, reward_quota)
+        VALUES (#{username}, #{password}, #{email}, #{nickname}, #{avatar}, #{role}, #{quota}, #{usedSpace}, #{status},
+                #{isVip}, #{adminBonusQuota}, #{rewardQuota})
     </insert>
 
     <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.User">
@@ -44,6 +46,9 @@
             quota = #{quota},
             used_space = #{usedSpace},
             status = #{status},
+            is_vip = #{isVip},
+            admin_bonus_quota = #{adminBonusQuota},
+            reward_quota = #{rewardQuota},
             updated_at = NOW()
         WHERE id = #{id}
     </update>

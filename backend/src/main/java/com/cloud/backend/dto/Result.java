@@ -1,6 +1,6 @@
 package com.cloud.backend.dto;
 
-import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.ErrorCode;
 import lombok.Data;
 
 /**
@@ -15,7 +15,7 @@ import lombok.Data;
  * 静态工厂方法：
  * - success(data) —— 带数据成功
  * - success() —— 无数据成功
- * - fail(errorCode) —— 用 ErrorCodeEnum 描述失败
+ * - fail(errorCode) —— 用 ErrorCode 描述失败
  * - fail(errorCode, message) —— 自定义失败描述
  * - fail(message) —— 快速失败（code=500）
  */
@@ -28,8 +28,8 @@ public class Result<T> {
 
     public static <T> Result<T> success(T data) {
         Result<T> result = new Result<>();
-        result.setCode(ErrorCodeEnum.SUCCESS.getCode());
-        result.setMessage(ErrorCodeEnum.SUCCESS.getMessage());
+        result.setCode(ErrorCode.SUCCESS.getCode());
+        result.setMessage(ErrorCode.SUCCESS.getMessage());
         result.setData(data);
         return result;
     }
@@ -38,14 +38,14 @@ public class Result<T> {
         return success(null);
     }
 
-    public static <T> Result<T> fail(ErrorCodeEnum errorCode) {
+    public static <T> Result<T> fail(ErrorCode errorCode) {
         Result<T> result = new Result<>();
         result.setCode(errorCode.getCode());
         result.setMessage(errorCode.getMessage());
         return result;
     }
 
-    public static <T> Result<T> fail(ErrorCodeEnum errorCode, String message) {
+    public static <T> Result<T> fail(ErrorCode errorCode, String message) {
         Result<T> result = fail(errorCode);
         result.setMessage(message);
         return result;
@@ -53,7 +53,7 @@ public class Result<T> {
 
     public static <T> Result<T> fail(String message) {
         Result<T> result = new Result<>();
-        result.setCode(ErrorCodeEnum.INTERNAL_ERROR.getCode());
+        result.setCode(ErrorCode.INTERNAL_ERROR.getCode());
         result.setMessage(message);
         return result;
     }

@@ -13,9 +13,9 @@ public class MyBatisTypeHandlerConfig implements ConfigurationCustomizer {
     @Override
     public void customize(Configuration configuration) {
         TypeHandlerRegistry registry = configuration.getTypeHandlerRegistry();
-        registry.register(RoleEnum.class, EnumOrdinalTypeHandler.class);
-        registry.register(UserStatusEnum.class, EnumOrdinalTypeHandler.class);
-        registry.register(FileStatusEnum.class, EnumOrdinalTypeHandler.class);
-        registry.register(ShareStatusEnum.class, EnumOrdinalTypeHandler.class);
+        registry.register(Role.class, EnumOrdinalTypeHandler.class);
+        registry.register(UserStatus.class, EnumOrdinalTypeHandler.class);
+        registry.register(FileStatus.class, EnumOrdinalTypeHandler.class);
+        registry.register(ShareStatus.class, EnumOrdinalTypeHandler.class);
     }
 }

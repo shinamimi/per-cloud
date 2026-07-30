@@ -1,6 +1,6 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.TeamStatusEnum;
+import com.cloud.backend.enums.TeamStatus;
 import java.time.LocalDateTime;
 
 public class AdminTeamResponse {
@@ -9,14 +9,14 @@ public class AdminTeamResponse {
     private String name;
     private Long ownerId;
     private String description;
-    private TeamStatusEnum status;
+    private TeamStatus status;
     private Long quota;
     private Long usedSpace;
     private long memberCount;
     private LocalDateTime createdAt;
 
     public AdminTeamResponse(Long id, String name, Long ownerId, String description,
-                             TeamStatusEnum status, Long quota, Long usedSpace,
+                             TeamStatus status, Long quota, Long usedSpace,
                              long memberCount, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
@@ -33,7 +33,7 @@ public class AdminTeamResponse {
     public String getName() { return name; }
     public Long getOwnerId() { return ownerId; }
     public String getDescription() { return description; }
-    public TeamStatusEnum getStatus() { return status; }
+    public TeamStatus getStatus() { return status; }
     public Long getQuota() { return quota; }
     public Long getUsedSpace() { return usedSpace; }
     public long getMemberCount() { return memberCount; }

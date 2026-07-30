@@ -6,9 +6,9 @@ import com.cloud.backend.dao.FileDao;
 import com.cloud.backend.dto.FileQuery;
 import com.cloud.backend.entity.File;
 import com.cloud.backend.entity.OperationLog;
-import com.cloud.backend.enums.ErrorCodeEnum;
-import com.cloud.backend.enums.OperationTypeEnum;
-import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.service.file.FileService;
@@ -84,7 +84,7 @@ public class FileServiceImpl implements FileService {
     public void adminDeleteFile(Long id) {
         File file = fileMapper.findById(id);
         if (file == null) {
-            throw new BusinessException(ErrorCodeEnum.FILE_NOT_FOUND);
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
         if (file.getObjectName() != null && !file.getObjectName().isEmpty()) {
             storageService.delete(file.getObjectName());
@@ -93,8 +93,8 @@ public class FileServiceImpl implements FileService {
 
         OperationLog log = new OperationLog();
         log.setUserId(AuthorizationPolicy.getCurrentUserId());
-        log.setOperation(OperationTypeEnum.DELETE_FILE);
-        log.setTargetType(TargetTypeEnum.FILE);
+        log.setOperation(OperationType.DELETE_FILE);
+        log.setTargetType(TargetType.FILE);
         log.setTargetId(id);
         log.setDetail("管理员删除文件: " + file.getName());
         operationLogService.log(log);

@@ -7,7 +7,7 @@ import lombok.Getter;
  * 如 LOGIN、REGISTER、UPLOAD_FILE 等，用默认的 EnumTypeHandler 即可。
  */
 @Getter
-public enum OperationTypeEnum {
+public enum OperationType {
 
     LOGIN,
     REGISTER,
@@ -23,5 +23,6 @@ public enum OperationTypeEnum {
     TEAM_DISSOLVE,
     TEAM_INVITE,
     TEAM_REMOVE,
-    TEAM_LEAVE;
+    TEAM_LEAVE,
+    RESET_PASSWORD;
 }

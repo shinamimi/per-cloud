@@ -40,7 +40,7 @@ public class JwtTokenUtilImpl implements JwtTokenUtil {
     }
 
     @Override
-    public Integer getRoleEnumFromToken(String token) {
+    public Integer getRoleFromToken(String token) {
         return parseClaims(token).get("role", Integer.class);
     }
 

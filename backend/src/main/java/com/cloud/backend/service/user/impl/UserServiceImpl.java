@@ -1,19 +1,21 @@
 package com.cloud.backend.service.user.impl;
 
 import com.cloud.backend.annotation.Log;
+import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.ErrorCodeEnum;
-import com.cloud.backend.enums.OperationTypeEnum;
-import com.cloud.backend.enums.RoleEnum;
-import com.cloud.backend.enums.TargetTypeEnum;
-import com.cloud.backend.enums.UserStatusEnum;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.TargetType;
+import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.UserMapper;
 import com.cloud.backend.service.system.LoginAttemptService;
 import com.cloud.backend.service.system.OperationLogService;
 import com.cloud.backend.service.user.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,12 @@ public class UserServiceImpl implements UserService {
     private final LoginAttemptService loginAttemptService;
     private final OperationLogService operationLogService;
 
+    @Value("${quota.default-user:5368709120}")
+    private long defaultUserQuota;
+
+    @Value("${quota.default-vip:107374182400}")
+    private long defaultVipQuota;
+
     public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder,
                            LoginAttemptService loginAttemptService,
                            OperationLogService operationLogService) {
@@ -38,6 +46,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User register(User user) {
+        if (user.getIsVip() == null) user.setIsVip(false);
+        if (user.getAdminBonusQuota() == null) user.setAdminBonusQuota(0L);
+        if (user.getRewardQuota() == null) user.setRewardQuota(0L);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userMapper.insert(user);
         return user;
@@ -87,18 +98,18 @@ public class UserServiceImpl implements UserService {
     public void updatePassword(Long id, String rawPassword) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         user.setPassword(passwordEncoder.encode(rawPassword));
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#result.id", detail = "'创建管理员: ' + #username")
-    public User createAdmin(String username, String password, String email, String nickname, RoleEnum role) {
+    public User createAdmin(String username, String password, String email, String nickname, Role role) {
         if (existsByUsername(username)) {
-            throw new BusinessException(ErrorCodeEnum.USER_ALREADY_EXISTS);
+            throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
         }
         User user = new User();
         user.setUsername(username);
@@ -106,80 +117,109 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setNickname(nickname);
         user.setRole(role);
-        user.setStatus(UserStatusEnum.NORMAL);
+        user.setStatus(UserStatus.NORMAL);
+        user.setIsVip(false);
+        user.setAdminBonusQuota(0L);
+        user.setRewardQuota(0L);
         user.setQuota(FileConstants.DEFAULT_QUOTA);
         user.setUsedSpace(0L);
         return register(user);
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'修改用户状态为: ' + #status.name()")
-    public void updateUserStatus(Long id, UserStatusEnum status) {
+    public void updateUserStatus(Long id, UserStatus status) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+        AuthorizationPolicy.canManageUser(user);
         user.setStatus(status);
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
-         targetId = "#id", detail = "'修改配额: ' + #quota")
-    public void updateUserQuota(Long id, Long quota) {
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
+         targetId = "#id", detail = "'设置 adminBonusQuota: ' + #adminBonusQuota")
+    public void updateUserQuota(Long id, Long adminBonusQuota) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
-        user.setQuota(quota);
+        AuthorizationPolicy.canManageUser(user);
+        user.setAdminBonusQuota(adminBonusQuota);
         userMapper.update(user);
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'解锁登录锁定'")
     public void unlockUser(Long id) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+        AuthorizationPolicy.canManageUser(user);
+        user.setStatus(UserStatus.NORMAL);
+        userMapper.update(user);
         loginAttemptService.loginSucceeded(user.getUsername());
     }
 
     @Override
     public void deleteAdmin(Long id, Long currentUserId) {
         if (id.equals(currentUserId)) {
-            throw new BusinessException(ErrorCodeEnum.BAD_REQUEST, "不能删除自己");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能删除自己");
         }
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
-        if (user.getRole() == RoleEnum.SUPER_ADMIN) {
-            throw new BusinessException(ErrorCodeEnum.BAD_REQUEST, "不能删除超级管理员");
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能删除超级管理员");
         }
-        user.setStatus(UserStatusEnum.DISABLED);
+        user.setStatus(UserStatus.DISABLED);
         userMapper.update(user);
 
         OperationLog log = new OperationLog();
         log.setUserId(currentUserId);
-        log.setOperation(OperationTypeEnum.UPDATE_USER);
-        log.setTargetType(TargetTypeEnum.USER);
+        log.setOperation(OperationType.UPDATE_USER);
+        log.setTargetType(TargetType.USER);
         log.setTargetId(id);
         log.setDetail("禁用管理员: " + user.getUsername());
         operationLogService.log(log);
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.UPDATE_USER, target = TargetTypeEnum.USER,
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'修改角色为: ' + #role.name()")
-    public void updateAdminRole(Long id, RoleEnum role) {
+    public void updateAdminRole(Long id, Role role) {
         User user = userMapper.findById(id);
         if (user == null) {
-            throw new BusinessException(ErrorCodeEnum.USER_NOT_FOUND);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         user.setRole(role);
         userMapper.update(user);
+    }
+
+    @Override
+    @Log(operation = OperationType.RESET_PASSWORD, target = TargetType.USER,
+         targetId = "#userId", detail = "'管理员密码重置'")
+    public void resetUserPassword(Long userId, String newPassword) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        AuthorizationPolicy.canManageUser(user);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userMapper.update(user);
+    }
+
+    @Override
+    public long calculateTotalQuota(User user) {
+        long baseQuota = Boolean.TRUE.equals(user.getIsVip()) ? defaultVipQuota : defaultUserQuota;
+        long adminBonus = user.getAdminBonusQuota() != null ? user.getAdminBonusQuota() : 0;
+        long reward = user.getRewardQuota() != null ? user.getRewardQuota() : 0;
+        return baseQuota + adminBonus + reward;
     }
 }

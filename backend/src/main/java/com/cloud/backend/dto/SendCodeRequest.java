@@ -1,6 +1,6 @@
 package com.cloud.backend.dto;
 
-import com.cloud.backend.enums.CaptchaTypeEnum;
+import com.cloud.backend.enums.CaptchaType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,5 +18,5 @@ public class SendCodeRequest {
     private String email;
 
     @NotNull(message = "验证码类型不能为空")
-    private CaptchaTypeEnum captchaType;
+    private CaptchaType captchaType;
 }

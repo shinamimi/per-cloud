@@ -2,8 +2,8 @@ package com.cloud.backend.config;
 
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.RoleEnum;
-import com.cloud.backend.enums.UserStatusEnum;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.service.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class SuperAdminInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         User admin = userService.findByUsername(superAdminUsername);
-        if (admin != null && admin.getRole() == RoleEnum.SUPER_ADMIN) {
+        if (admin != null && admin.getRole() == Role.SUPER_ADMIN) {
             if (!passwordEncoder.matches(superAdminPassword, admin.getPassword())) {
                 admin.setPassword(passwordEncoder.encode(superAdminPassword));
                 userService.update(admin);
@@ -46,7 +46,7 @@ public class SuperAdminInitializer implements ApplicationRunner {
             }
             return;
         }
-        if (admin != null && admin.getRole() != RoleEnum.SUPER_ADMIN) {
+        if (admin != null && admin.getRole() != Role.SUPER_ADMIN) {
             log.warn("User {} exists but is not SUPER_ADMIN, skipping auto-init", superAdminUsername);
             return;
         }
@@ -56,8 +56,11 @@ public class SuperAdminInitializer implements ApplicationRunner {
         newAdmin.setPassword(superAdminPassword);
         newAdmin.setEmail(superAdminEmail);
         newAdmin.setNickname("Super Admin");
-        newAdmin.setRole(RoleEnum.SUPER_ADMIN);
-        newAdmin.setStatus(UserStatusEnum.NORMAL);
+        newAdmin.setRole(Role.SUPER_ADMIN);
+        newAdmin.setStatus(UserStatus.NORMAL);
+        newAdmin.setIsVip(false);
+        newAdmin.setAdminBonusQuota(0L);
+        newAdmin.setRewardQuota(0L);
         newAdmin.setQuota(FileConstants.DEFAULT_QUOTA);
         newAdmin.setUsedSpace(0L);
         userService.register(newAdmin);

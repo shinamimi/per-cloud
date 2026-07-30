@@ -3,9 +3,9 @@ package com.cloud.backend.service.team.impl;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.Team;
 import com.cloud.backend.entity.User;
-import com.cloud.backend.enums.ErrorCodeEnum;
-import com.cloud.backend.enums.OperationTypeEnum;
-import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.TeamMapper;
 import com.cloud.backend.mapper.TeamMemberMapper;
@@ -36,7 +36,7 @@ public class TeamServiceImpl implements TeamService {
     public Team findById(Long id) {
         Team team = teamMapper.findById(id);
         if (team == null) {
-            throw new BusinessException(ErrorCodeEnum.TEAM_NOT_FOUND);
+            throw new BusinessException(ErrorCode.TEAM_NOT_FOUND);
         }
         return team;
     }
@@ -54,8 +54,8 @@ public class TeamServiceImpl implements TeamService {
         User operator = userService.findById(operatorId);
         OperationLog log = new OperationLog();
         log.setUserId(operatorId);
-        log.setOperation(OperationTypeEnum.TEAM_DISSOLVE);
-        log.setTargetType(TargetTypeEnum.TEAM);
+        log.setOperation(OperationType.TEAM_DISSOLVE);
+        log.setTargetType(TargetType.TEAM);
         log.setTargetId(id);
         log.setDetail("强制解散团队: " + team.getName()
                 + " (操作人: " + (operator != null ? operator.getUsername() : operatorId) + ")");

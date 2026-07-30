@@ -2,10 +2,10 @@ package com.cloud.backend.service.share.impl;
 
 import com.cloud.backend.annotation.Log;
 import com.cloud.backend.entity.Share;
-import com.cloud.backend.enums.ErrorCodeEnum;
-import com.cloud.backend.enums.OperationTypeEnum;
-import com.cloud.backend.enums.ShareStatusEnum;
-import com.cloud.backend.enums.TargetTypeEnum;
+import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.enums.ShareStatus;
+import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.mapper.ShareMapper;
 import com.cloud.backend.service.share.ShareService;
@@ -62,14 +62,14 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    @Log(operation = OperationTypeEnum.CANCEL_SHARE, target = TargetTypeEnum.SHARE,
+    @Log(operation = OperationType.CANCEL_SHARE, target = TargetType.SHARE,
          targetId = "#id", detail = "'管理员取消分享'")
     public void adminCancelShare(Long id) {
         Share share = shareMapper.findById(id);
         if (share == null) {
-            throw new BusinessException(ErrorCodeEnum.SHARE_NOT_FOUND);
+            throw new BusinessException(ErrorCode.SHARE_NOT_FOUND);
         }
-        share.setStatus(ShareStatusEnum.CANCELED);
+        share.setStatus(ShareStatus.CANCELED);
         shareMapper.update(share);
     }
 }

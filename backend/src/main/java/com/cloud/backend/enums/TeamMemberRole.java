@@ -3,7 +3,7 @@ package com.cloud.backend.enums;
 import lombok.Getter;
 
 @Getter
-public enum TeamMemberRoleEnum {
+public enum TeamMemberRole {
 
     MEMBER(0),
     ADMIN(10),
@@ -11,12 +11,12 @@ public enum TeamMemberRoleEnum {
 
     private final int value;
 
-    TeamMemberRoleEnum(int value) {
+    TeamMemberRole(int value) {
         this.value = value;
     }
 
-    public static TeamMemberRoleEnum fromValue(int value) {
-        for (TeamMemberRoleEnum r : TeamMemberRoleEnum.values()) {
+    public static TeamMemberRole fromValue(int value) {
+        for (TeamMemberRole r : TeamMemberRole.values()) {
             if (r.value == value) return r;
         }
         return MEMBER;

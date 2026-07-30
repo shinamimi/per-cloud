@@ -1,7 +1,7 @@
 package com.cloud.backend.exception;
 
 import com.cloud.backend.dto.Result;
-import com.cloud.backend.enums.ErrorCodeEnum;
+import com.cloud.backend.enums.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         log.warn("Validation failed: {}", message);
-        return Result.fail(ErrorCodeEnum.BAD_REQUEST, message);
+        return Result.fail(ErrorCode.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -49,13 +49,13 @@ public class GlobalExceptionHandler {
                 .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
                 .collect(Collectors.joining(", "));
         log.warn("Constraint violation: {}", message);
-        return Result.fail(ErrorCodeEnum.BAD_REQUEST, message);
+        return Result.fail(ErrorCode.BAD_REQUEST, message);
     }
 
     /** 兜底异常处理器 —— 捕获所有未处理异常，返回 500 */
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
         log.error("Unhandled exception", e);
-        return Result.fail(ErrorCodeEnum.INTERNAL_ERROR, e.getMessage());
+        return Result.fail(ErrorCode.INTERNAL_ERROR, e.getMessage());
     }
 }

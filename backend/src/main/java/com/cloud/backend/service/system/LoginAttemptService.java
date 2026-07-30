@@ -22,7 +22,7 @@ public class LoginAttemptService {
     private static final String LOCK_PREFIX = "login:lock:";
 
     private static final int MAX_ATTEMPTS = 5;
-    private static final long LOCK_DURATION_MINUTES = 15;
+    private static final long LOCK_DURATION_MINUTES = 30;
 
     private final StringRedisTemplate redisTemplate;
 

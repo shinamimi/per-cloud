@@ -88,7 +88,7 @@ backend/src/main/java/com/cloud/backend/
 | `dto/request/` | `{动作}Request` 或 `{子域}{动作}Request` | `LoginRequest`、`UploadInitRequest` |
 | `dto/response/` | `{子域}{描述}Response` | `UserProfileResponse`、`QuotaResponse` |
 | `dto/admin/` | `Admin{动作}Request` / `Admin{动作}Response` | `AdminCreateUserRequest` |
-| `enums/` | `{领域}Enum` | `RoleEnum`、`UserStatusEnum`、`FileStatusEnum` |
+| `enums/` | `{领域}`（不加后缀） | `Role`、`UserStatus`、`FileStatus` |
 | `constant/` | `{领域}Constants` | `FileConstants`、`RedisConstants`、`SecurityConstants` |
 | `config/` (配置类) | `{技术/领域}Config` | `SecurityConfig`、`RedisConfig`、`WebMvcConfig` |
 | `config/` (属性类) | `{技术/领域}Properties` | `JwtProperties`、`MinioProperties`、`MailProperties` |

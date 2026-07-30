@@ -52,6 +52,10 @@ redis:
   password:
   timeout: 3000
 
+quota:
+  default-user: 5368709120        # 5GB，普通用户基础配额
+  default-vip: 107374182400       # 100GB，VIP 用户基础配额（预留）
+
 file:
   storage-path: /tmp/cloud-storage
   chunk-size: 10485760     # 10MB，分片上传的片段大小

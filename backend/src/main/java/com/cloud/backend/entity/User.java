@@ -1,7 +1,7 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.RoleEnum;
-import com.cloud.backend.enums.UserStatusEnum;
+import com.cloud.backend.enums.Role;
+import com.cloud.backend.enums.UserStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -12,9 +12,12 @@ import java.time.LocalDateTime;
  * - role：角色枚举，存储为 TINYINT（0=USER, 1=OPERATOR, 2=ADMIN, 3=SUPER_ADMIN），
  *   但谨慎注意 EnumOrdinalTypeHandler 用 ordinal() 而非 getValue() 写入数据库，
  *   所以这里 ordinal 必须与 value 含义一致（USER 在最前 ordinal=0, value=0）
- * - quota：用户空间配额（字节），默认在 FileConstants.DEFAULT_QUOTA 中定义
+ * - quota：用户空间配额（字节），默认在 FileConstants.DEFAULT_QUOTA 中定义（保留向后兼容）
  * - usedSpace：已使用空间（字节），上传/删除时更新
- * - status：用户状态，NORMAL=1 正常，DISABLED=0 禁用
+ * - status：用户状态，NORMAL=1 正常，DISABLED=0 禁用，LOCKED=2 锁定，INACTIVE=3 未激活
+ * - isVip：VIP 标记（TINYINT），影响 baseQuota 计算
+ * - adminBonusQuota：管理员赠送容量（字节），默认 0
+ * - rewardQuota：奖励容量（字节），默认 0
  */
 @Data
 public class User {
@@ -25,10 +28,13 @@ public class User {
     private String email;
     private String nickname;
     private String avatar;
-    private RoleEnum role;
+    private Role role;
     private Long quota;
     private Long usedSpace;
-    private UserStatusEnum status;
+    private UserStatus status;
+    private Boolean isVip;
+    private Long adminBonusQuota;
+    private Long rewardQuota;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

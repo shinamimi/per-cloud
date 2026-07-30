@@ -1,9 +1,9 @@
 package com.cloud.backend.dto.admin;
 
-import com.cloud.backend.enums.UserStatusEnum;
+import com.cloud.backend.enums.UserStatus;
 import lombok.Data;
 
 @Data
 public class StatusRequest {
-    private UserStatusEnum status;
+    private UserStatus status;
 }

@@ -8,19 +8,19 @@ import lombok.Getter;
  * 配合 EnumOrdinalTypeHandler，ordinal() 映射为 TINYINT 值。
  */
 @Getter
-public enum FileStatusEnum {
+public enum FileStatus {
 
     DELETED(0),
     NORMAL(1);
 
     private final int value;
 
-    FileStatusEnum(int value) {
+    FileStatus(int value) {
         this.value = value;
     }
 
-    public static FileStatusEnum fromValue(int value) {
-        for (FileStatusEnum status : FileStatusEnum.values()) {
+    public static FileStatus fromValue(int value) {
+        for (FileStatus status : FileStatus.values()) {
             if (status.value == value) {
                 return status;
             }

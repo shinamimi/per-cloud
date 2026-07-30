@@ -1,6 +1,6 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.TeamMemberRoleEnum;
+import com.cloud.backend.enums.TeamMemberRole;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -10,7 +10,7 @@ public class TeamMember {
     private Long id;
     private Long teamId;
     private Long userId;
-    private TeamMemberRoleEnum role;
+    private TeamMemberRole role;
     private Integer status;
     private LocalDateTime joinedAt;
 }

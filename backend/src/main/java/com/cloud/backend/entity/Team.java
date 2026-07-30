@@ -1,6 +1,6 @@
 package com.cloud.backend.entity;
 
-import com.cloud.backend.enums.TeamStatusEnum;
+import com.cloud.backend.enums.TeamStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ public class Team {
     private Long ownerId;
     private String avatar;
     private String description;
-    private TeamStatusEnum status;
+    private TeamStatus status;
     private Long quota;
     private Long usedSpace;
     private LocalDateTime createdAt;
