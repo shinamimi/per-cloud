@@ -5,6 +5,7 @@ import com.cloud.backend.enums.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -50,6 +51,13 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         log.warn("Constraint violation: {}", message);
         return Result.fail(ErrorCode.BAD_REQUEST, message);
+    }
+
+    /** 处理请求体无法反序列化（JSON 格式错误、枚举值非法等）—— 属于客户端错误，返回 400 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("Request body not readable: {}", e.getMessage());
+        return Result.fail(ErrorCode.BAD_REQUEST, "请求体格式错误");
     }
 
     /** 兜底异常处理器 —— 捕获所有未处理异常，返回 500 */

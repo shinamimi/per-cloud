@@ -1,5 +1,6 @@
 package com.cloud.backend.service.user;
 
+import com.cloud.backend.dto.admin.RoleChangeRequest;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.Role;
 import com.cloud.backend.enums.UserStatus;
@@ -43,4 +44,8 @@ public interface UserService {
     void resetUserPassword(Long userId, String newPassword);
 
     long calculateTotalQuota(User user);
+
+    List<User> listCandidates();
+
+    void batchUpdateAdminRole(List<RoleChangeRequest> changes);
 }

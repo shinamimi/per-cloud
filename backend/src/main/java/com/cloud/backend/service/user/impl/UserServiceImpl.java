@@ -3,6 +3,7 @@ package com.cloud.backend.service.user.impl;
 import com.cloud.backend.annotation.Log;
 import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.constant.FileConstants;
+import com.cloud.backend.dto.admin.RoleChangeRequest;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
 import com.cloud.backend.enums.ErrorCode;
@@ -108,6 +109,9 @@ public class UserServiceImpl implements UserService {
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#result.id", detail = "'创建管理员: ' + #username")
     public User createAdmin(String username, String password, String email, String nickname, Role role) {
+        if (role == null || role == Role.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能创建超级管理员");
+        }
         if (existsByUsername(username)) {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
         }
@@ -194,9 +198,15 @@ public class UserServiceImpl implements UserService {
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'修改角色为: ' + #role.name()")
     public void updateAdminRole(Long id, Role role) {
+        if (role == null || role == Role.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能授予超级管理员");
+        }
         User user = userMapper.findById(id);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能操作超级管理员");
         }
         user.setRole(role);
         userMapper.update(user);
@@ -221,5 +231,38 @@ public class UserServiceImpl implements UserService {
         long adminBonus = user.getAdminBonusQuota() != null ? user.getAdminBonusQuota() : 0;
         long reward = user.getRewardQuota() != null ? user.getRewardQuota() : 0;
         return baseQuota + adminBonus + reward;
+    }
+
+    @Override
+    public List<User> listCandidates() {
+        return userMapper.findAll().stream()
+                .filter(u -> u.getRole().getValue() < Role.ADMIN.getValue())
+                .toList();
+    }
+
+    @Override
+    public void batchUpdateAdminRole(List<RoleChangeRequest> changes) {
+        for (RoleChangeRequest change : changes) {
+            if (change.getNewRole() == Role.SUPER_ADMIN) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "不能通过批量接口授予超级管理员");
+            }
+            User user = userMapper.findById(change.getUserId());
+            if (user == null) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+            if (user.getRole() == Role.SUPER_ADMIN) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "不能修改超级管理员角色");
+            }
+            user.setRole(change.getNewRole());
+            userMapper.update(user);
+
+            OperationLog log = new OperationLog();
+            log.setUserId(AuthorizationPolicy.getCurrentUserId());
+            log.setOperation(OperationType.UPDATE_USER);
+            log.setTargetType(TargetType.USER);
+            log.setTargetId(user.getId());
+            log.setDetail("批量修改角色为: " + change.getNewRole().name());
+            operationLogService.log(log);
+        }
     }
 }
