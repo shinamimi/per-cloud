@@ -39,10 +39,15 @@
             管理员菜单组 —— 仅在当前用户 role >= ADMIN 时显示。
             使用 v-if="userStore.isAdmin" 阻止非管理员看到管理入口。
           -->
-          <el-menu-item v-if="userStore.isAdmin" index="/admin">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>管理后台</span>
-          </el-menu-item>
+          <el-sub-menu v-if="userStore.isAdmin" index="/admin">
+            <template #title>
+              <el-icon><DataAnalysis /></el-icon>
+              <span>管理后台</span>
+            </template>
+            <el-menu-item index="/admin">仪表盘</el-menu-item>
+            <el-menu-item index="/admin/users">用户管理</el-menu-item>
+            <el-menu-item index="/admin/admins">管理员管理</el-menu-item>
+          </el-sub-menu>
         </el-menu>
       </el-aside>
       <el-main class="main-content">
