@@ -57,4 +57,9 @@
         DELETE FROM t_user WHERE id = #{id}
     </delete>
 
+    <!-- 原子调整已用空间：used_space = used_space + delta，避免并发覆盖；负数钳制为 0 -->
+    <update id="updateUsedSpace">
+        UPDATE t_user SET used_space = GREATEST(used_space + #{delta}, 0) WHERE id = #{userId}
+    </update>
+
 </mapper>

@@ -49,6 +49,14 @@ public enum ErrorCode {
     UPLOAD_MERGE_FAILED(10205, "分片合并失败"),
     FILE_UPLOAD_FAILED(10206, "文件上传失败"),
     FILE_DOWNLOAD_FAILED(10207, "文件下载失败"),
+    UPLOAD_TASK_EXCEEDED(10208, "上传任务数超过限制"),
+    FILE_TOO_LARGE(10209, "单文件大小超过限制"),
+    UPLOAD_NOT_FOUND(10210, "上传任务不存在或已过期"),
+    UPLOAD_ALREADY_MERGED(10211, "上传任务已合并"),
+    RECYCLE_NOT_FOUND(10212, "回收站记录不存在"),
+    PREVIEW_UNSUPPORTED(10213, "该文件类型暂不支持预览"),
+    BATCH_TASK_NOT_FOUND(10214, "打包任务不存在"),
+    MOVE_INVALID(10215, "不能移动到自身或其子目录"),
 
     /* ==================== 分享 (10300-10399) ==================== */
     SHARE_EXPIRED(10300, "分享已过期"),

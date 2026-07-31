@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.SettingMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.Setting"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_setting (setting_key, setting_value, description)
+        VALUES (#{settingKey}, #{settingValue}, #{description})
+    </insert>
+
+    <select id="findByKey" parameterType="java.lang.String" resultType="com.cloud.backend.entity.Setting">
+        SELECT * FROM t_setting WHERE setting_key = #{settingKey} LIMIT 1
+    </select>
+
+    <select id="findAll" resultType="com.cloud.backend.entity.Setting">
+        SELECT * FROM t_setting ORDER BY id ASC
+    </select>
+
+    <insert id="upsert" parameterType="com.cloud.backend.entity.Setting">
+        INSERT INTO t_setting (setting_key, setting_value, description)
+        VALUES (#{settingKey}, #{settingValue}, #{description})
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), description = VALUES(description)
+    </insert>
+
+    <delete id="deleteByKey" parameterType="java.lang.String">
+        DELETE FROM t_setting WHERE setting_key = #{settingKey}
+    </delete>
+
+</mapper>

@@ -234,6 +234,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public long getRemainingQuota(Long userId) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        long used = user.getUsedSpace() != null ? user.getUsedSpace() : 0;
+        return calculateTotalQuota(user) - used;
+    }
+
+    @Override
+    public void changeUsedSpace(Long userId, long delta) {
+        userMapper.updateUsedSpace(userId, delta);
+    }
+
+    @Override
     public List<User> listCandidates() {
         return userMapper.findAll().stream()
                 .filter(u -> u.getRole().getValue() < Role.ADMIN.getValue())

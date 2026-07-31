@@ -11,7 +11,12 @@
  * 集中处理避免每个 API 调用处重复 try-catch + message 弹窗，减少样板代码。
  */
 
-import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  AxiosError,
+  type AxiosInstance,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { ElMessage } from 'element-plus'
 import type { Result } from '@/types/api'
 
@@ -82,3 +87,62 @@ request.interceptors.response.use(
 )
 
 export default request
+
+/*
+ * 文件下载专用实例 —— 用于下载接口（GET /api/files/{id}/download）。
+ *
+ * 为什么不能用默认 request？
+ * 下载接口返回的是文件二进制（Blob），不是 Result<T> JSON 包体，
+ * 默认实例的响应拦截器按 Result 解包会误判（Blob 没有 code 字段）。
+ * requestBlob 只做鉴权注入与 HTTP 层错误处理，直接返回 Blob。
+ *
+ * 注意：下载端点会 302 重定向到 MinIO presigned URL，axios 默认跟随重定向；
+ * 跨域重定向时 axios 不会转发 Authorization 头（MinIO 凭 presigned URL 鉴权，无需该头）。
+ */
+export const requestBlob: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  timeout: 0, // 大文件下载不设超时
+  responseType: 'blob',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+requestBlob.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('token')
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
+requestBlob.interceptors.response.use(
+  (response) => {
+    // 返回 Blob（类型层面回填 AxiosResponse 以满足拦截器签名，实际运行时返回 data）
+    return response.data as unknown as AxiosResponse
+  },
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      ElMessage.error('登录已过期，请重新登录')
+      window.location.href = '/#/login'
+      return Promise.reject(error)
+    }
+
+    ElMessage.error(error.message || '下载失败，请稍后重试')
+    return Promise.reject(error)
+  },
+)
+
+/**
+ * 文件下载 GET —— 返回 Blob。
+ * 类型边界：requestBlob 拦截器已解包 AxiosResponse.data（Blob），
+ * 此处收敛类型断言，业务代码无需再处理 AxiosResponse 包装。
+ */
+export function downloadGet(url: string): Promise<Blob> {
+  return requestBlob.get(url) as unknown as Promise<Blob>
+}

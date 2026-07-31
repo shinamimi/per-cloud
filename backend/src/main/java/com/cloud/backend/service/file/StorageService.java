@@ -28,6 +28,9 @@ public interface StorageService {
 
     ObjectInfo getObjectInfo(String objectName);
 
+    /** 列出指定前缀下的全部对象名（分页内部处理） */
+    java.util.List<String> listObjects(String prefix);
+
     boolean bucketExists(String bucketName);
 
     void createBucket(String bucketName);

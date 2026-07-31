@@ -15,6 +15,7 @@ public enum OperationType {
     DOWNLOAD_FILE,
     DELETE_FILE,
     RESTORE_FILE,
+    CREATE_DIRECTORY,
     CREATE_SHARE,
     CANCEL_SHARE,
     UPDATE_USER,

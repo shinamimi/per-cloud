@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/files',
     name: 'Files',
-    component: () => import('@/views/welcome/WelcomeView.vue'),
+    component: () => import('@/views/files/FileView.vue'),
     meta: { layout: 'main', title: '我的文件', requiresAuth: true },
   },
 

@@ -7,16 +7,38 @@
 
     <insert id="insert" parameterType="com.cloud.backend.entity.RecycleBin"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_recycle_bin (user_id, file_id, original_name, object_name, parent_id, size, mime_type, deleted_time, expire_time)
-        VALUES (#{userId}, #{fileId}, #{originalName}, #{objectName}, #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
+        INSERT INTO t_recycle_bin (user_id, file_id, original_name, object_name, file_hash, type, team_id,
+                                   parent_id, size, mime_type, deleted_time, expire_time)
+        VALUES (#{userId}, #{fileId}, #{originalName}, #{objectName}, #{fileHash}, #{type}, #{teamId},
+                #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
     </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE id = #{id}
+    </select>
+
+    <select id="findByIdAndUserId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND user_id = #{userId} LIMIT 1
+    </select>
+
+    <select id="findByUserId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} ORDER BY deleted_time DESC
+    </select>
+
+    <select id="findByExpireTimeBefore" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE expire_time &lt;= #{time}
+    </select>
+
+    <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} AND parent_id = #{parentId}
+    </select>
 
     <delete id="deleteById" parameterType="java.lang.Long">
         DELETE FROM t_recycle_bin WHERE id = #{id}
     </delete>
 
-    <select id="findByUserId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE user_id = #{userId}
-    </select>
+    <delete id="deleteByUserIdAndParentId">
+        DELETE FROM t_recycle_bin WHERE user_id = #{userId} AND parent_id = #{parentId}
+    </delete>
 
 </mapper>

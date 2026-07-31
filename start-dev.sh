@@ -11,7 +11,7 @@
 set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKEND_READY_URL="http://localhost:8080/api/auth/login"
+BACKEND_READY_URL="http://localhost:8081/api/auth/login"
 
 stop_all() {
   echo ""
@@ -36,7 +36,7 @@ echo "       Redis:   localhost:6379"
 echo "       MinIO:   localhost:9000 (API) / localhost:9001 (Console)"
 
 # 2. 启动后端（后台运行，等待就绪）
-echo "[2/3] 启动后端 (Spring Boot :8080)..."
+echo "[2/3] 启动后端 (Spring Boot :8081)..."
 cd "$ROOT_DIR/backend"
 ./mvnw spring-boot:run &
 BACKEND_PID=$!
@@ -65,7 +65,7 @@ echo ""
 echo "=========================================="
 echo "  所有服务已启动"
 echo "  前端:  http://localhost:5173"
-echo "  后端:  http://localhost:8080"
+echo "  后端:  http://localhost:8081"
 echo "  MinIO: http://localhost:9001"
 echo "=========================================="
 echo "按 Ctrl+C 停止所有服务"

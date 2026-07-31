@@ -5,17 +5,31 @@
 
 <mapper namespace="com.cloud.backend.dao.FileDao">
 
-    <select id="search" parameterType="com.cloud.backend.dto.FileQuery" resultType="com.cloud.backend.entity.File">
-        SELECT * FROM t_file
+    <!-- 搜索公共条件：仅正常记录；teamId 为空默认个人空间（team_id=0），否则限定团队空间 -->
+    <sql id="searchWhere">
         <where>
-            <if test="userId != null">AND user_id = #{userId}</if>
-            <if test="parentId != null">AND parent_id = #{parentId}</if>
+            AND user_id = #{userId}
+            AND status = 1
+            <if test="teamId == null">AND team_id = 0</if>
             <if test="teamId != null">AND team_id = #{teamId}</if>
+            <if test="parentId != null">AND parent_id = #{parentId}</if>
             <if test="keyword != null and keyword != ''">AND name LIKE CONCAT('%', #{keyword}, '%')</if>
+            <if test="category != null">AND category = #{category}</if>
             <if test="mimeTypePrefix != null and mimeTypePrefix != ''">AND mime_type LIKE CONCAT(#{mimeTypePrefix}, '%')</if>
             <if test="isDirectory != null">AND is_directory = #{isDirectory}</if>
         </where>
-        ORDER BY created_at DESC
+    </sql>
+
+    <select id="searchPage" parameterType="com.cloud.backend.dto.FileQuery" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        <include refid="searchWhere"/>
+        ORDER BY type DESC, created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="count" parameterType="com.cloud.backend.dto.FileQuery" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_file
+        <include refid="searchWhere"/>
     </select>
 
 </mapper>

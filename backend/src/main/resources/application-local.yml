@@ -3,7 +3,15 @@
 # 本地运行 Docker 容器中的 MySQL / Redis / MinIO
 # 敏感配置可被环境变量覆盖，有默认兜底
 # =============================================================================
+server:
+  port: 8081
+
 spring:
+
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 520MB
 
   datasource:
     url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cloud}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
@@ -58,5 +66,14 @@ quota:
 
 file:
   storage-path: /tmp/cloud-storage
-  chunk-size: 10485760     # 10MB，分片上传的片段大小
-  max-size: 536870912      # 512MB，单文件大小上限
+  chunk-size: 10485760          # 10MB，默认分片大小（大文件自适应调整）
+  max-size: 536870912           # 512MB，单文件大小上限（保留兼容）
+  max-size-user: 536870912      # 512MB，普通用户单文件大小上限（默认值，管理员可配置）
+  max-size-vip: 2147483648      # 2GB，VIP 用户单文件大小上限（默认值，管理员可配置）
+  max-concurrent-user: 3        # 普通用户同时进行中的上传任务数上限（默认值，管理员可配置）
+  max-concurrent-vip: 5         # VIP 用户同时进行中的上传任务数上限（默认值，管理员可配置）
+  small-file-threshold: 5242880 # 5MB，小于此阈值的文件不分片直接上传
+  upload-expire-hours: 24       # 上传临时分片/元数据保留时长
+  package-expire-hours: 24      # 打包下载产物保留时长
+  recycle-days: 30              # 回收站保留天数，到期物理清理
+  preview-text-max-size: 1048576 # 文本预览最大字节数（1MB）

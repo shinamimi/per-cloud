@@ -7,8 +7,10 @@
 
     <insert id="insert" parameterType="com.cloud.backend.entity.File"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_file (user_id, parent_id, name, path, size, mime_type, extension, file_hash, is_directory, object_name, status)
-        VALUES (#{userId}, #{parentId}, #{name}, #{path}, #{size}, #{mimeType}, #{extension}, #{fileHash}, #{isDirectory}, #{objectName}, #{status})
+        INSERT INTO t_file (user_id, team_id, parent_id, name, path, size, mime_type, extension, file_hash,
+                            is_directory, type, category, object_name, status)
+        VALUES (#{userId}, #{teamId}, #{parentId}, #{name}, #{path}, #{size}, #{mimeType}, #{extension}, #{fileHash},
+                #{isDirectory}, #{type}, #{category}, #{objectName}, #{status})
     </insert>
 
     <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.File">
@@ -19,6 +21,26 @@
     <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
         WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+        ORDER BY type DESC, name ASC
+    </select>
+
+    <select id="pageByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+        ORDER BY type DESC, created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByUserIdAndParentId" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_file
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+    </select>
+
+    <!-- 同名检查（仅正常记录，回收站中的不算） -->
+    <select id="findByUserIdAndParentIdAndName" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND name = #{name} AND status = 1
+        LIMIT 1
     </select>
 
     <!-- 按用户和路径查找（用于防止同一目录下创建同名文件） -->
@@ -27,19 +49,36 @@
         WHERE user_id = #{userId} AND path = #{path} AND status = 1
     </select>
 
+    <!-- 用户全部正常文件（目录树、递归删除收集） -->
+    <select id="findByUserId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file WHERE user_id = #{userId} AND status = 1
+    </select>
+
     <update id="update" parameterType="com.cloud.backend.entity.File">
         UPDATE t_file
         SET name = #{name},
-            path = #{path},
+            parent_id = #{parentId},
             size = #{size},
             mime_type = #{mimeType},
             extension = #{extension},
             file_hash = #{fileHash},
             is_directory = #{isDirectory},
+            type = #{type},
+            category = #{category},
             object_name = #{objectName},
             status = #{status},
             updated_at = NOW()
         WHERE id = #{id}
+    </update>
+
+    <!-- 重命名：仅改 name，不动其他字段 -->
+    <update id="updateName">
+        UPDATE t_file SET name = #{name}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <!-- 移动：仅改 parentId，MinIO 对象不动 -->
+    <update id="updateParent">
+        UPDATE t_file SET parent_id = #{parentId}, updated_at = NOW() WHERE id = #{id}
     </update>
 
     <delete id="deleteById" parameterType="java.lang.Long">
@@ -49,6 +88,21 @@
     <update id="updateStatus">
         UPDATE t_file SET status = #{status} WHERE id = #{id}
     </update>
+
+    <update id="updateStatusByIds">
+        UPDATE t_file SET status = #{status}, updated_at = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <delete id="deleteByIds">
+        DELETE FROM t_file WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
 
     <select id="findAll" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file ORDER BY created_at DESC

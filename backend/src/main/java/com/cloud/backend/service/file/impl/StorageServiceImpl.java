@@ -149,4 +149,23 @@ public class StorageServiceImpl implements StorageService {
             throw new RuntimeException("MinIO create bucket failed: " + bucketName, e);
         }
     }
+
+    @Override
+    public java.util.List<String> listObjects(String prefix) {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        try {
+            Iterable<Result<io.minio.messages.Item>> results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(properties.getBucket())
+                            .prefix(prefix)
+                            .recursive(true)
+                            .build());
+            for (Result<io.minio.messages.Item> result : results) {
+                names.add(result.get().objectName());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("MinIO list objects failed: " + prefix, e);
+        }
+        return names;
+    }
 }

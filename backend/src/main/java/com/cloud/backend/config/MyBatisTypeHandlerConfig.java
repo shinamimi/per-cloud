@@ -16,6 +16,7 @@ public class MyBatisTypeHandlerConfig implements ConfigurationCustomizer {
         registry.register(Role.class, EnumOrdinalTypeHandler.class);
         registry.register(UserStatus.class, EnumOrdinalTypeHandler.class);
         registry.register(FileStatus.class, EnumOrdinalTypeHandler.class);
+        registry.register(FileType.class, EnumOrdinalTypeHandler.class);
         registry.register(ShareStatus.class, EnumOrdinalTypeHandler.class);
     }
 }

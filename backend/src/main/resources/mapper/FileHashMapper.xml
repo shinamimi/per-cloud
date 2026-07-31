@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.FileHashMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.FileHash"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_file_hash (file_hash, object_name, size, mime_type, ref_count)
+        VALUES (#{fileHash}, #{objectName}, #{size}, #{mimeType}, #{refCount})
+    </insert>
+
+    <select id="findByHash" parameterType="java.lang.String" resultType="com.cloud.backend.entity.FileHash">
+        SELECT * FROM t_file_hash WHERE file_hash = #{fileHash} LIMIT 1
+    </select>
+
+    <update id="incrementRefCount">
+        UPDATE t_file_hash SET ref_count = ref_count + 1 WHERE file_hash = #{fileHash}
+    </update>
+
+    <update id="decrementRefCount">
+        UPDATE t_file_hash SET ref_count = ref_count - 1 WHERE file_hash = #{fileHash}
+    </update>
+
+    <delete id="deleteByHash" parameterType="java.lang.String">
+        DELETE FROM t_file_hash WHERE file_hash = #{fileHash}
+    </delete>
+
+</mapper>

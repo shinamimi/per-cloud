@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.stream.Collectors;
 
@@ -58,6 +59,13 @@ public class GlobalExceptionHandler {
     public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("Request body not readable: {}", e.getMessage());
         return Result.fail(ErrorCode.BAD_REQUEST, "请求体格式错误");
+    }
+
+    /** 上传分片超过 multipart 限制 —— 单分片大小不应超过服务端 chunk-size 配置 */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        log.warn("Upload size exceeded: {}", e.getMessage());
+        return Result.fail(ErrorCode.FILE_TOO_LARGE, "上传分片大小超过限制");
     }
 
     /** 兜底异常处理器 —— 捕获所有未处理异常，返回 500 */

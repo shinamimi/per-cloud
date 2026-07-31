@@ -2,6 +2,7 @@ package com.cloud.backend.mapper;
 
 import com.cloud.backend.entity.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
@@ -27,4 +28,7 @@ public interface UserMapper {
     int update(User user);
 
     int deleteById(Long id);
+
+    /** 原子调整已用空间（上传扣减/删除释放），避免并发读写覆盖 */
+    int updateUsedSpace(@Param("userId") Long userId, @Param("delta") long delta);
 }

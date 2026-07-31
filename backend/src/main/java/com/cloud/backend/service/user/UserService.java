@@ -45,6 +45,12 @@ public interface UserService {
 
     long calculateTotalQuota(User user);
 
+    /** 用户剩余可用空间 = 总配额 - 已用（用户不存在抛 USER_NOT_FOUND） */
+    long getRemainingQuota(Long userId);
+
+    /** 原子调整已用空间（上传扣减为正、删除释放为负） */
+    void changeUsedSpace(Long userId, long delta);
+
     List<User> listCandidates();
 
     void batchUpdateAdminRole(List<RoleChangeRequest> changes);
