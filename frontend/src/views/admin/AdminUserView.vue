@@ -6,17 +6,20 @@
   <div class="admin-users">
     <h2 class="page-title">用户管理</h2>
 
-    <!-- 搜索栏 -->
+    <!-- 搜索栏：状态下拉从字典 userStatus 组渲染（frontend-standard.md） -->
     <el-card shadow="never" class="search-card">
       <el-form :model="search" inline size="default">
         <el-form-item label="用户名">
           <el-input v-model="search.username" placeholder="搜索用户名" clearable />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="search.status" placeholder="全部" clearable style="width:130px">
-            <el-option label="正常" :value="1" />
-            <el-option label="已禁用" :value="0" />
-            <el-option label="已锁定" :value="2" />
+          <el-select v-model="search.status" placeholder="全部" clearable style="width: 130px">
+            <el-option
+              v-for="opt in metaStore.getGroup(MetaGroup.USER_STATUS)"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -26,7 +29,7 @@
       </el-form>
     </el-card>
 
-    <!-- 用户列表表格 -->
+    <!-- 用户列表表格：容量列自动选择单位（B/KB/MB/GB/TB）只读展示 -->
     <el-card shadow="never">
       <el-table
         :data="filteredUsers"
@@ -47,32 +50,61 @@
           </template>
         </el-table-column>
         <el-table-column prop="totalQuota" label="总配额" width="120">
-          <template #default="{ row }">{{ formatBytes(row.totalQuota) }}</template>
+          <template #default="{ row }">{{ formatBytesAuto(row.totalQuota) }}</template>
         </el-table-column>
         <el-table-column prop="usedSpace" label="已用空间" width="120">
-          <template #default="{ row }">{{ formatBytes(row.usedSpace) }}</template>
+          <template #default="{ row }">{{ formatBytesAuto(row.usedSpace) }}</template>
         </el-table-column>
         <el-table-column label="创建时间" width="170">
           <template #default="{ row }">{{ row.createdAt?.slice(0, 16).replace('T', ' ') }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+
+        <!-- 操作列：按钮显隐全部由 can() 规则表推导（frontend-standard.md 5.x） -->
+        <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleToggleStatus(row)">
-              {{ row.status === 1 ? '禁用' : '启用' }}
+            <el-button
+              v-if="can('disable', userStore.role, row.status, USER_OPERATIONS)"
+              link
+              type="danger"
+              size="small"
+              @click="handleToggleStatus(row)"
+            >
+              禁用
             </el-button>
             <el-button
+              v-if="can('enable', userStore.role, row.status, USER_OPERATIONS)"
               link
               type="primary"
               size="small"
-              :disabled="row.status !== 2"
+              @click="handleToggleStatus(row)"
+            >
+              启用
+            </el-button>
+            <el-button
+              v-if="can('unlock', userStore.role, row.status, USER_OPERATIONS)"
+              link
+              type="primary"
+              size="small"
               @click="handleUnlock(row)"
             >
               解锁
             </el-button>
-            <el-button link type="primary" size="small" @click="openQuotaDialog(row)">
+            <el-button
+              v-if="can('quota', userStore.role, row.status, USER_OPERATIONS)"
+              link
+              type="primary"
+              size="small"
+              @click="openQuotaDialog(row)"
+            >
               配额
             </el-button>
-            <el-button link type="primary" size="small" @click="openPasswordDialog(row)">
+            <el-button
+              v-if="can('resetPwd', userStore.role, row.status, USER_OPERATIONS)"
+              link
+              type="primary"
+              size="small"
+              @click="openPasswordDialog(row)"
+            >
               重置密码
             </el-button>
           </template>
@@ -80,25 +112,35 @@
       </el-table>
     </el-card>
 
-    <!-- 调整配额对话框 -->
+    <!--
+      调整配额对话框。
+      单位选择在弹窗内进行：
+      - 基础配额：只读展示，固定以 GB 为单位
+      - 额外配额：按所选单位（KB/MB/GB，默认 MB）输入，提交时换算为字节
+    -->
     <el-dialog v-model="quotaDialog.visible" title="调整配额" width="420px" :close-on-click-modal="false">
-      <el-form :model="quotaDialog.form" label-width="100px">
+      <el-form :model="quotaDialog" label-width="100px">
         <el-form-item label="当前用户">
           <span>{{ quotaDialog.target?.username }}</span>
         </el-form-item>
         <el-form-item label="基础配额">
-          <span>{{ formatBytes(quotaDialog.target?.totalQuota || 0) }}</span>
+          <span>{{ formatSize(quotaDialog.target?.totalQuota || 0, 'GB') }} GB</span>
         </el-form-item>
-        <el-form-item label="额外配额 (字节)">
-          <el-input-number
-            v-model="quotaDialog.form.adminBonusQuota"
-            :min="0"
-            :step="1073741824"
-            style="width: 100%"
-          />
+        <el-form-item label="额外配额">
+          <div class="quota-input-row">
+            <el-input-number
+              v-model="quotaDialog.inputValue"
+              :min="0"
+              :step="1"
+              style="flex: 1"
+            />
+            <el-select v-model="quotaDialog.unit" size="default" style="width: 90px">
+              <el-option v-for="unit in SIZE_UNITS" :key="unit" :label="unit" :value="unit" />
+            </el-select>
+          </div>
           <div class="form-hint">
-            当前额外配额：{{ formatBytes(quotaDialog.target?.adminBonusQuota || 0) }}，
-            建议：1 GB = 1073741824, 10 GB = 10737418240
+            当前额外配额：{{ formatSize(quotaDialog.target?.adminBonusQuota || 0, quotaDialog.unit) }}
+            {{ quotaDialog.unit }}
           </div>
         </el-form-item>
       </el-form>
@@ -135,20 +177,16 @@
 /*
  * 管理员用户管理页面 —— 核心逻辑：
  *
- * 1. 页面加载时调用 getAdminUsers() 获取所有非管理员用户
- * 2. 前端搜索过滤（用户名 + 状态），不依赖后端搜索接口（后端未提供搜索参数）
- * 3. 操作按钮：
- *   - 启用/禁用：调用 updateUserStatus(id, { status: NORMAL/DISABLED })
- *   - 解锁：调用 unlockUser(id) —— 仅对 LOCKED 状态的用户可点击
- *   - 配额：弹出对话框，设置 adminBonusQuota
- *   - 重置密码：弹出对话框，输入新密码后调用 resetUserPassword
- * 4. 每个操作完成后刷新列表，保持数据一致性
+ * 1. 字典驱动：状态筛选下拉与状态标签 label 来自 metaStore 字典组
+ *    （GET /api/meta/options 的 userStatus 组），前端只维护 Tag 颜色。
+ * 2. 权限驱动：操作按钮显隐由 can() 规则表推导，
+ *    页面不写死 role/status 判断（见 src/permissions/admin-operations.ts）。
+ * 3. 前端内存过滤：后端 listUsers 无搜索参数，用户量不大时 computed 过滤足够。
  *
- * 为什么不用后端搜索？
- * 后端 AdminUserController.listUsers 没有搜索/分页参数，返回全量用户。
- * 前端用 computed 做内存过滤，对于用户量不大的场景足够高效。
+ * 注意：后端枚举序列化为字符串（"NORMAL" 等），
+ * 所有状态比较一律使用字符串，与字典 value 对齐。
  */
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAdminUsers,
@@ -156,9 +194,24 @@ import {
   unlockUser,
   updateUserQuota,
   resetUserPassword,
-} from '@/api/admin'
-import type { AdminUserResponse } from '@/types/admin'
-import { AdminUserStatus, AdminUserStatusLabel, AdminUserStatusType } from '@/types/admin'
+} from '@/api/admin/user'
+import type { AdminUserResponse, UserStatusKey } from '@/types/admin'
+import { USER_STATUS_TAG_TYPE } from '@/types/admin'
+import { MetaGroup } from '@/types/meta'
+import { useMetaStore } from '@/stores/meta'
+import { useUserStore } from '@/stores/user'
+import { can } from '@/utils/permission'
+import { USER_OPERATIONS } from '@/permissions/admin-operations'
+import {
+  formatSize,
+  formatBytesAuto,
+  SIZE_UNITS,
+  UNIT_BYTES,
+  type SizeUnit,
+} from '@/utils/format'
+
+const metaStore = useMetaStore()
+const userStore = useUserStore()
 
 /* ========== 数据加载 ========== */
 
@@ -167,7 +220,7 @@ const users = ref<AdminUserResponse[]>([])
 
 const search = reactive({
   username: '',
-  status: null as number | null,
+  status: null as string | null,
 })
 
 /** 前端过滤后的用户列表 */
@@ -195,28 +248,32 @@ function resetSearch() {
   search.status = null
 }
 
+/* ========== 字典驱动的展示 ========== */
+
+/** 状态 label 从字典 userStatus 组获取；字典未加载时回退为原始字符串 */
+function statusLabel(status: UserStatusKey): string {
+  return (
+    metaStore.getGroup(MetaGroup.USER_STATUS).find((opt) => opt.value === status)?.label ??
+    status
+  )
+}
+
+/** Tag 颜色属于前端 UI 样式，前端维护映射（字典不返回颜色） */
+function statusTagType(status: UserStatusKey): string {
+  return USER_STATUS_TAG_TYPE[status] ?? 'info'
+}
+
 /* ========== 工具函数 ========== */
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
-}
-
-function statusLabel(status: number): string {
-  return AdminUserStatusLabel[status as AdminUserStatus] || '未知'
-}
-
-function statusTagType(status: number): string {
-  return AdminUserStatusType[status as AdminUserStatus] || 'info'
-}
+/* 容量展示说明：表格列使用 formatBytesAuto 自动单位；
+ * 配额弹窗内由用户选择单位（见下方 quotaDialog.unit，默认 MB）。 */
 
 /* ========== 操作处理 ========== */
 
 /** 切换用户启用/禁用状态 */
 async function handleToggleStatus(row: AdminUserResponse) {
-  const action = row.status === 1 ? '禁用' : '启用'
+  const isDisabled = row.status === 'DISABLED'
+  const action = isDisabled ? '启用' : '禁用'
   try {
     await ElMessageBox.confirm(`确定要${action}用户「${row.username}」吗？`, '提示', {
       confirmButtonText: '确定',
@@ -228,7 +285,7 @@ async function handleToggleStatus(row: AdminUserResponse) {
   }
 
   try {
-    const newStatus = row.status === 1 ? AdminUserStatus.DISABLED : AdminUserStatus.NORMAL
+    const newStatus: UserStatusKey = isDisabled ? 'NORMAL' : 'DISABLED'
     await updateUserStatus(row.id, { status: newStatus })
     ElMessage.success(`${action}成功`)
     await loadUsers()
@@ -260,18 +317,32 @@ async function handleUnlock(row: AdminUserResponse) {
 
 /* ========== 配额对话框 ========== */
 
+/**
+ * 单位选择在弹窗内进行：
+ * - unit      额外配额输入单位，默认 MB（基础配额固定以 GB 展示）
+ * - inputValue 按当前单位输入的额外配额数值，提交时换算为字节
+ */
 const quotaDialog = reactive({
   visible: false,
   loading: false,
   target: null as AdminUserResponse | null,
-  form: {
-    adminBonusQuota: 0,
-  },
+  unit: 'MB' as SizeUnit,
+  inputValue: 0,
 })
+
+/** 切换单位时换算输入值，保持物理量（字节数）不变 */
+watch(
+  () => quotaDialog.unit,
+  (newUnit, oldUnit) => {
+    quotaDialog.inputValue =
+      (quotaDialog.inputValue * UNIT_BYTES[oldUnit]) / UNIT_BYTES[newUnit]
+  },
+)
 
 function openQuotaDialog(row: AdminUserResponse) {
   quotaDialog.target = row
-  quotaDialog.form.adminBonusQuota = row.adminBonusQuota
+  quotaDialog.unit = 'MB'
+  quotaDialog.inputValue = row.adminBonusQuota / UNIT_BYTES.MB
   quotaDialog.visible = true
 }
 
@@ -281,7 +352,7 @@ async function submitQuota() {
   quotaDialog.loading = true
   try {
     await updateUserQuota(quotaDialog.target.id, {
-      adminBonusQuota: quotaDialog.form.adminBonusQuota,
+      adminBonusQuota: Math.round(quotaDialog.inputValue * UNIT_BYTES[quotaDialog.unit]),
     })
     ElMessage.success('配额调整成功')
     quotaDialog.visible = false
@@ -335,7 +406,11 @@ async function submitPassword() {
   }
 }
 
-onMounted(loadUsers)
+onMounted(() => {
+  // 字典拉取失败不影响页面：loadIfNeeded 内部已静默降级
+  metaStore.loadIfNeeded()
+  loadUsers()
+})
 </script>
 
 <style scoped>
@@ -352,6 +427,13 @@ onMounted(loadUsers)
 
 .search-card {
   margin-bottom: 16px;
+}
+
+/* 额外配额输入行：数值输入框 + 单位选择器 */
+.quota-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
 }
 
 .form-hint {

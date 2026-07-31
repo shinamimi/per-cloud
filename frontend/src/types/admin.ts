@@ -2,13 +2,20 @@
  * 管理后台（M7）类型定义 —— 对应后端 dto/admin/ 下的所有 DTO。
  *
  * 设计思路：
- * 与后端 AdminUserResponse / StatusRequest / QuotaRequest 等 DTO 一一对应，
- * 前端通过 Axios 响应拦截器解包 Result<T> 后直接拿到这些类型。
+ * - 后端 Spring Boot 默认将 Java 枚举序列化为 JSON 字符串（name），
+ *   因此 role / status 在此处声明为字符串字面量联合类型。
+ * - 字符串值即字典接口（GET /api/meta/options）中的 value，
+ *   label 展示统一从 metaStore 字典组获取（见 docs/frontend-standard.md）。
  */
+
+/** 用户状态字符串值 —— 对应后端 UserStatus 枚举 name */
+export type UserStatusKey = 'NORMAL' | 'DISABLED' | 'LOCKED' | 'INACTIVE'
+
+/** 角色字符串值 —— 对应后端 Role 枚举 name */
+export type RoleKey = 'USER' | 'OPERATOR' | 'ADMIN' | 'SUPER_ADMIN'
 
 /**
  * 管理员用户管理响应 —— 对应用户列表/管理员列表返回的数据。
- * 后端返回的是 List<AdminUserResponse>，每个元素包含用户的所有管理可见信息。
  *
  * 字段说明：
  * - totalQuota: base quota + admin bonus quota + reward quota 之和
@@ -22,14 +29,14 @@ export interface AdminUserResponse {
   email: string
   nickname: string
   avatar: string
-  role: AdminRole
+  role: RoleKey
   quota: number
   totalQuota: number
   adminBonusQuota: number
   rewardQuota: number
   usedSpace: number
   isVip: boolean
-  status: AdminUserStatus
+  status: UserStatusKey
   createdAt: string
 }
 
@@ -44,7 +51,7 @@ export interface AdminDashboardStats {
 
 /** 修改用户状态请求体 */
 export interface StatusRequest {
-  status: AdminUserStatus
+  status: UserStatusKey
 }
 
 /** 修改配额请求体 —— adminBonusQuota 是管理员额外分配的额度（字节） */
@@ -63,58 +70,34 @@ export interface CreateAdminRequest {
   password: string
   email: string
   nickname?: string
-  role: AdminRole
+  role: RoleKey
 }
 
 /** 修改管理员角色请求体 */
 export interface UpdateRoleRequest {
-  role: AdminRole
+  role: RoleKey
+}
+
+/** 候选管理员 —— 穿梭器左侧列表项（对应 GET /api/admin/admins/candidates） */
+export interface AdminCandidate {
+  id: number
+  username: string
+  nickname: string | null
+}
+
+/** 批量角色变更项 —— 对应 PUT /api/admin/admins/batch 请求体元素 */
+export interface AdminRoleChange {
+  userId: number
+  newRole: RoleKey
 }
 
 /**
- * 用户状态枚举 —— 对应后端 com.cloud.backend.enums.UserStatus。
- * DISABLED=0：手动禁用的用户（不可登录）
- * NORMAL=1：正常状态
- * LOCKED=2：登录失败次数过多自动锁定
- * INACTIVE=3：长期未登录
+ * 用户状态 → Tag 类型映射 —— 前端维护的 UI 展示样式。
+ * 字典接口只返回 value + label，颜色等样式属于前端职责（见 frontend-standard.md）。
  */
-export enum AdminUserStatus {
-  DISABLED = 0,
-  NORMAL = 1,
-  LOCKED = 2,
-  INACTIVE = 3,
-}
-
-/** 用户状态的中文映射，用于表格展示 */
-export const AdminUserStatusLabel: Record<AdminUserStatus, string> = {
-  [AdminUserStatus.DISABLED]: '已禁用',
-  [AdminUserStatus.NORMAL]: '正常',
-  [AdminUserStatus.LOCKED]: '已锁定',
-  [AdminUserStatus.INACTIVE]: '未活跃',
-}
-
-/** 用户状态的 Element Plus Tag 类型映射 */
-export const AdminUserStatusType: Record<AdminUserStatus, string> = {
-  [AdminUserStatus.DISABLED]: 'danger',
-  [AdminUserStatus.NORMAL]: 'success',
-  [AdminUserStatus.LOCKED]: 'warning',
-  [AdminUserStatus.INACTIVE]: 'info',
-}
-
-/**
- * 角色枚举 —— 复用 types/user.ts 中的 Role 定义，但用更准确的名字避免混淆。
- * 实际上后端 AdminUserResponse.role 返回的是 Role 枚举，前端直接用相同的数值。
- */
-export enum AdminRole {
-  USER = 0,
-  OPERATOR = 10,
-  ADMIN = 20,
-  SUPER_ADMIN = 100,
-}
-
-export const AdminRoleLabel: Record<AdminRole, string> = {
-  [AdminRole.USER]: '用户',
-  [AdminRole.OPERATOR]: '运营',
-  [AdminRole.ADMIN]: '管理员',
-  [AdminRole.SUPER_ADMIN]: '超级管理员',
+export const USER_STATUS_TAG_TYPE: Record<UserStatusKey, string> = {
+  NORMAL: 'success',
+  DISABLED: 'danger',
+  LOCKED: 'warning',
+  INACTIVE: 'info',
 }

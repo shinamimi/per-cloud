@@ -20,8 +20,8 @@
         <span>存储使用概览</span>
       </template>
       <div class="usage-row">
-        <span>已使用：{{ formatBytes(stats.totalSize) }}</span>
-        <span>总配额：{{ formatBytes(stats.totalQuota) }}</span>
+        <span>已使用：{{ formatBytesAuto(stats.totalSize) }}</span>
+        <span>总配额：{{ formatBytesAuto(stats.totalQuota) }}</span>
         <span>使用率：{{ stats.usagePercent.toFixed(1) }}%</span>
       </div>
       <el-progress
@@ -39,11 +39,12 @@
  * 设计思路：
  * - 四个统计卡片使用 el-row + el-col 栅格布局响应式排列
  * - 存储使用进度条颜色随使用率变化（<60% 绿色，<80% 橙色，>=80% 红色）
- * - formatBytes 工具函数将字节转换为人类可读格式
+ * - 容量展示使用 formatBytesAuto 自动选择单位（B/KB/MB/GB/TB），只读场景不提供单位选择
  */
 import { ref, onMounted, computed } from 'vue'
-import { getDashboardStats } from '@/api/admin'
+import { getDashboardStats } from '@/api/admin/dashboard'
 import type { AdminDashboardStats } from '@/types/admin'
+import { formatBytesAuto } from '@/utils/format'
 
 const stats = ref<AdminDashboardStats>({
   userCount: 0,
@@ -56,16 +57,9 @@ const stats = ref<AdminDashboardStats>({
 const statsCards = computed(() => [
   { label: '用户总数', value: stats.value.userCount },
   { label: '文件总数', value: stats.value.fileCount },
-  { label: '存储总量', value: formatBytes(stats.value.totalSize) },
-  { label: '配额总量', value: formatBytes(stats.value.totalQuota) },
+  { label: '存储总量', value: formatBytesAuto(stats.value.totalSize) },
+  { label: '配额总量', value: formatBytesAuto(stats.value.totalQuota) },
 ])
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
-}
 
 const usageColor = computed(() => {
   const pct = stats.value.usagePercent

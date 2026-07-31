@@ -1,15 +1,18 @@
 <template>
   <!--
     AdminAdminView —— 管理员账户管理页面。
-    仅 SUPER_ADMIN 可访问（后端 SecurityConfig 限制 /api/admin/admins/**），
-    用于创建/删除 ADMIN 角色用户，或修改其角色。
+    仅 SUPER_ADMIN 可访问（后端 SecurityConfig 限制 /api/admin/admins/**）。
+    提供两种管理方式（docs/component-transfer.md）：
+    - 「添加管理员」入口：弹出穿梭器，批量调整候选人角色
+    - 「创建管理员」对话框：单个创建管理员账户（与穿梭器并存）
   -->
   <div class="admin-admins">
     <h2 class="page-title">管理员管理</h2>
 
     <!-- 操作栏 -->
     <div class="action-bar">
-      <el-button type="primary" @click="openCreateDialog">创建管理员</el-button>
+      <el-button type="primary" @click="openTransferDialog">添加管理员</el-button>
+      <el-button @click="openCreateDialog">创建管理员</el-button>
     </div>
 
     <!-- 管理员列表 -->
@@ -21,7 +24,7 @@
         <el-table-column prop="nickname" label="昵称" min-width="120" />
         <el-table-column label="角色" width="130">
           <template #default="{ row }">
-            <el-tag :type="row.role === 100 ? 'danger' : 'warning'" size="small">
+            <el-tag :type="row.role === 'SUPER_ADMIN' ? 'danger' : 'warning'" size="small">
               {{ roleLabel(row.role) }}
             </el-tag>
           </template>
@@ -41,6 +44,25 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 穿梭器对话框（添加管理员） -->
+    <el-dialog v-model="transferDialog.visible" title="添加管理员" width="680px" :close-on-click-modal="false">
+      <!--
+        加载中：候选列表/管理员列表尚未返回时不渲染 Transfer，
+        避免左右列表误显示 0 误导用户；用骨架屏提示数据加载中。
+      -->
+      <div v-if="transferDialog.loading" class="transfer-loading">
+        <el-skeleton :rows="6" animated />
+      </div>
+      <Transfer
+        v-else
+        :candidates="transferDialog.candidates"
+        :selected="transferDialog.selected"
+        :role-options="transferRoleOptions"
+        @confirm="handleTransferConfirm"
+        @cancel="transferDialog.visible = false"
+      />
+    </el-dialog>
 
     <!-- 创建管理员对话框 -->
     <el-dialog v-model="createDialog.visible" title="创建管理员" width="480px" :close-on-click-modal="false">
@@ -64,8 +86,12 @@
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="createDialog.form.role" style="width: 100%">
-            <el-option label="管理员" :value="20" />
-            <el-option label="超级管理员" :value="100" />
+            <el-option
+              v-for="opt in transferRoleOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -82,14 +108,18 @@
           <span>{{ editRoleDialog.target?.username }}</span>
         </el-form-item>
         <el-form-item label="当前角色">
-          <el-tag :type="editRoleDialog.target?.role === 100 ? 'danger' : 'warning'" size="small">
-            {{ roleLabel(editRoleDialog.target?.role || 20) }}
+          <el-tag :type="editRoleDialog.target?.role === 'SUPER_ADMIN' ? 'danger' : 'warning'" size="small">
+            {{ roleLabel(editRoleDialog.target?.role || 'ADMIN') }}
           </el-tag>
         </el-form-item>
         <el-form-item label="新角色">
           <el-select v-model="editRoleDialog.newRole" style="width: 100%">
-            <el-option label="管理员" :value="20" />
-            <el-option label="超级管理员" :value="100" />
+            <el-option
+              v-for="opt in transferRoleOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -105,21 +135,34 @@
 /*
  * 管理员账户管理页面。
  *
- * 设计思路：
- * 此页面涉及的操作（创建/删除/修改角色）都需要 SUPER_ADMIN 权限，
- * 后端 SecurityConfig 通过 .hasRole("SUPER_ADMIN") 限制 /api/admin/admins/**，
- * 前端不做额外校验，权限不足的请求会被后端拦截并返回 403。
+ * 设计思路（docs/component-transfer.md + frontend-standard.md）：
+ * 1. 「添加管理员」穿梭器：
+ *    - 打开时父组件拉取候选列表（GET /api/admin/admins/candidates）传入 Transfer
+ *    - 角色档位来自字典 role 组过滤（排除 USER 和 SUPER_ADMIN，剩 OPERATOR/ADMIN 两档）
+ *    - 确认后调用批量接口 PUT /api/admin/admins/batch（降级也传 USER 目标角色）
+ * 2. 「创建管理员」对话框：单个创建，与穿梭器并存，适用于需要指定账号密码的场景
+ * 3. 角色 label 从字典获取（后端已混淆：OPERATOR→管理员，ADMIN→超级管理员），
+ *    前端零二次映射；Tag 颜色属前端 UI 样式，本地维护。
+ *
+ * 权限说明：本页所有接口仅 SUPER_ADMIN 可调用，
+ * 权限不足时后端返回 403，前端不重复校验（路由层已有 requiresAdmin 粗筛）。
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAdminAccounts,
   createAdminAccount,
   deleteAdminAccount,
   updateAdminRole,
-} from '@/api/admin'
-import type { AdminUserResponse } from '@/types/admin'
-import { AdminRole, AdminRoleLabel } from '@/types/admin'
+  getAdminCandidates,
+  updateAdminRolesBatch,
+} from '@/api/admin/admin'
+import type { AdminUserResponse, AdminCandidate, AdminRoleChange, RoleKey } from '@/types/admin'
+import { MetaGroup } from '@/types/meta'
+import { useMetaStore } from '@/stores/meta'
+import Transfer from '@/components/common/Transfer.vue'
+
+const metaStore = useMetaStore()
 
 /* ========== 数据加载 ========== */
 
@@ -137,8 +180,69 @@ async function loadAdmins() {
   }
 }
 
-function roleLabel(role: number): string {
-  return AdminRoleLabel[role as AdminRole] || '未知'
+/** 角色 label 从字典 role 组获取（后端已做显示层混淆），字典未加载时回退为原始值 */
+function roleLabel(role: RoleKey): string {
+  return metaStore.getGroup(MetaGroup.ROLE).find((opt) => opt.value === role)?.label ?? role
+}
+
+/* ========== 穿梭器（添加管理员） ========== */
+
+/**
+ * 可选角色档位 —— 来自字典 role 组过滤。
+ * 排除 USER（普通用户档）和 SUPER_ADMIN（不暴露在此页 UI），
+ * 剩余 OPERATOR（显示"管理员"）与 ADMIN（显示"超级管理员"）两档。
+ */
+const transferRoleOptions = computed(() =>
+  metaStore
+    .getGroup(MetaGroup.ROLE)
+    .filter((opt) => opt.value !== 'USER' && opt.value !== 'SUPER_ADMIN'),
+)
+
+const transferDialog = reactive({
+  visible: false,
+  /** 数据加载中 —— 为 true 时不渲染 Transfer，显示骨架屏 */
+  loading: false,
+  candidates: [] as AdminCandidate[],
+  selected: [] as { id: number; username: string; nickname: string }[],
+})
+
+/**
+ * 打开穿梭器：并行拉取候选列表与当前管理员列表，传入 Transfer。
+ * 数据未就绪时 loading=true，dialog 内显示骨架屏而非空列表。
+ */
+async function openTransferDialog() {
+  transferDialog.visible = true
+  transferDialog.loading = true
+  try {
+    const [candidates, adminList] = await Promise.all([getAdminCandidates(), getAdminAccounts()])
+    transferDialog.candidates = candidates
+    transferDialog.selected = adminList.map((a) => ({
+      id: a.id,
+      username: a.username,
+      nickname: a.nickname,
+    }))
+  } catch {
+    // 拉取失败直接关闭对话框（错误信息已在拦截器中提示）
+    transferDialog.visible = false
+  } finally {
+    transferDialog.loading = false
+  }
+}
+
+/** 穿梭器确认：调用批量角色变更接口后刷新列表 */
+async function handleTransferConfirm(changes: AdminRoleChange[]) {
+  if (changes.length === 0) {
+    transferDialog.visible = false
+    return
+  }
+  try {
+    await updateAdminRolesBatch(changes)
+    ElMessage.success(`已批量更新 ${changes.length} 个用户的角色`)
+    transferDialog.visible = false
+    await loadAdmins()
+  } catch {
+    // 错误已在拦截器中提示
+  }
 }
 
 /* ========== 创建管理员 ========== */
@@ -151,12 +255,18 @@ const createDialog = reactive({
     password: '',
     email: '',
     nickname: '',
-    role: AdminRole.ADMIN,
+    role: 'OPERATOR' as RoleKey,
   },
 })
 
 function openCreateDialog() {
-  createDialog.form = { username: '', password: '', email: '', nickname: '', role: AdminRole.ADMIN }
+  createDialog.form = {
+    username: '',
+    password: '',
+    email: '',
+    nickname: '',
+    role: 'OPERATOR',
+  }
   createDialog.visible = true
 }
 
@@ -186,12 +296,12 @@ const editRoleDialog = reactive({
   visible: false,
   loading: false,
   target: null as AdminUserResponse | null,
-  newRole: AdminRole.ADMIN,
+  newRole: 'OPERATOR' as RoleKey,
 })
 
 function openEditRoleDialog(row: AdminUserResponse) {
   editRoleDialog.target = row
-  editRoleDialog.newRole = row.role as AdminRole
+  editRoleDialog.newRole = row.role === 'SUPER_ADMIN' ? 'ADMIN' : row.role
   editRoleDialog.visible = true
 }
 
@@ -233,7 +343,10 @@ async function handleDelete(row: AdminUserResponse) {
   }
 }
 
-onMounted(loadAdmins)
+onMounted(() => {
+  metaStore.loadIfNeeded()
+  loadAdmins()
+})
 </script>
 
 <style scoped>
@@ -249,6 +362,13 @@ onMounted(loadAdmins)
 }
 
 .action-bar {
+  display: flex;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+/* 穿梭器数据加载中的骨架屏容器 */
+.transfer-loading {
+  padding: 12px;
 }
 </style>

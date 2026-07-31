@@ -25,7 +25,14 @@ SUPER_ADMIN (100)  >  ADMIN (20)  >  OPERATOR (10)  >  USER (0)
 | 操作日志 | ✅ | ✅ | ✅ | — |
 | 仪表盘 | ✅ | ✅ | ✅ | — |
 
-## 三、需要做的事
+## 三、SUPER_ADMIN 保护规则
+
+- 管理端列表（`GET /api/admin/admins`）**不返回** SUPER_ADMIN，UI 不展示
+- **拒绝创建** SUPER_ADMIN：`POST /api/admin/admins` 校验 role ≠ SUPER_ADMIN
+- **拒绝操作** SUPER_ADMIN：改角色（单个/批量）、删除等写入接口，目标为 SUPER_ADMIN 一律拒绝；批量/单个改角色均不可授予 SUPER_ADMIN
+- 字典接口 role 组不暴露 SUPER_ADMIN
+
+## 四、需要做的事
 
 1. **配置角色继承**：新增 `RoleHierarchyConfig`，定义 SUPER_ADMIN > ADMIN > OPERATOR > USER。Spring Security 目前是精确匹配（`hasRole("ADMIN")` 不匹配 `ROLE_SUPER_ADMIN`），配置后高级角色自动拥有低级角色的全部权限。
 
