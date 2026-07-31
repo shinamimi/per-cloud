@@ -16,6 +16,13 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
+/*
+ * 为什么管理后台路由不要求 meta.layout？
+ * 管理后台页面使用 MainLayout（和其他业务页面相同），
+ * 通过侧边栏的 el-menu 子菜单导航。
+ * 路由默认 meta.layout 为 'main'（在 App.vue 的 layout 计算中 fallback）。
+ */
+
 const routes: RouteRecordRaw[] = [
   /*
    * 认证页面组 —— 使用 AuthLayout（居中卡片式布局）
@@ -48,6 +55,29 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/welcome/WelcomeView.vue'),
     meta: { layout: 'main', title: '我的文件', requiresAuth: true },
   },
+
+  /*
+   * 管理后台页面组 —— 使用 MainLayout，需要 ADMIN 及以上角色
+   */
+  {
+    path: '/admin',
+    name: 'AdminDashboard',
+    component: () => import('@/views/admin/AdminDashboardView.vue'),
+    meta: { layout: 'main', title: '仪表盘', requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    component: () => import('@/views/admin/AdminUserView.vue'),
+    meta: { layout: 'main', title: '用户管理', requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/admins',
+    name: 'AdminAdmins',
+    component: () => import('@/views/admin/AdminAdminView.vue'),
+    meta: { layout: 'main', title: '管理员管理', requiresAuth: true, requiresAdmin: true },
+  },
+
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -69,14 +99,29 @@ const router = createRouter({
  * 先检查是否已登录（通过 userStore.isLoggedIn），未登录则拦截跳转到 /login。
  * 同时将目标路由的 query 参数拼接为 ?redirect=xxx，登录后自动跳回。
  */
+/*
+ * 导航守卫 —— 两层校验：
+ * 1. 需登录的页面 → 未登录则重定向到 /login
+ * 2. 需管理员的页面（requiresAdmin）→ 非 ADMIN 及以上角色则重定向到 /files
+ *
+ * 为什么不做更细粒度的角色校验？
+ * requiresAdmin 只检查 role >= ADMIN，后端 SecurityConfig 会进一步拦截权限不足的请求。
+ * 前端仅做粗粒度的路由保护，避免非管理员看到管理入口。
+ */
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return
   }
+
+  if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    next({ name: 'Files' })
+    return
+  }
+
+  next()
 })
 
 export default router

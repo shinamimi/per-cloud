@@ -24,7 +24,7 @@
       </div>
     </el-header>
     <el-container class="main-body">
-      <el-aside width="200px" class="main-aside">
+      <el-aside width="220px" class="main-aside">
         <el-menu
           :default-active="currentRoute"
           router
@@ -33,6 +33,15 @@
           <el-menu-item index="/files">
             <el-icon><Folder /></el-icon>
             <span>我的文件</span>
+          </el-menu-item>
+
+          <!--
+            管理员菜单组 —— 仅在当前用户 role >= ADMIN 时显示。
+            使用 v-if="userStore.isAdmin" 阻止非管理员看到管理入口。
+          -->
+          <el-menu-item v-if="userStore.isAdmin" index="/admin">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>管理后台</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
