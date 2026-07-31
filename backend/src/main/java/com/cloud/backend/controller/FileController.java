@@ -20,6 +20,7 @@ import com.cloud.backend.dto.file.SecUploadResponse;
 import com.cloud.backend.dto.file.UploadInitRequest;
 import com.cloud.backend.dto.file.UploadInitResponse;
 import com.cloud.backend.dto.file.UploadMergeRequest;
+import com.cloud.backend.dto.file.UploadPolicyResponse;
 import com.cloud.backend.dto.file.UploadProgressResponse;
 import com.cloud.backend.dto.file.UploadSecRequest;
 import com.cloud.backend.enums.OperationType;
@@ -105,6 +106,11 @@ public class FileController {
     @PostMapping("/upload/init")
     public Result<UploadInitResponse> uploadInit(@Valid @RequestBody UploadInitRequest request) {
         return Result.success(uploadService.init(AuthorizationPolicy.getCurrentUserId(), request));
+    }
+
+    @GetMapping("/upload/policy")
+    public Result<UploadPolicyResponse> uploadPolicy() {
+        return Result.success(uploadService.policy(AuthorizationPolicy.getCurrentUserId()));
     }
 
     @PostMapping("/upload/chunk")

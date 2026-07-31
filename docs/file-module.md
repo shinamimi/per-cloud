@@ -23,6 +23,7 @@
 | GET | `/api/files/tree` | 目录树 |
 | POST | `/api/files/directory` | 创建目录 |
 | POST | `/api/files/upload/init` | 初始化分片上传 |
+| GET | `/api/files/upload/policy` | 上传策略（单文件上限 + 并发数，VIP 差异化） |
 | POST | `/api/files/upload/chunk` | 上传分片 |
 | POST | `/api/files/upload/merge` | 合并分片 |
 | POST | `/api/files/upload/sec` | 秒传 |

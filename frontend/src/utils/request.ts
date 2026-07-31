@@ -44,6 +44,15 @@ request.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    /*
+     * FormData 请求（分片上传）必须由浏览器自动生成 multipart boundary，
+     * 因此要移除全局默认的 Content-Type: application/json。
+     * 否则 axios 的 transformRequest（defaults/index.js）会把 FormData
+     * 用 formDataToJSON 序列化成 JSON，后端永远收不到真实的多分片文件，上传必然失败。
+     */
+    if (config.data instanceof FormData && config.headers) {
+      config.headers.delete('Content-Type')
+    }
     return config
   },
   (error) => Promise.reject(error),

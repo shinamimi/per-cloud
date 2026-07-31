@@ -17,8 +17,9 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { connectWs, disconnectWs, onProgressMessage, isWsConnected } from '@/utils/ws'
 import { uploadOneFile } from '@/utils/upload'
-import { batchDownload } from '@/api/file'
+import { batchDownload, getUploadPolicy } from '@/api/file'
 import { downloadByUrl } from '@/utils/download'
+import { formatBytesAuto } from '@/utils/format'
 import type { ProgressMessage, TransferTask } from '@/types/file'
 
 /** 任务 ID 生成（上传任务在 init 前尚无后端 uploadId，先用本地 ID 占位） */
@@ -120,13 +121,42 @@ export const useUploadStore = defineStore('upload', () => {
 
   /**
    * 上传一组文件到指定目录。
-   * 每个文件独立任务、串行执行（避免并发数限制与进度混乱）。
+   *
+   * 流程：
+   * 1. 先拉取上传策略（单文件大小上限 / 并发任务数，VIP 差异化）
+   * 2. 超过单文件上限的文件：直接拒绝，不进入传输队列
+   * 3. 合法文件入队（pending = 等待中），以并发工作池执行：
+   *    - 同时最多 maxConcurrent 个任务在上传
+   *    - 其余任务保持等待中，有空闲槽位才被调度
    */
   async function uploadFiles(files: File[], parentId: number): Promise<void> {
     if (files.length === 0) return
     ensureConnected()
 
-    for (const file of files) {
+    // 拉取上传策略；失败时退化为串行（不预检大小），保证功能可用
+    let maxSize = 0
+    let maxConcurrent = 1
+    try {
+      const policy = await getUploadPolicy()
+      maxSize = policy.maxSize
+      maxConcurrent = policy.maxConcurrent > 0 ? policy.maxConcurrent : 1
+    } catch {
+      maxSize = 0
+      maxConcurrent = 1
+    }
+
+    // 超过单文件大小上限的直接拒绝，不入传输队列
+    const oversized = files.filter((f) => maxSize > 0 && f.size > maxSize)
+    const accepted = files.filter((f) => !oversized.includes(f))
+    if (oversized.length > 0) {
+      ElMessage.error(
+        `以下文件超过单文件大小上限（${formatBytesAuto(maxSize)}），已跳过：${oversized.map((f) => f.name).join('、')}`,
+      )
+    }
+    if (accepted.length === 0) return
+
+    // 合法文件入队：全部先标记等待中，由并发工作池调度
+    const queue: Array<{ file: File; task: TransferTask }> = accepted.map((file) => {
       const task: TransferTask = {
         id: nextTaskId(),
         name: file.name,
@@ -136,29 +166,42 @@ export const useUploadStore = defineStore('upload', () => {
         progress: 0,
       }
       tasks.value.unshift(task)
+      return { file, task }
+    })
 
-      try {
-        const result = await uploadOneFile(file, parentId, {
-          onStatus: (status) => {
-            task.status = status
-          },
-          onProgress: (percentage) => {
-            task.progress = percentage
-          },
-          onUploadId: (uploadId) => {
-            task.uploadId = uploadId
-          },
-        })
-        task.status = 'completed'
-        task.progress = 100
-        if (result.mode === 'sec') {
-          ElMessage.success(`「${file.name}」秒传完成`)
+    // 并发工作池：同时最多 maxConcurrent 个，其余等待
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < queue.length) {
+        const item = queue[cursor]
+        cursor += 1
+        const { file, task } = item
+        try {
+          const result = await uploadOneFile(file, parentId, {
+            onStatus: (status) => {
+              task.status = status
+            },
+            onProgress: (percentage) => {
+              task.progress = percentage
+            },
+            onUploadId: (uploadId) => {
+              task.uploadId = uploadId
+            },
+          })
+          task.status = 'completed'
+          task.progress = 100
+          if (result.mode === 'sec') {
+            ElMessage.success(`「${file.name}」秒传完成`)
+          }
+        } catch (e) {
+          task.status = 'failed'
+          task.error = e instanceof Error ? e.message : '上传失败'
         }
-      } catch (e) {
-        task.status = 'failed'
-        task.error = e instanceof Error ? e.message : '上传失败'
       }
     }
+
+    const workers = Array.from({ length: Math.min(maxConcurrent, queue.length) }, () => worker())
+    await Promise.all(workers)
   }
 
   /* ========== 批量打包下载 ========== */

@@ -8,6 +8,7 @@ import com.cloud.backend.dto.file.FileNodeResponse;
 import com.cloud.backend.dto.file.SecUploadResponse;
 import com.cloud.backend.dto.file.UploadInitRequest;
 import com.cloud.backend.dto.file.UploadInitResponse;
+import com.cloud.backend.dto.file.UploadPolicyResponse;
 import com.cloud.backend.dto.file.UploadProgressResponse;
 import com.cloud.backend.dto.file.UploadSecRequest;
 import com.cloud.backend.entity.File;
@@ -78,6 +79,15 @@ public class UploadServiceImpl implements UploadService {
     }
 
     /* ==================== init ==================== */
+
+    @Override
+    public UploadPolicyResponse policy(Long userId) {
+        boolean vip = isVip(userId);
+        UploadPolicyResponse response = new UploadPolicyResponse();
+        response.setMaxSize(vip ? adminSettingsService.getMaxSizeVip() : adminSettingsService.getMaxSizeUser());
+        response.setMaxConcurrent(vip ? adminSettingsService.getMaxConcurrentVip() : adminSettingsService.getMaxConcurrentUser());
+        return response;
+    }
 
     @Override
     public UploadInitResponse init(Long userId, UploadInitRequest request) {

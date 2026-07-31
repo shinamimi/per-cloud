@@ -42,6 +42,13 @@
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column prop="nickname" label="昵称" min-width="120" />
+        <el-table-column label="权限等级" width="110">
+          <template #default="{ row }">
+            <el-tag :type="roleTagType(row.role)" size="small">
+              {{ roleLabel(row.role) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="statusTagType(row.status)" size="small">
@@ -195,7 +202,7 @@ import {
   updateUserQuota,
   resetUserPassword,
 } from '@/api/admin/user'
-import type { AdminUserResponse, UserStatusKey } from '@/types/admin'
+import type { AdminUserResponse, RoleKey, UserStatusKey } from '@/types/admin'
 import { USER_STATUS_TAG_TYPE } from '@/types/admin'
 import { MetaGroup } from '@/types/meta'
 import { useMetaStore } from '@/stores/meta'
@@ -261,6 +268,24 @@ function statusLabel(status: UserStatusKey): string {
 /** Tag 颜色属于前端 UI 样式，前端维护映射（字典不返回颜色） */
 function statusTagType(status: UserStatusKey): string {
   return USER_STATUS_TAG_TYPE[status] ?? 'info'
+}
+
+/** 角色 label 从字典 role 组获取；字典未加载时回退为原始字符串 */
+function roleLabel(role: RoleKey): string {
+  return (
+    metaStore.getGroup(MetaGroup.ROLE).find((opt) => opt.value === role)?.label ?? role
+  )
+}
+
+/** 角色 Tag 颜色属于前端 UI 样式，前端维护映射 */
+function roleTagType(role: RoleKey): string {
+  const map: Record<RoleKey, string> = {
+    USER: 'info',
+    OPERATOR: 'warning',
+    ADMIN: 'danger',
+    SUPER_ADMIN: 'danger',
+  }
+  return map[role] ?? 'info'
 }
 
 /* ========== 工具函数 ========== */

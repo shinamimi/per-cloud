@@ -25,7 +25,7 @@ public class AdminUserController {
     @GetMapping
     public Result<List<AdminUserResponse>> listUsers() {
         List<AdminUserResponse> users = userService.findAll().stream()
-                .filter(u -> u.getRole() != Role.ADMIN && u.getRole() != Role.SUPER_ADMIN)
+                .filter(u -> u.getRole() != Role.SUPER_ADMIN)
                 .map(u -> new AdminUserResponse(u.getId(), u.getUsername(), u.getEmail(),
                         u.getNickname(), u.getAvatar(), u.getRole(), u.getQuota(),
                         userService.calculateTotalQuota(u), u.getAdminBonusQuota(), u.getRewardQuota(),

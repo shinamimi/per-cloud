@@ -25,6 +25,7 @@ import type {
   UploadInitRequest,
   UploadInitResponse,
   UploadMergeRequest,
+  UploadPolicy,
   UploadProgressResponse,
 } from '@/types/file'
 
@@ -46,6 +47,11 @@ export function createDirectory(data: CreateDirectoryRequest): Promise<FileItem>
 /** 初始化分片上传 —— POST /api/files/upload/init（校验配额/单文件上限/并发任务数） */
 export function uploadInit(data: UploadInitRequest): Promise<UploadInitResponse> {
   return request.post('/api/files/upload/init', data)
+}
+
+/** 上传策略 —— GET /api/files/upload/policy（单文件上限 + 并发数，VIP 差异化） */
+export function getUploadPolicy(): Promise<UploadPolicy> {
+  return request.get('/api/files/upload/policy')
 }
 
 /**

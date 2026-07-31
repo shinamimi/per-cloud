@@ -102,6 +102,16 @@ export interface UploadInitResponse {
   totalChunks: number
 }
 
+/**
+ * 上传策略响应 —— GET /api/files/upload/policy（VIP 差异化）。
+ * - maxSize: 单文件大小上限（字节），0 表示不限制
+ * - maxConcurrent: 上传并发任务数上限，0 表示不限制
+ */
+export interface UploadPolicy {
+  maxSize: number
+  maxConcurrent: number
+}
+
 /** 上传进度响应 —— GET /api/files/upload/progress/{uploadId}（断点续传） */
 export interface UploadProgressResponse {
   uploadId: string
