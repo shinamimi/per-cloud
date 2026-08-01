@@ -68,9 +68,14 @@ export const useUploadStore = defineStore('upload', () => {
   /**
    * 懒建立连接：首次发起传输任务时调用。
    * 上传消息按 uploadId 匹配队列任务，下载消息按 taskId 匹配。
+   * 连接失败不影响页面使用（进度退化为本地回退），因此这里兜底吞掉异常。
    */
   function ensureConnected(): void {
-    if (!isWsConnected()) connectWs()
+    try {
+      if (!isWsConnected()) connectWs()
+    } catch {
+      // 连接失败仅影响实时进度推送，不应阻断页面挂载/上传流程
+    }
   }
 
   /** 处理后端进度消息 */

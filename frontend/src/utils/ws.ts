@@ -37,6 +37,18 @@ export function onProgressMessage(handler: MessageHandler): () => void {
 }
 
 /**
+ * 解析为绝对 WebSocket URL。
+ * Safari 的 WebSocket 构造器要求 ws:// 或 wss:// 绝对地址（相对路径会抛
+ * "Wrong url scheme for WebSocket"），Chrome 会自动解析相对路径，因此必须显式拼全。
+ * 派生规则：https 页面 → wss，其余 → ws；host 沿用当前页面。
+ */
+function resolveWsUrl(base: string): string {
+  if (/^wss?:\/\//i.test(base)) return base
+  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${scheme}//${window.location.host}${base.startsWith('/') ? '' : '/'}${base}`
+}
+
+/**
  * 建立（或复用）WebSocket 连接。
  * token 从 localStorage 读取，后端拦截器按 token 参数校验身份。
  * 连接断开时自动重连一次（令牌仍有效时）；失败后由调用方择机重试。
@@ -49,7 +61,7 @@ export function connectWs(): void {
   const token = localStorage.getItem('token')
   if (!token) return
 
-  const url = `${WS_BASE}/progress?token=${encodeURIComponent(token)}`
+  const url = `${resolveWsUrl(WS_BASE)}/progress?token=${encodeURIComponent(token)}`
   socket = new WebSocket(url)
   connected = false
 
