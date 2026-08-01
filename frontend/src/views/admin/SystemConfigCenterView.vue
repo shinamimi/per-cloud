@@ -308,6 +308,8 @@
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" :loading="saving.log" @click="saveLog">保存日志配置</el-button>
+                <el-button @click="openLogs('all')">查看操作日志</el-button>
+                <el-button @click="openLogs('login')">查看登录日志</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -322,6 +324,40 @@
         :target-quota-user="batchDetail.targetQuotaUser"
         :target-quota-vip="batchDetail.targetQuotaVip"
       />
+    </el-dialog>
+
+    <!-- 日志查询弹窗 -->
+    <el-dialog v-model="logDialog.visible" title="日志查询" width="900px" :close-on-click-modal="false">
+      <el-tabs v-model="logDialog.tab" @tab-change="switchLogTab">
+        <el-tab-pane label="操作日志" name="all" />
+        <el-tab-pane label="登录日志" name="login" />
+      </el-tabs>
+      <el-table v-loading="logDialog.loading" :data="logDialog.records" stripe>
+        <el-table-column label="时间" prop="createdAt" width="170" />
+        <el-table-column label="用户" width="140">
+          <template #default="{ row }">
+            {{ row.username || `#${row.userId}` }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-tag size="small" type="info">{{ opLabel(row.operation) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="详情" prop="detail" show-overflow-tooltip />
+        <el-table-column label="IP" prop="ip" width="140" />
+      </el-table>
+      <div class="pager-row">
+        <el-pagination
+          v-model:current-page="logDialog.page"
+          v-model:page-size="logDialog.size"
+          layout="total, prev, pager, next, sizes"
+          :total="logDialog.total"
+          :page-sizes="[10, 20, 50, 100]"
+          @current-change="loadLogs"
+          @size-change="onLogSizeChange"
+        />
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -350,11 +386,13 @@ import {
   updateMailSettings,
   updateLogSettings,
   quotaBatchUsers,
+  queryLogs,
 } from '@/api/admin/settings'
 import type {
   AdminUserResponse,
   CacheSettings,
   FileSettings,
+  LogItem,
   LogSettings,
   MailSettings,
   SessionSettings,
@@ -393,9 +431,9 @@ const saving = reactive({
 
 const upload = reactive({
   maxSizeUser: 0,
-  maxSizeUserUnit: 'GB' as SizeUnit,
+  maxSizeUserUnit: 'MB' as SizeUnit,
   maxSizeVip: 0,
-  maxSizeVipUnit: 'GB' as SizeUnit,
+  maxSizeVipUnit: 'MB' as SizeUnit,
   maxConcurrentUser: 1,
   maxConcurrentVip: 1,
 })
@@ -480,6 +518,18 @@ const batchDetail = reactive({
   users: [] as AdminUserResponse[],
   targetQuotaUser: 0,
   targetQuotaVip: 0,
+})
+
+/* ========== 日志查询状态 ========== */
+
+const logDialog = reactive({
+  visible: false,
+  tab: 'all' as 'all' | 'login',
+  loading: false,
+  records: [] as LogItem[],
+  total: 0,
+  page: 1,
+  size: 20,
 })
 
 /* ========== 数据加载 ========== */
@@ -744,6 +794,49 @@ function showBatchDetail() {
   batchDetail.visible = true
 }
 
+/* ========== 日志查询 ========== */
+
+/** 打开日志弹窗（type：all=操作日志，login=登录日志） */
+function openLogs(type: 'all' | 'login') {
+  logDialog.tab = type
+  logDialog.page = 1
+  logDialog.visible = true
+  loadLogs()
+}
+
+function switchLogTab() {
+  logDialog.page = 1
+  loadLogs()
+}
+
+function onLogSizeChange() {
+  logDialog.page = 1
+  loadLogs()
+}
+
+async function loadLogs() {
+  logDialog.loading = true
+  try {
+    const res = await queryLogs({
+      operation: logDialog.tab === 'login' ? 'LOGIN' : undefined,
+      page: logDialog.page,
+      size: logDialog.size,
+    })
+    logDialog.records = res.records
+    logDialog.total = res.total
+  } catch {
+    // 错误已在拦截器中提示
+  } finally {
+    logDialog.loading = false
+  }
+}
+
+/** 操作类型字典 label 兜底（枚举名直显） */
+function opLabel(operation: string): string {
+  const opt = metaStore.getGroup(MetaGroup.OPERATION_TYPE).find((o) => o.value === operation)
+  return opt?.label ?? operation
+}
+
 onMounted(() => {
   metaStore.loadIfNeeded()
   loadSettings().catch(() => {
@@ -805,5 +898,11 @@ onMounted(() => {
   font-size: 13px;
   color: #909399;
   margin-left: 4px;
+}
+
+.pager-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

@@ -237,6 +237,25 @@ export interface LogSettingsRequest {
   loginDays: number | null
 }
 
+/** 日志查询结果项（GET /api/admin/settings/logs） */
+export interface LogItem {
+  id: number
+  userId: number
+  username: string | null
+  operation: string
+  detail: string | null
+  ip: string | null
+  createdAt: string
+}
+
+/** 日志分页返回 */
+export interface LogPageResponse {
+  records: LogItem[]
+  total: number
+  page: number
+  size: number
+}
+
 /** GET /api/admin/settings 全量返回（按分组） */
 export interface AdminSettingsResponse {
   upload: UploadSettings

@@ -1,8 +1,12 @@
 package com.cloud.backend.controller.admin;
 
+import com.cloud.backend.dto.Page;
+import com.cloud.backend.dto.PageRequest;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.dto.admin.*;
+import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.service.admin.AdminSettingsService;
+import com.cloud.backend.service.system.OperationLogService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,9 +26,11 @@ public class AdminSettingsController {
     private static final String PASSWORD_MASK = "********";
 
     private final AdminSettingsService adminSettingsService;
+    private final OperationLogService operationLogService;
 
-    public AdminSettingsController(AdminSettingsService adminSettingsService) {
+    public AdminSettingsController(AdminSettingsService adminSettingsService, OperationLogService operationLogService) {
         this.adminSettingsService = adminSettingsService;
+        this.operationLogService = operationLogService;
     }
 
     /** 返回全部分组配置（SMTP 密码脱敏） */
@@ -46,10 +52,10 @@ public class AdminSettingsController {
                 "loginLockDurationMinutes", adminSettingsService.getLoginLockDurationMinutes(),
                 "resetPasswordTtlMinutes", adminSettingsService.getResetPasswordTtlMinutes()));
         settings.put("cache", Map.of(
-                "captcha", adminSettingsService.getCaptchaTtlSeconds(),
+                "captcha", adminSettingsService.getCacheCaptchaTtlSeconds(),
                 "loginAttempt", adminSettingsService.getLoginAttemptTtlSeconds(),
                 "blacklist", adminSettingsService.getBlacklistTokenTtlSeconds(),
-                "filePreview", 0L,
+                "filePreview", adminSettingsService.getFilePreviewTtlSeconds(),
                 "downloadLinkMinutes", adminSettingsService.getDownloadLinkTtlMinutes()));
         settings.put("system", Map.of(
                 "allowRegister", adminSettingsService.isAllowRegister(),
@@ -58,7 +64,11 @@ public class AdminSettingsController {
                 "enableCaptcha", adminSettingsService.isCaptchaEnabled(),
                 "enableOperationLog", adminSettingsService.isOperationLogEnabled()));
         settings.put("file", Map.of(
-                "recycleBinDays", adminSettingsService.getRecycleBinDays()));
+                "recycleBinDays", adminSettingsService.getRecycleBinDays(),
+                "shareDefaultValidDays", adminSettingsService.getShareDefaultValidDays(),
+                "shareMaxValidDays", adminSettingsService.getShareMaxValidDays(),
+                "shareMaxCountPerFile", adminSettingsService.getShareMaxCountPerFile(),
+                "shareDefaultRequirePassword", adminSettingsService.isShareDefaultRequirePassword()));
         settings.put("mail", mailGroup());
         settings.put("log", Map.of(
                 "operationDays", adminSettingsService.getOperationLogDays(),
@@ -164,5 +174,19 @@ public class AdminSettingsController {
     @PostMapping("/users/quota-batch")
     public Result<QuotaBatchResponse> quotaBatch(@Valid @RequestBody QuotaBatchRequest request) {
         return Result.success(adminSettingsService.quotaBatch(request));
+    }
+
+    /**
+     * 日志分页查询（审计）。
+     * operation：可选，如 LOGIN 表示登录日志；不传返回全部操作日志。
+     * 记录按创建时间倒序，join 用户表带出用户名。
+     */
+    @GetMapping("/logs")
+    public Result<Page<LogItem>> queryLogs(@RequestParam(required = false) OperationType operation,
+                                           @RequestParam(defaultValue = "1") int page,
+                                           @RequestParam(defaultValue = "20") int size) {
+        LogFilterRequest filter = new LogFilterRequest();
+        filter.setOperation(operation);
+        return Result.success(operationLogService.listByFilterPaged(filter, new PageRequest(page, size)));
     }
 }

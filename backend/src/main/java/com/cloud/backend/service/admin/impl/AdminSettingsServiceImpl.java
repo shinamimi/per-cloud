@@ -191,6 +191,11 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     /* ==================== 缓存策略 ==================== */
 
     @Override
+    public long getCacheCaptchaTtlSeconds() {
+        return readLong(KEY_CACHE_CAPTCHA, 300);
+    }
+
+    @Override
     public long getLoginAttemptTtlSeconds() {
         return readLong(KEY_CACHE_LOGIN_ATTEMPT, 30 * 60);
     }
@@ -198,6 +203,11 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     @Override
     public long getBlacklistTokenTtlSeconds() {
         return readLong(KEY_CACHE_BLACKLIST, getAccessTokenTtlMs() / 1000);
+    }
+
+    @Override
+    public long getFilePreviewTtlSeconds() {
+        return readLong(KEY_CACHE_FILE_PREVIEW, 0);
     }
 
     @Override
@@ -256,6 +266,26 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     @Override
     public int getRecycleBinDays() {
         return readInt(KEY_RECYCLE_BIN_DAYS, fileProperties.getRecycleDays());
+    }
+
+    @Override
+    public int getShareDefaultValidDays() {
+        return readInt(KEY_SHARE_DEFAULT_VALID_DAYS, 7);
+    }
+
+    @Override
+    public int getShareMaxValidDays() {
+        return readInt(KEY_SHARE_MAX_VALID_DAYS, 30);
+    }
+
+    @Override
+    public int getShareMaxCountPerFile() {
+        return readInt(KEY_SHARE_MAX_COUNT_PER_FILE, 0);
+    }
+
+    @Override
+    public boolean isShareDefaultRequirePassword() {
+        return readBoolean(KEY_SHARE_DEFAULT_REQUIRE_PASSWORD, false);
     }
 
     @Override

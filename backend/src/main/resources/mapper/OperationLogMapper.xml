@@ -46,4 +46,31 @@
         </choose>
     </delete>
 
+    <!-- 分页查询条件（findPaged / countByFilter 共用） -->
+    <sql id="filterWhere">
+        <where>
+            <if test="filter.userId != null">AND l.user_id = #{filter.userId}</if>
+            <if test="filter.operation != null">AND l.operation = #{filter.operation}</if>
+            <if test="filter.targetType != null">AND l.target_type = #{filter.targetType}</if>
+            <if test="filter.startTime != null">AND l.created_at &gt;= #{filter.startTime}</if>
+            <if test="filter.endTime != null">AND l.created_at &lt;= #{filter.endTime}</if>
+        </where>
+    </sql>
+
+    <!-- 管理端分页查询：join 用户表带出用户名（登录日志可复用，传 operation=LOGIN） -->
+    <select id="findPaged" resultType="com.cloud.backend.dto.admin.LogItem">
+        SELECT l.id, l.user_id, u.username, l.operation, l.detail, l.ip, l.created_at
+        FROM t_operation_log l
+        LEFT JOIN t_user u ON u.id = l.user_id
+        <include refid="filterWhere"/>
+        ORDER BY l.created_at DESC
+        LIMIT #{page.offset}, #{page.size}
+    </select>
+
+    <select id="countByFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM t_operation_log l
+        <include refid="filterWhere"/>
+    </select>
+
 </mapper>

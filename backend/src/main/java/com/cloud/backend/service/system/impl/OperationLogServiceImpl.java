@@ -1,6 +1,9 @@
 package com.cloud.backend.service.system.impl;
 
+import com.cloud.backend.dto.Page;
+import com.cloud.backend.dto.PageRequest;
 import com.cloud.backend.dto.admin.LogFilterRequest;
+import com.cloud.backend.dto.admin.LogItem;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.mapper.OperationLogMapper;
 import com.cloud.backend.service.admin.AdminSettingsService;
@@ -47,5 +50,12 @@ public class OperationLogServiceImpl implements OperationLogService {
     @Override
     public List<OperationLog> listByFilter(LogFilterRequest filter) {
         return operationLogMapper.findByFilter(filter);
+    }
+
+    @Override
+    public Page<LogItem> listByFilterPaged(LogFilterRequest filter, PageRequest pageRequest) {
+        long total = operationLogMapper.countByFilter(filter);
+        List<LogItem> records = operationLogMapper.findPaged(filter, pageRequest);
+        return new Page<>(records, total, pageRequest.getPage(), pageRequest.getSize());
     }
 }

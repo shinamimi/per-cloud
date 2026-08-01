@@ -62,11 +62,17 @@ public interface AdminSettingsService {
 
     /* ==================== 缓存策略 ==================== */
 
+    /** 验证码缓存 TTL（秒），默认 300（本期预留，未消费） */
+    long getCacheCaptchaTtlSeconds();
+
     /** 登录失败计数 TTL（秒），默认 1800 */
     long getLoginAttemptTtlSeconds();
 
     /** 黑名单 Token TTL（秒），默认取 Access Token 有效期兜底 */
     long getBlacklistTokenTtlSeconds();
+
+    /** 文件预览缓存 TTL（秒），默认 0（本期预留，未消费） */
+    long getFilePreviewTtlSeconds();
 
     /** 下载链接 TTL（分钟，presigned URL 有效期），默认 10 */
     int getDownloadLinkTtlMinutes();
@@ -99,6 +105,18 @@ public interface AdminSettingsService {
 
     /** 回收站保留天数，默认 30 */
     int getRecycleBinDays();
+
+    /** 分享默认有效期（天），默认 7 */
+    int getShareDefaultValidDays();
+
+    /** 分享最长有效期（天），默认 30 */
+    int getShareMaxValidDays();
+
+    /** 同一文件最大分享次数，默认 0（不限） */
+    int getShareMaxCountPerFile();
+
+    /** 分享默认是否要求提取码，默认 false */
+    boolean isShareDefaultRequirePassword();
 
     /** 更新文件管理配置（null 字段恢复配置默认值） */
     void updateFile(Integer recycleBinDays, Integer shareDefaultValidDays, Integer shareMaxValidDays,

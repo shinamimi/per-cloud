@@ -16,6 +16,7 @@ import type {
   FileSettingsRequest,
   MailSettingsRequest,
   LogSettingsRequest,
+  LogPageResponse,
 } from '@/types/admin'
 
 /** 获取全部分组配置（SMTP 密码已脱敏） */
@@ -66,4 +67,11 @@ export function updateLogSettings(data: LogSettingsRequest): Promise<void> {
 /** 老用户配额批量调整（preview=true 仅预览明细，false 执行） */
 export function quotaBatchUsers(data: QuotaBatchRequest): Promise<QuotaBatchResponse> {
   return request.post('/api/admin/settings/users/quota-batch', data)
+}
+
+/** 日志分页查询（operation 如 LOGIN 表示登录日志，不传返回全部操作日志） */
+export function queryLogs(
+  params: { operation?: string; page?: number; size?: number },
+): Promise<LogPageResponse> {
+  return request.get('/api/admin/settings/logs', { params })
 }
