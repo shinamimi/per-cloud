@@ -130,7 +130,7 @@ export const useUploadStore = defineStore('upload', () => {
   /* ========== 上传 ========== */
 
   /**
-   * 上传一组文件到指定目录。
+   * 上传一组文件到指定目录（后台执行，不等待完成）。
    *
    * 流程：
    * 1. 先拉取上传策略（单文件大小上限 / 并发任务数，VIP 差异化）
@@ -138,9 +138,12 @@ export const useUploadStore = defineStore('upload', () => {
    * 3. 合法文件入队（pending = 等待中），以并发工作池执行：
    *    - 同时最多 maxConcurrent 个任务在上传
    *    - 其余任务保持等待中，有空闲槽位才被调度
+   *
+   * 任务入队后立即返回入队数量，进度在传输队列中持续更新；
+   * 工作池内部消化全部错误（任务标记 failed），不会产生未处理拒绝。
    */
-  async function uploadFiles(files: File[], parentId: number): Promise<void> {
-    if (files.length === 0) return
+  async function uploadFiles(files: File[], parentId: number): Promise<number> {
+    if (files.length === 0) return 0
     ensureConnected()
 
     // 拉取上传策略；失败时退化为串行（不预检大小），保证功能可用
@@ -163,7 +166,7 @@ export const useUploadStore = defineStore('upload', () => {
         `以下文件超过单文件大小上限（${formatBytesAuto(maxSize)}），已跳过：${oversized.map((f) => f.name).join('、')}`,
       )
     }
-    if (accepted.length === 0) return
+    if (accepted.length === 0) return 0
 
     // 合法文件入队：全部先标记等待中，由并发工作池调度
     const queue: Array<{ file: File; task: TransferTask }> = accepted.map((file) => {
@@ -179,7 +182,16 @@ export const useUploadStore = defineStore('upload', () => {
       return { file, task }
     })
 
-    // 并发工作池：同时最多 maxConcurrent 个，其余等待
+    runWorkers(queue, Math.min(maxConcurrent, queue.length), parentId)
+    return accepted.length
+  }
+
+  /** 并发工作池：同时最多 workerCount 个任务，其余等待；内部消化全部错误 */
+  function runWorkers(
+    queue: Array<{ file: File; task: TransferTask }>,
+    workerCount: number,
+    parentId: number,
+  ): void {
     let cursor = 0
     const worker = async () => {
       while (cursor < queue.length) {
@@ -219,8 +231,9 @@ export const useUploadStore = defineStore('upload', () => {
       }
     }
 
-    const workers = Array.from({ length: Math.min(maxConcurrent, queue.length) }, () => worker())
-    await Promise.all(workers)
+    const workers = Array.from({ length: workerCount }, () => worker())
+    // 后台执行：工作池不会 reject（错误已全部捕获），无需 await
+    void Promise.all(workers)
   }
 
   /* ========== 批量打包下载 ========== */

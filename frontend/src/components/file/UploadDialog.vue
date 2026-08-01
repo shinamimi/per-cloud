@@ -30,9 +30,7 @@
 
     <template #footer>
       <el-button @click="handleCancel">取消</el-button>
-      <el-button type="primary" :loading="uploading" @click="handleConfirm">
-        {{ uploading ? '上传中...' : '开始上传' }}
-      </el-button>
+      <el-button type="primary" @click="handleConfirm">开始上传</el-button>
     </template>
   </el-dialog>
 </template>
@@ -40,6 +38,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { UploadUserFile, UploadRawFile } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useUploadStore } from '@/stores/upload'
 
 const props = defineProps<{
@@ -54,7 +53,6 @@ const emit = defineEmits<{
 const uploadStore = useUploadStore()
 
 const fileList = ref<UploadUserFile[]>([])
-const uploading = ref(false)
 
 async function handleConfirm() {
   const files = fileList.value
@@ -62,18 +60,17 @@ async function handleConfirm() {
     .filter((f): f is UploadRawFile => !!f)
   if (files.length === 0) return
 
-  uploading.value = true
-  try {
-    await uploadStore.uploadFiles(files, props.parentId)
-    emit('update:visible', false)
-    fileList.value = []
-  } finally {
-    uploading.value = false
+  // 确认后立即关闭：任务由 uploadStore 后台编排（秒传校验 → 分片上传 → 合并），
+  // 进度在传输队列面板中持续更新，无需等待上传完成
+  emit('update:visible', false)
+  fileList.value = []
+  const count = await uploadStore.uploadFiles(files, props.parentId)
+  if (count > 0) {
+    ElMessage.info(`已创建 ${count} 个上传任务，可到传输队列查看进度`)
   }
 }
 
 function handleCancel() {
-  if (uploading.value) return
   fileList.value = []
   emit('update:visible', false)
 }
