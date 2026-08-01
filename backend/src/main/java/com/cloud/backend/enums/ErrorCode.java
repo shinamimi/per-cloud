@@ -39,6 +39,8 @@ public enum ErrorCode {
     ACCOUNT_DISABLED(10108, "账号已被禁用"),
     INVALID_TOKEN(10109, "Token 无效"),
     TOKEN_EXPIRED(10110, "Token 已过期"),
+    REGISTER_DISABLED(10111, "注册功能未开放"),
+    MAIL_NOT_ENABLED(10112, "邮件服务未开启"),
 
     /* ==================== 文件 (10200-10299) ==================== */
     FILE_NAME_DUPLICATE(10200, "文件名已存在"),

@@ -2,7 +2,6 @@ package com.cloud.backend.service.user.impl;
 
 import com.cloud.backend.annotation.Log;
 import com.cloud.backend.authorization.AuthorizationPolicy;
-import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.admin.RoleChangeRequest;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.User;
@@ -29,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
     private final OperationLogService operationLogService;
+    private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
     @Value("${quota.default-user:5368709120}")
     private long defaultUserQuota;
@@ -38,11 +38,13 @@ public class UserServiceImpl implements UserService {
 
     public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder,
                            LoginAttemptService loginAttemptService,
-                           OperationLogService operationLogService) {
+                           OperationLogService operationLogService,
+                           com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptService = loginAttemptService;
         this.operationLogService = operationLogService;
+        this.adminSettingsService = adminSettingsService;
     }
 
     @Override
@@ -125,7 +127,8 @@ public class UserServiceImpl implements UserService {
         user.setIsVip(false);
         user.setAdminBonusQuota(0L);
         user.setRewardQuota(0L);
-        user.setQuota(FileConstants.DEFAULT_QUOTA);
+        // 默认配额走配置中心（storage.default-quota-user），无配置时回落 yml/默认值
+        user.setQuota(adminSettingsService.getDefaultQuotaUser());
         user.setUsedSpace(0L);
         return register(user);
     }

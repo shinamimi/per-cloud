@@ -57,12 +57,14 @@ public class FileServiceImpl implements FileService {
     private final com.cloud.backend.config.FileProperties fileProperties;
     private final com.cloud.backend.service.file.RecycleBinService recycleBinService;
     private final com.cloud.backend.dao.FileDao fileDao;
+    private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
     public FileServiceImpl(FileMapper fileMapper, StorageService storageService,
                            OperationLogService operationLogService, UserService userService,
                            FileHashMapper fileHashMapper, com.cloud.backend.config.FileProperties fileProperties,
                            com.cloud.backend.service.file.RecycleBinService recycleBinService,
-                           com.cloud.backend.dao.FileDao fileDao) {
+                           com.cloud.backend.dao.FileDao fileDao,
+                           com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.fileMapper = fileMapper;
         this.storageService = storageService;
         this.operationLogService = operationLogService;
@@ -71,6 +73,7 @@ public class FileServiceImpl implements FileService {
         this.fileProperties = fileProperties;
         this.recycleBinService = recycleBinService;
         this.fileDao = fileDao;
+        this.adminSettingsService = adminSettingsService;
     }
 
     @Override
@@ -323,7 +326,7 @@ public class FileServiceImpl implements FileService {
         fileMapper.updateName(fileId, tombstone);
         List<File> nodes = collectSubtree(userId, fileId);
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireTime = now.plusDays(fileProperties.getRecycleDays());
+        LocalDateTime expireTime = now.plusDays(adminSettingsService.getRecycleBinDays());
         long totalSize = 0;
         for (File node : nodes) {
             totalSize += node.getSize() != null ? node.getSize() : 0;

@@ -1,6 +1,5 @@
 package com.cloud.backend.service.system.impl;
 
-import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.LoginRequest;
 import com.cloud.backend.dto.LoginResponse;
 import com.cloud.backend.dto.RegisterRequest;
@@ -16,6 +15,7 @@ import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.enums.UserStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.security.LoginUser;
+import com.cloud.backend.service.admin.AdminSettingsService;
 import com.cloud.backend.service.system.AuthService;
 import com.cloud.backend.service.system.CaptchaService;
 import com.cloud.backend.service.system.EmailService;
@@ -40,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final LoginAttemptService loginAttemptService;
     private final OperationLogService operationLogService;
+    private final AdminSettingsService settingsService;
 
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            UserService userService,
@@ -47,7 +48,8 @@ public class AuthServiceImpl implements AuthService {
                            CaptchaService captchaService,
                            EmailService emailService,
                            LoginAttemptService loginAttemptService,
-                           OperationLogService operationLogService) {
+                           OperationLogService operationLogService,
+                           AdminSettingsService settingsService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -55,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
         this.emailService = emailService;
         this.loginAttemptService = loginAttemptService;
         this.operationLogService = operationLogService;
+        this.settingsService = settingsService;
     }
 
     @Override
@@ -67,7 +70,9 @@ public class AuthServiceImpl implements AuthService {
             user.setStatus(UserStatus.NORMAL);
             userService.update(user);
         }
-        if (request.getCaptchaCode() != null && !request.getCaptchaCode().isEmpty()) {
+        // 登录验证码开关（system.enable-captcha）：关闭时忽略前端传的验证码
+        if (settingsService.isCaptchaEnabled()
+                && request.getCaptchaCode() != null && !request.getCaptchaCode().isEmpty()) {
             if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaCode())) {
                 throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
             }
@@ -109,13 +114,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse register(RegisterRequest request, String ip) {
+        // 开放注册开关（system.allow-register，ADMIN 配置）
+        if (!settingsService.isAllowRegister()) {
+            throw new BusinessException(ErrorCode.REGISTER_DISABLED);
+        }
         if (userService.existsByUsername(request.getUsername())) {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
         }
         if (userService.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
-        if (!captchaService.verify(request.getEmail(), CaptchaType.REGISTER, request.getCode())) {
+        // 邮件验证开关（system.enable-mail-verify）：关闭时注册不校验邮箱验证码
+        if (settingsService.isMailVerifyEnabled()
+                && !captchaService.verify(request.getEmail(), CaptchaType.REGISTER, request.getCode())) {
             throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
         }
 
@@ -129,7 +140,8 @@ public class AuthServiceImpl implements AuthService {
         user.setIsVip(false);
         user.setAdminBonusQuota(0L);
         user.setRewardQuota(0L);
-        user.setQuota(FileConstants.DEFAULT_QUOTA);
+        // 新用户默认配额（storage.default-quota-user，ADMIN 配置，只影响新注册用户）
+        user.setQuota(settingsService.getDefaultQuotaUser());
         user.setUsedSpace(0L);
 
         userService.register(user);
@@ -178,7 +190,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void resetPassword(ResetPasswordRequest request) {
-        if (!captchaService.verify(request.getEmail(), CaptchaType.RESET_PASSWORD, request.getCode())) {
+        if (settingsService.isMailVerifyEnabled()
+                && !captchaService.verify(request.getEmail(), CaptchaType.RESET_PASSWORD, request.getCode())) {
             throw new BusinessException(ErrorCode.CAPTCHA_INVALID);
         }
         User user = userService.findByEmail(request.getEmail());

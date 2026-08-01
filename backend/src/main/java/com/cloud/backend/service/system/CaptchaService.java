@@ -1,6 +1,7 @@
 package com.cloud.backend.service.system;
 
 import com.cloud.backend.enums.CaptchaType;
+import com.cloud.backend.service.admin.AdminSettingsService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +12,10 @@ import java.util.concurrent.TimeUnit;
  * 邮箱验证码服务。
  *
  * 设计思路：
- * 1. 验证码使用 SecureRandom 生成 6 位数字，存入 Redis，过期时间 5 分钟
+ * 1. 验证码使用 SecureRandom 生成 6 位数字，存入 Redis，过期时间可配置（session.captcha-ttl，默认 5 分钟）
  * 2. 验证码区分三种场景：注册(REGISTER)、登录(LOGIN)、重置密码(RESET_PASSWORD)
  *    通过 CaptchaType 区分 Key（如 captcha:REGISTER:xxx@email.com）
- * 3. 防刷机制：每个邮箱 60 秒冷却期（Cooldown），冷却期内拒绝生成新验证码
+ * 3. 防刷机制：每个邮箱冷却期（mail.frequency-limit，默认 60 秒），冷却期内拒绝生成新验证码
  * 4. 验证通过后立即删除 Key，验证码只能使用一次
  */
 @Service
@@ -24,20 +25,19 @@ public class CaptchaService {
     private static final String COOLDOWN_PREFIX = "captcha:cooldown:";
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final long CAPTCHA_TTL_SECONDS = 300;
-    private static final long COOLDOWN_TTL_SECONDS = 60;
-
     private final StringRedisTemplate redisTemplate;
+    private final AdminSettingsService settingsService;
 
-    public CaptchaService(StringRedisTemplate redisTemplate) {
+    public CaptchaService(StringRedisTemplate redisTemplate, AdminSettingsService settingsService) {
         this.redisTemplate = redisTemplate;
+        this.settingsService = settingsService;
     }
 
     /** 生成 6 位验证码并存入 Redis */
     public String generateAndStore(String email, CaptchaType type) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         String key = captchaKey(email, type);
-        redisTemplate.opsForValue().set(key, code, CAPTCHA_TTL_SECONDS, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, code, settingsService.getCaptchaTtlSeconds(), TimeUnit.SECONDS);
         return code;
     }
 
@@ -67,7 +67,7 @@ public class CaptchaService {
     public String generateAndStore(String captchaId) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         String key = CAPTCHA_PREFIX + "LOGIN:" + captchaId;
-        redisTemplate.opsForValue().set(key, code, CAPTCHA_TTL_SECONDS, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, code, settingsService.getCaptchaTtlSeconds(), TimeUnit.SECONDS);
         return code;
     }
 
@@ -78,7 +78,8 @@ public class CaptchaService {
 
     /** 设置冷却期 */
     public void setCooldown(String email) {
-        redisTemplate.opsForValue().set(COOLDOWN_PREFIX + email, "1", COOLDOWN_TTL_SECONDS, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(COOLDOWN_PREFIX + email, "1",
+                settingsService.getMailFrequencyLimitSeconds(), TimeUnit.SECONDS);
     }
 
     private String captchaKey(String email, CaptchaType type) {

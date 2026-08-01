@@ -43,11 +43,14 @@ public class PreviewServiceImpl implements PreviewService {
     private final FileService fileService;
     private final StorageService storageService;
     private final FileProperties fileProperties;
+    private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
-    public PreviewServiceImpl(FileService fileService, StorageService storageService, FileProperties fileProperties) {
+    public PreviewServiceImpl(FileService fileService, StorageService storageService, FileProperties fileProperties,
+                              com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.fileService = fileService;
         this.storageService = storageService;
         this.fileProperties = fileProperties;
+        this.adminSettingsService = adminSettingsService;
     }
 
     @Override
@@ -57,7 +60,7 @@ public class PreviewServiceImpl implements PreviewService {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
         }
         String extension = file.getExtension() == null ? "" : file.getExtension().toLowerCase();
-        String url = storageService.generateDownloadUrl(file.getObjectName(), 10);
+        String url = storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
 
         FilePreviewResponse response = new FilePreviewResponse();
         response.setName(file.getName());
@@ -124,6 +127,6 @@ public class PreviewServiceImpl implements PreviewService {
                 return originalUrl;
             }
         }
-        return storageService.generateDownloadUrl(thumbnailObject, 10);
+        return storageService.generateDownloadUrl(thumbnailObject, adminSettingsService.getDownloadLinkTtlMinutes());
     }
 }

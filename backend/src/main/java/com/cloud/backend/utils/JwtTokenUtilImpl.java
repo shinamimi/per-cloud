@@ -15,9 +15,12 @@ public class JwtTokenUtilImpl implements JwtTokenUtil {
 
     private final JwtProperties jwtProperties;
     private final SecretKey secretKey;
+    private final com.cloud.backend.service.admin.AdminSettingsService settingsService;
 
-    public JwtTokenUtilImpl(JwtProperties jwtProperties) {
+    public JwtTokenUtilImpl(JwtProperties jwtProperties,
+                            com.cloud.backend.service.admin.AdminSettingsService settingsService) {
         this.jwtProperties = jwtProperties;
+        this.settingsService = settingsService;
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtProperties.getSecret()));
     }
 
@@ -29,7 +32,7 @@ public class JwtTokenUtilImpl implements JwtTokenUtil {
                 .claim("role", loginUser.getRole().getValue())
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + jwtProperties.getExpiration()))
+                .expiration(new Date(now + getExpirationMs()))
                 .signWith(secretKey)
                 .compact();
     }
@@ -56,7 +59,7 @@ public class JwtTokenUtilImpl implements JwtTokenUtil {
 
     @Override
     public long getExpirationMs() {
-        return jwtProperties.getExpiration();
+        return settingsService.getAccessTokenTtlMs();
     }
 
     private Claims parseClaims(String token) {

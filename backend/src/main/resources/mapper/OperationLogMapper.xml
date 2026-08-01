@@ -33,4 +33,17 @@
         ORDER BY created_at DESC
     </select>
 
+    <!--
+      按创建时间批量删除。
+      operation：具体类型（如 LOGIN）；"NON_LOGIN" = 排除 LOGIN 的所有类型；null/空 = 全部类型。
+    -->
+    <delete id="deleteByCreatedAtBefore">
+        DELETE FROM t_operation_log
+        WHERE created_at &lt; #{cutoff}
+        <choose>
+            <when test="operation == 'NON_LOGIN'">AND operation != 'LOGIN'</when>
+            <when test="operation != null and operation != ''">AND operation = #{operation}</when>
+        </choose>
+    </delete>
+
 </mapper>

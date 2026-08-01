@@ -1,6 +1,9 @@
 package com.cloud.backend.config;
 
 import com.cloud.backend.constant.RedisConstants;
+import com.cloud.backend.enums.OperationType;
+import com.cloud.backend.mapper.OperationLogMapper;
+import com.cloud.backend.service.admin.AdminSettingsService;
 import com.cloud.backend.service.file.DownloadService;
 import com.cloud.backend.service.file.RecycleBinService;
 import com.cloud.backend.service.file.StorageService;
@@ -10,11 +13,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 文件清理定时任务（file-module.md 第四节/五节/七节）。
- * - 每日 03:00：回收站过期记录物理清理（30 天）+ 打包产物清理（24 小时）
+ * - 每日 03:00：回收站过期记录物理清理（保留天数可配置）+ 打包产物清理（24 小时）
+ * - 每日 03:30：操作/登录日志按保留天数清理（log.operation-days / log.login-days）
  * - 每日 04:00：上传临时分片清理（Redis 元数据已过期的孤儿对象）
  */
 @Component
@@ -26,13 +31,18 @@ public class FileCleanupTask {
     private final DownloadService downloadService;
     private final StorageService storageService;
     private final StringRedisTemplate redis;
+    private final OperationLogMapper operationLogMapper;
+    private final AdminSettingsService settingsService;
 
     public FileCleanupTask(RecycleBinService recycleBinService, DownloadService downloadService,
-                           StorageService storageService, StringRedisTemplate redis) {
+                           StorageService storageService, StringRedisTemplate redis,
+                           OperationLogMapper operationLogMapper, AdminSettingsService settingsService) {
         this.recycleBinService = recycleBinService;
         this.downloadService = downloadService;
         this.storageService = storageService;
         this.redis = redis;
+        this.operationLogMapper = operationLogMapper;
+        this.settingsService = settingsService;
     }
 
     @Scheduled(cron = "0 0 3 * * ?")
@@ -40,6 +50,19 @@ public class FileCleanupTask {
         log.info("Scheduled cleanup: recycle bin expired records");
         recycleBinService.purgeExpired();
         downloadService.cleanupExpiredPackages();
+    }
+
+    /** 日志保留天数清理：登录日志用 log.login-days，其余操作日志用 log.operation-days */
+    @Scheduled(cron = "0 30 3 * * ?")
+    public void cleanupExpiredLogs() {
+        log.info("Scheduled cleanup: expired operation logs");
+        LocalDateTime operationCutoff = LocalDateTime.now().minusDays(settingsService.getOperationLogDays());
+        LocalDateTime loginCutoff = LocalDateTime.now().minusDays(settingsService.getLoginLogDays());
+        int loginDeleted = operationLogMapper.deleteByCreatedAtBefore(loginCutoff, OperationType.LOGIN.name());
+        int operationDeleted = operationLogMapper.deleteByCreatedAtBefore(operationCutoff, "NON_LOGIN");
+        if (loginDeleted + operationDeleted > 0) {
+            log.info("Expired logs deleted: {} login, {} operation", loginDeleted, operationDeleted);
+        }
     }
 
     @Scheduled(cron = "0 0 4 * * ?")
@@ -69,3 +92,4 @@ public class FileCleanupTask {
         }
     }
 }
+

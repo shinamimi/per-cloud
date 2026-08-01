@@ -67,10 +67,12 @@ public class FileController {
     private final SearchService searchService;
     private final RecycleBinService recycleBinService;
     private final StorageService storageService;
+    private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
     public FileController(FileService fileService, UploadService uploadService, DownloadService downloadService,
                           PreviewService previewService, SearchService searchService,
-                          RecycleBinService recycleBinService, StorageService storageService) {
+                          RecycleBinService recycleBinService, StorageService storageService,
+                          com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.fileService = fileService;
         this.uploadService = uploadService;
         this.downloadService = downloadService;
@@ -78,6 +80,7 @@ public class FileController {
         this.searchService = searchService;
         this.recycleBinService = recycleBinService;
         this.storageService = storageService;
+        this.adminSettingsService = adminSettingsService;
     }
 
     /* ==================== 列表 / 树 / 目录 ==================== */
@@ -222,7 +225,7 @@ public class FileController {
         AudioPlayResponse response = new AudioPlayResponse();
         response.setFileId(file.getId());
         response.setName(file.getName());
-        response.setUrl(storageService.generateDownloadUrl(file.getObjectName(), 10));
+        response.setUrl(storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes()));
         return Result.success(response);
     }
 

@@ -77,6 +77,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/AdminAdminView.vue'),
     meta: { layout: 'main', title: '管理员管理', requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: '/admin/settings',
+    name: 'SystemConfigCenter',
+    component: () => import('@/views/admin/SystemConfigCenterView.vue'),
+    meta: { layout: 'main', title: '系统设置', requiresAuth: true, requiresAdmin: true },
+  },
 
   {
     path: '/:pathMatch(.*)*',

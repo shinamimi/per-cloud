@@ -53,16 +53,19 @@ public class DownloadServiceImpl implements DownloadService {
     private final FileProperties fileProperties;
     private final ProgressWebSocketHandler progressHandler;
     private final ExecutorService packExecutor;
+    private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
     private final Map<String, BatchTask> tasks = new ConcurrentHashMap<>();
 
     public DownloadServiceImpl(FileService fileService, FileMapper fileMapper, StorageService storageService,
-                               FileProperties fileProperties, ProgressWebSocketHandler progressHandler) {
+                               FileProperties fileProperties, ProgressWebSocketHandler progressHandler,
+                               com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.fileService = fileService;
         this.fileMapper = fileMapper;
         this.storageService = storageService;
         this.fileProperties = fileProperties;
         this.progressHandler = progressHandler;
+        this.adminSettingsService = adminSettingsService;
         this.packExecutor = Executors.newFixedThreadPool(2, runnable -> {
             Thread thread = new Thread(runnable, "pack-task");
             thread.setDaemon(true);
@@ -77,7 +80,7 @@ public class DownloadServiceImpl implements DownloadService {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
         try {
-            return storageService.generateDownloadUrl(file.getObjectName(), 10);
+            return storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.FILE_DOWNLOAD_FAILED, e.getMessage());
         }
@@ -159,7 +162,7 @@ public class DownloadServiceImpl implements DownloadService {
             try (FileInputStream input = new FileInputStream(tempFile)) {
                 storageService.upload(task.objectName, input, size, "application/zip");
             }
-            task.url = storageService.generateDownloadUrl(task.objectName, 10);
+            task.url = storageService.generateDownloadUrl(task.objectName, adminSettingsService.getDownloadLinkTtlMinutes());
             task.status = "DONE";
             progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "DONE",
                     "total", task.total, "done", task.done, "url", task.url));

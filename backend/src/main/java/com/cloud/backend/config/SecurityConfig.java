@@ -45,6 +45,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/admin/admins/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // 敏感配置分组（SMTP 连接信息、系统功能开关）仅 ADMIN+ 可改（ADR-009）
+                        .requestMatchers("/api/admin/settings/system", "/api/admin/settings/mail")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyRole("OPERATOR", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()

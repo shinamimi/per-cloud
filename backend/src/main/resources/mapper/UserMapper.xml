@@ -62,4 +62,33 @@
         UPDATE t_user SET used_space = GREATEST(used_space + #{delta}, 0) WHERE id = #{userId}
     </update>
 
+    <!--
+      按注册日期范围 + 角色/状态过滤查询（quota-batch 预览与执行共用）。
+      role/status 枚举存 ordinal（USER=0, VIP 用 is_vip 区分；NORMAL=1, DISABLED=0, LOCKED=2, INACTIVE=3）。
+    -->
+    <select id="findByQuotaFilter" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user
+        <where>
+            <if test="startDate != null">AND DATE(created_at) &gt;= #{startDate}</if>
+            <if test="endDate != null">AND DATE(created_at) &lt;= #{endDate}</if>
+            <choose>
+                <when test="role == 'USER'">AND role = 0 AND (is_vip = 0 OR is_vip IS NULL)</when>
+                <when test="role == 'VIP'">AND is_vip = 1</when>
+            </choose>
+            <choose>
+                <when test="status == 'NORMAL'">AND status = 1</when>
+                <when test="status == 'DISABLED'">AND status = 0</when>
+                <when test="status == 'LOCKED'">AND status = 2</when>
+                <when test="status == 'INACTIVE'">AND status = 3</when>
+            </choose>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 批量更新配额（quota-batch 执行） -->
+    <update id="batchUpdateQuota">
+        UPDATE t_user SET quota = #{quota}, updated_at = NOW() WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
 </mapper>

@@ -101,3 +101,167 @@ export const USER_STATUS_TAG_TYPE: Record<UserStatusKey, string> = {
   LOCKED: 'warning',
   INACTIVE: 'info',
 }
+
+/* ==================== 系统配置中心（SystemConfigCenterView） ==================== */
+
+/*
+ * 保存请求约定：数字/字符串字段为 null = 恢复配置文件默认值（后端删除该配置行），
+ * boolean 字段为开关值，始终提交。
+ */
+
+/** 上传限制分组（key: upload.*） */
+export interface UploadSettings {
+  maxSizeUser: number
+  maxSizeVip: number
+  maxConcurrentUser: number
+  maxConcurrentVip: number
+}
+
+/** 上传限制保存请求 */
+export interface UploadSettingsRequest {
+  maxSizeUser: number | null
+  maxSizeVip: number | null
+  maxConcurrentUser: number | null
+  maxConcurrentVip: number | null
+}
+
+/** 存储限制分组（key: storage.*） */
+export interface StorageSettings {
+  defaultQuotaUser: number
+  defaultQuotaVip: number
+}
+
+/** 存储限制保存请求 */
+export interface StorageSettingsRequest {
+  defaultQuotaUser: number | null
+  defaultQuotaVip: number | null
+}
+
+/** 会话安全分组（key: session.*） */
+export interface SessionSettings {
+  accessTokenTtlMinutes: number
+  captchaTtlSeconds: number
+  loginLockThreshold: number
+  loginLockDurationMinutes: number
+  resetPasswordTtlMinutes: number
+}
+
+/** 会话安全保存请求 */
+export interface SessionSettingsRequest {
+  accessTokenTtlMinutes: number | null
+  captchaTtlSeconds: number | null
+  loginLockThreshold: number | null
+  loginLockDurationMinutes: number | null
+  resetPasswordTtlMinutes: number | null
+}
+
+/** 缓存策略分组（key: cache.*） */
+export interface CacheSettings {
+  captcha: number
+  loginAttempt: number
+  blacklist: number
+  filePreview: number
+  downloadLinkMinutes: number
+}
+
+/** 缓存策略保存请求 */
+export interface CacheSettingsRequest {
+  captcha: number | null
+  loginAttempt: number | null
+  blacklist: number | null
+  filePreview: number | null
+  downloadLinkMinutes: number | null
+}
+
+/** 系统功能开关分组（key: system.*） */
+export interface SystemSettings {
+  allowRegister: boolean
+  allowGuestShare: boolean
+  enableMailVerify: boolean
+  enableCaptcha: boolean
+  enableOperationLog: boolean
+}
+
+/** 系统功能保存请求（ADMIN） */
+export type SystemSettingsRequest = SystemSettings
+
+/** 文件管理分组（key: file.* / share.*） */
+export interface FileSettings {
+  recycleBinDays: number
+  shareDefaultValidDays: number
+  shareMaxValidDays: number
+  shareMaxCountPerFile: number
+  shareDefaultRequirePassword: boolean
+}
+
+/** 文件管理保存请求 */
+export interface FileSettingsRequest {
+  recycleBinDays: number | null
+  shareDefaultValidDays: number | null
+  shareMaxValidDays: number | null
+  shareMaxCountPerFile: number | null
+  shareDefaultRequirePassword: boolean
+}
+
+/** 邮件服务分组（key: mail.*，ADMIN 可改；password 为脱敏占位符或空） */
+export interface MailSettings {
+  enabled: boolean
+  host: string
+  port: number
+  username: string
+  password: string | null
+  fromName: string
+  frequencyLimit: number
+}
+
+/** 邮件服务保存请求（ADMIN；password 留空 = 不修改当前密码） */
+export interface MailSettingsRequest {
+  enabled: boolean
+  host: string | null
+  port: number | null
+  username: string | null
+  password: string | null
+  fromName: string | null
+  frequencyLimit: number | null
+}
+
+/** 日志分组（key: log.*） */
+export interface LogSettings {
+  operationDays: number
+  loginDays: number
+}
+
+/** 日志保存请求 */
+export interface LogSettingsRequest {
+  operationDays: number | null
+  loginDays: number | null
+}
+
+/** GET /api/admin/settings 全量返回（按分组） */
+export interface AdminSettingsResponse {
+  upload: UploadSettings
+  storage: StorageSettings
+  session: SessionSettings
+  cache: CacheSettings
+  system: SystemSettings
+  file: FileSettings
+  mail: MailSettings
+  log: LogSettings
+}
+
+/** 老用户配额批量调整请求体（POST /api/admin/settings/users/quota-batch） */
+export interface QuotaBatchRequest {
+  startDate: string
+  endDate: string
+  role: 'ALL' | 'USER' | 'VIP'
+  status: 'ALL' | UserStatusKey
+  targetQuotaUser: number
+  targetQuotaVip: number
+  preview: boolean
+}
+
+/** 老用户配额批量调整结果 */
+export interface QuotaBatchResponse {
+  count: number
+  users: AdminUserResponse[]
+}
