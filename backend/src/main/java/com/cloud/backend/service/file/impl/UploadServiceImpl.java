@@ -148,8 +148,21 @@ public class UploadServiceImpl implements UploadService {
         Long count = redis.opsForSet().size(key);
         int limit = isVip(userId) ? adminSettingsService.getMaxConcurrentVip() : adminSettingsService.getMaxConcurrentUser();
         if (limit > 0 && count != null && count > limit) {
-            redis.opsForSet().remove(key, uploadId);
-            throw new BusinessException(ErrorCode.UPLOAD_TASK_EXCEEDED);
+            // 惰性清理：移除元数据已不存在（TTL 过期/已合并清理）的残留任务，再重新计数
+            Set<String> members = redis.opsForSet().members(key);
+            if (members != null) {
+                for (String id : members) {
+                    if (!id.equals(uploadId)
+                            && Boolean.FALSE.equals(redis.hasKey(RedisConstants.UPLOAD_META_PREFIX + id))) {
+                        redis.opsForSet().remove(key, id);
+                    }
+                }
+            }
+            Long after = redis.opsForSet().size(key);
+            if (after != null && after > limit) {
+                redis.opsForSet().remove(key, uploadId);
+                throw new BusinessException(ErrorCode.UPLOAD_TASK_EXCEEDED);
+            }
         }
     }
 

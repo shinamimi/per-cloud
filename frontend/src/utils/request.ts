@@ -79,7 +79,10 @@ request.interceptors.response.use(
       ElMessage.error(body.message || '请求失败')
     }
 
-    return Promise.reject(new Error(body.message || '请求失败'))
+    // 挂载业务错误码，供调用方区分处理（如上传并发超限 10208 → 排队等待）
+    const err = new Error(body.message || '请求失败') as Error & { code?: number }
+    err.code = body.code
+    return Promise.reject(err)
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {

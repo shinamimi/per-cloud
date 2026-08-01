@@ -29,6 +29,16 @@ function nextTaskId(): string {
   return `local-${Date.now()}-${taskSeq}`
 }
 
+/** 后端错误码：上传任务数超过限制（并发已满，等待空位后重试） */
+const UPLOAD_TASK_EXCEEDED = 10208
+
+/** 并发已满时的重试间隔 */
+const RETRY_INTERVAL_MS = 3000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export const useUploadStore = defineStore('upload', () => {
   /* ========== State ========== */
 
@@ -194,8 +204,17 @@ export const useUploadStore = defineStore('upload', () => {
             ElMessage.success(`「${file.name}」秒传完成`)
           }
         } catch (e) {
-          task.status = 'failed'
-          task.error = e instanceof Error ? e.message : '上传失败'
+          const code = (e as Error & { code?: number }).code
+          if (code === UPLOAD_TASK_EXCEEDED) {
+            // 并发已满（如其他会话占用）：任务保持"等待中"，延迟后放回队尾重试
+            task.status = 'pending'
+            task.progress = 0
+            queue.push(item)
+            await sleep(RETRY_INTERVAL_MS)
+          } else {
+            task.status = 'failed'
+            task.error = e instanceof Error ? e.message : '上传失败'
+          }
         }
       }
     }
