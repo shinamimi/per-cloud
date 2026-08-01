@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * 文件列表节点响应。
+ * userId/uploaderName 为上传者信息：个人文件列表用不到，团队文件列表由服务层填充。
  */
 @Data
 public class FileNodeResponse {
@@ -23,6 +24,8 @@ public class FileNodeResponse {
     private Integer category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long userId;
+    private String uploaderName;
 
     public static FileNodeResponse from(File file) {
         FileNodeResponse response = new FileNodeResponse();
@@ -37,6 +40,7 @@ public class FileNodeResponse {
         response.setCategory(file.getCategory());
         response.setCreatedAt(file.getCreatedAt());
         response.setUpdatedAt(file.getUpdatedAt());
+        response.setUserId(file.getUserId());
         return response;
     }
 }

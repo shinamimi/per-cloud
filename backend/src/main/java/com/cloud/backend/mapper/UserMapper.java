@@ -19,6 +19,9 @@ public interface UserMapper {
 
     User findById(Long id);
 
+    /** 批量查询（团队文件列表填充上传者等场景） */
+    List<User> findByIds(@Param("ids") List<Long> ids);
+
     User findByUsername(String username);
 
     User findByAccount(String account);

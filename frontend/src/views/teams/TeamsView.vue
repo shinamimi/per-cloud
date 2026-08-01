@@ -95,32 +95,23 @@
 
     <!-- 成员管理 -->
     <el-dialog v-model="membersVisible" :title="`成员管理 - ${currentTeam?.name ?? ''}`" width="560px" draggable>
-      <div class="invite-bar">
-        <el-input v-model="inviteKeyword" placeholder="按用户名/昵称搜索用户" clearable>
+      <div class="member-toolbar">
+        <el-input
+          v-model="memberKeyword"
+          placeholder="搜索团队成员（用户名/昵称）"
+          clearable
+          style="width: 240px"
+        >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-button @click="handleSearchInvite">搜索</el-button>
+        <el-button type="primary" @click="addVisible = true">
+          <el-icon><Plus /></el-icon>
+          <span>添加成员</span>
+        </el-button>
       </div>
-      <div v-if="inviteResults.length > 0" class="invite-results">
-        <div v-for="u in inviteResults" :key="u.userId" class="invite-row">
-          <el-avatar :size="30" :src="u.avatar || undefined">
-            {{ (u.nickname || u.username)[0] }}
-          </el-avatar>
-          <span class="invite-name">{{ u.nickname || u.username }}（{{ u.username }}）</span>
-          <el-button
-            size="small"
-            type="primary"
-            :disabled="isMember(u.userId)"
-            @click="handleInvite(u)"
-          >
-            {{ isMember(u.userId) ? '已在团队' : '邀请' }}
-          </el-button>
-        </div>
-      </div>
-      <el-divider />
-      <el-table :data="members" size="small">
+      <el-table :data="filteredMembers" size="small">
         <el-table-column label="成员" min-width="160">
           <template #default="{ row }">
             <div class="member-cell">
@@ -128,6 +119,7 @@
                 {{ (row.nickname || row.username)[0] }}
               </el-avatar>
               <span>{{ row.nickname || row.username }}</span>
+              <span class="member-sub">{{ row.username }}</span>
             </div>
           </template>
         </el-table-column>
@@ -150,7 +142,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-empty v-if="filteredMembers.length === 0" description="没有匹配的成员" :image-size="60" />
     </el-dialog>
+
+    <!-- 添加成员 -->
+    <AddMemberDialog
+      v-model:visible="addVisible"
+      :team-id="currentTeam?.id ?? 0"
+      :team-name="currentTeam?.name ?? ''"
+      :members="members"
+      @done="handleMembersChanged"
+    />
 
     <!-- 团队设置 -->
     <el-dialog v-model="settingsVisible" :title="`团队设置 - ${currentTeam?.name ?? ''}`" width="440px" draggable>
@@ -171,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
@@ -180,15 +182,13 @@ import {
   dissolveTeam,
   getMyTeams,
   getTeamMembers,
-  inviteMembers,
   leaveTeam,
   removeTeamMember,
   updateTeam,
 } from '@/api/team'
-import { searchUsers } from '@/api/friend'
+import AddMemberDialog from '@/components/team/AddMemberDialog.vue'
 import { formatBytesAuto } from '@/utils/format'
 import type { Team, TeamMember, TeamRole } from '@/types/team'
-import type { FriendUser } from '@/types/friend'
 
 const router = useRouter()
 const teams = ref<Team[]>([])
@@ -214,13 +214,25 @@ async function handleCreate() {
 const membersVisible = ref(false)
 const currentTeam = ref<Team | null>(null)
 const members = ref<TeamMember[]>([])
-const inviteKeyword = ref('')
-const inviteResults = ref<FriendUser[]>([])
+const memberKeyword = ref('')
+const addVisible = ref(false)
+
+/** 成员搜索过滤（用户名/昵称前缀匹配） */
+const filteredMembers = computed(() => {
+  const k = memberKeyword.value.trim().toLowerCase()
+  if (!k) return members.value
+  return members.value.filter(
+    (m) =>
+      (m.username || '').toLowerCase().includes(k) ||
+      (m.nickname || '').toLowerCase().includes(k),
+  )
+})
 
 function openMembers(t: Team) {
   currentTeam.value = t
   membersVisible.value = true
-  inviteResults.value = []
+  memberKeyword.value = ''
+  addVisible.value = false
   void loadMembers()
 }
 
@@ -229,22 +241,9 @@ async function loadMembers() {
   members.value = await getTeamMembers(currentTeam.value.id)
 }
 
-function isMember(userId: number): boolean {
-  return members.value.some((m) => m.userId === userId)
-}
-
-async function handleSearchInvite() {
-  const k = inviteKeyword.value.trim()
-  if (!k) return
-  inviteResults.value = (await searchUsers(k)).filter((u) => u.relation !== 'FRIEND' || true)
-}
-
-async function handleInvite(u: FriendUser) {
-  if (!currentTeam.value) return
-  await inviteMembers(currentTeam.value.id, { userIds: [u.userId] })
-  ElMessage.success(`已邀请 ${u.nickname || u.username}`)
-  inviteResults.value = []
-  await loadMembers()
+/** 成员变动（添加/移除）后刷新成员与团队卡片 */
+async function handleMembersChanged() {
+  await Promise.all([loadMembers(), loadTeams()])
 }
 
 function canRemove(row: TeamMember): boolean {
@@ -268,8 +267,7 @@ async function handleRemoveMember(row: TeamMember) {
   }
   await removeTeamMember(currentTeam.value.id, row.userId)
   ElMessage.success('已移除')
-  await loadMembers()
-  await loadTeams()
+  await handleMembersChanged()
 }
 
 /* ========== 团队设置 ========== */
@@ -435,6 +433,19 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.member-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.member-sub {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 6px;
 }
 
 .invite-results {

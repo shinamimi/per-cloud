@@ -57,12 +57,14 @@ public class TeamFileServiceImpl implements TeamFileService {
     private final OperationLogService operationLogService;
     private final AdminSettingsService adminSettingsService;
     private final com.cloud.backend.service.file.RecycleBinService recycleBinService;
+    private final com.cloud.backend.mapper.UserMapper userMapper;
 
     public TeamFileServiceImpl(FileMapper fileMapper, FileHashMapper fileHashMapper,
                                RecycleBinMapper recycleBinMapper, StorageService storageService,
                                TeamService teamService, PreviewService previewService,
                                OperationLogService operationLogService, AdminSettingsService adminSettingsService,
-                               com.cloud.backend.service.file.RecycleBinService recycleBinService) {
+                               com.cloud.backend.service.file.RecycleBinService recycleBinService,
+                               com.cloud.backend.mapper.UserMapper userMapper) {
         this.fileMapper = fileMapper;
         this.fileHashMapper = fileHashMapper;
         this.recycleBinMapper = recycleBinMapper;
@@ -72,6 +74,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         this.operationLogService = operationLogService;
         this.adminSettingsService = adminSettingsService;
         this.recycleBinService = recycleBinService;
+        this.userMapper = userMapper;
     }
 
     /* ==================== 列表 / 树 / 目录 ==================== */
@@ -87,6 +90,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         long total = fileMapper.countByTeamIdAndParentId(teamId, safeParent);
         List<FileNodeResponse> records = fileMapper.pageByTeamIdAndParentId(teamId, safeParent, offset, size)
                 .stream().map(FileNodeResponse::from).toList();
+        fillUploaders(records);
         return new Page<>(records, total, page, size);
     }
 
@@ -402,6 +406,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         long total = fileMapper.countByTeamIdAndParentId(teamId, safeParent);
         List<FileNodeResponse> records = fileMapper.pageByTeamIdAndParentId(teamId, safeParent, offset, size)
                 .stream().map(FileNodeResponse::from).toList();
+        fillUploaders(records);
         return new Page<>(records, total, page, size);
     }
 
@@ -426,7 +431,29 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== helpers ==================== */
 
-    /** 团队文件必须属于该团队且状态正常 */
+    /** 批量填充上传者显示名（nickname 优先，缺省用 username），避免 N+1 */
+    private void fillUploaders(List<FileNodeResponse> records) {
+        List<Long> userIds = records.stream()
+                .map(FileNodeResponse::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct().toList();
+        if (userIds.isEmpty()) {
+            return;
+        }
+        Map<Long, String> nameByUser = userMapper.findByIds(userIds).stream()
+                .collect(Collectors.toMap(
+                        com.cloud.backend.entity.User::getId,
+                        u -> (u.getNickname() != null && !u.getNickname().isBlank())
+                                ? u.getNickname() : u.getUsername(),
+                        (a, b) -> a));
+        for (FileNodeResponse record : records) {
+            if (record.getUserId() != null) {
+                record.setUploaderName(nameByUser.get(record.getUserId()));
+            }
+        }
+    }
+
+    /** 团队文件列表必须属于该团队且状态正常 */
     private File getTeamFile(Long teamId, Long fileId) {
         File file = fileMapper.findById(fileId);
         if (file == null || file.getTeamId() == null || file.getTeamId() != teamId) {

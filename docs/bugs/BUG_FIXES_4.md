@@ -33,3 +33,19 @@
 **验证：** `npx vue-tsc --noEmit` 通过；构造后的地址为 `ws://localhost:5173/ws/progress?token=...`，与 `vite.config.ts` 中 `/ws → ws://localhost:8081 (ws: true)` 的代理匹配。生产环境 https 下会自动派生 `wss://<host>/ws/...`，与 Nginx 反代一致。
 
 **遗留说明：** 若后端部署在独立域名/端口（非当前页面同源），需显式配置 `VITE_WS_URL=wss://...`，`resolveWsUrl` 会原样透传。
+
+## 2026-08-01 — 团队文件"创建人"字段返回乱码（t_user.nickname 历史数据编码损坏）
+
+**现象：** 团队文件列表新增 `uploaderName`（创建人）字段后，接口返回的中文昵称显示为乱码（如 `æµ‹è¯•2`），而团队名等其它中文（走同一 JDBC 链路）显示正常。
+
+**根因：** 数据库 `t_user.nickname` 中存储的本身就是乱码——tester1/tester2 的昵称在**写入时**连接字符集不正确，UTF-8 字节被按 latin-1 解释后入库，与本次字段改动无关。JDBC 读取链路（`map-underscore-to-camel-case`、utf8mb4）验证无问题。
+
+**修复：**
+
+| 对象 | 变更 |
+|---|---|
+| `cloud.t_user`（数据修复） | 用 `mysql --default-character-set=utf8mb4` 将 id=7（tester1）、id=8（tester2）的 `nickname` 修正为「测试1」「测试2」 |
+
+**验证：** 修复后 `GET /api/teams/1/files` 成员视角与 `GET /api/admin/teams/1/files` 管理员视角均返回 `uploaderName=测试2`（UTF-8 正常）。
+
+**遗留说明：** 若后续其它用户昵称/资料仍有乱码，属同类历史写入问题，需按 `utf8mb4` 连接修复数据；代码层无需改动。

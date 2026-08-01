@@ -59,6 +59,10 @@ export interface FileItem {
   category: number
   createdAt: string
   updatedAt: string
+  /** 上传者用户 id（团队空间返回，个人空间可为空） */
+  userId?: number
+  /** 上传者昵称/用户名（团队空间由服务端填充） */
+  uploaderName?: string
 }
 
 /** 目录树节点 —— 对应 GET /api/files/tree 返回结构 */

@@ -127,6 +127,11 @@
             {{ row.isDirectory ? '-' : formatBytesAuto(row.size) }}
           </template>
         </el-table-column>
+        <el-table-column label="创建人" width="110">
+          <template #default="{ row }">
+            {{ row.uploaderName || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="160" />
       </el-table>
     </el-dialog>
