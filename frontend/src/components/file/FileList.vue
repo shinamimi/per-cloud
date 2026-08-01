@@ -6,6 +6,16 @@
 -->
 <template>
   <div class="file-list">
+    <!-- 批量操作条：多选后出现 -->
+    <div v-if="fileStore.selectedFiles.length > 0" class="batch-bar">
+      <span class="batch-count">已选 {{ fileStore.selectedFiles.length }} 项</span>
+      <el-button size="small" @click="handleBatchDownload">下载</el-button>
+      <el-button size="small" @click="handleBatchMoveCopy('move')">移动</el-button>
+      <el-button size="small" @click="handleBatchMoveCopy('copy')">复制</el-button>
+      <el-button size="small" type="danger" plain @click="handleBatchDelete">删除</el-button>
+      <el-button size="small" link type="info" @click="handleClearSelection">取消选择</el-button>
+    </div>
+
     <!-- 列表视图 -->
     <el-table
       v-if="viewMode === 'list'"
@@ -39,7 +49,7 @@
           {{ row.updatedAt?.slice(0, 16).replace('T', ' ') }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button
             v-if="fileCan('preview', row) && isPreviewable(row.name, row.type)"
@@ -51,15 +61,6 @@
             预览
           </el-button>
           <el-button
-            v-if="fileCan('download', row)"
-            link
-            type="primary"
-            size="small"
-            @click="handleDownload(row)"
-          >
-            下载
-          </el-button>
-          <el-button
             v-if="fileCan('rename', row)"
             link
             type="primary"
@@ -68,33 +69,19 @@
           >
             重命名
           </el-button>
-          <el-button
-            v-if="fileCan('move', row)"
-            link
-            type="primary"
-            size="small"
-            @click="$emit('move-copy', row, 'move')"
-          >
-            移动
-          </el-button>
-          <el-button
-            v-if="fileCan('copy', row)"
-            link
-            type="primary"
-            size="small"
-            @click="$emit('move-copy', row, 'copy')"
-          >
-            复制
-          </el-button>
-          <el-button
-            v-if="fileCan('delete', row)"
-            link
-            type="danger"
-            size="small"
-            @click="handleDelete(row)"
-          >
-            删除
-          </el-button>
+          <el-dropdown trigger="click" @command="(cmd: string) => handleMore(row, cmd)">
+            <el-button link type="primary" size="small">
+              更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-if="fileCan('download', row)" command="download">下载</el-dropdown-item>
+                <el-dropdown-item v-if="fileCan('move', row)" command="move">移动</el-dropdown-item>
+                <el-dropdown-item v-if="fileCan('copy', row)" command="copy">复制</el-dropdown-item>
+                <el-dropdown-item v-if="fileCan('delete', row)" command="delete" divided>删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
       <template #empty>
@@ -142,6 +129,7 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  ArrowDown,
   Document,
   Folder,
   Files,
@@ -165,6 +153,7 @@ import {
 const emit = defineEmits<{
   preview: [file: FileItem]
   'move-copy': [file: FileItem, mode: 'move' | 'copy']
+  'batch-move-copy': [files: FileItem[], mode: 'move' | 'copy']
 }>()
 
 const fileStore = useFileStore()
@@ -253,6 +242,68 @@ async function handleDownload(row: FileItem) {
   }
 }
 
+/** 操作列"更多"菜单分发 */
+function handleMore(row: FileItem, command: string) {
+  if (command === 'download') {
+    handleDownload(row)
+  } else if (command === 'move' || command === 'copy') {
+    emit('move-copy', row, command)
+  } else if (command === 'delete') {
+    handleDelete(row)
+  }
+}
+
+/* ========== 批量操作 ========== */
+
+/** 批量下载（逐个文件下载，区别于打包下载） */
+async function handleBatchDownload() {
+  const selected = fileStore.selectedFiles.filter((f) => f.type === 'FILE')
+  if (selected.length === 0) {
+    ElMessage.warning('请先选择要下载的文件')
+    return
+  }
+  try {
+    await Promise.allSettled(selected.map((f) => downloadFile(f)))
+    ElMessage.success(`已开始下载 ${selected.length} 个文件`)
+  } catch {
+    // 错误已在拦截器中提示
+  }
+}
+
+/** 批量移动/复制 */
+function handleBatchMoveCopy(mode: 'move' | 'copy') {
+  const selected = fileStore.selectedFiles
+  if (selected.length === 0) return
+  emit('batch-move-copy', selected, mode)
+}
+
+/** 批量删除（移入回收站） */
+async function handleBatchDelete() {
+  const selected = fileStore.selectedFiles
+  try {
+    await ElMessageBox.confirm(
+      `确定将选中的 ${selected.length} 项移入回收站吗？目录会连同其中所有文件一并移入。`,
+      '批量删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+
+  try {
+    await Promise.all(selected.map((f) => deleteFile(f.id)))
+    ElMessage.success('已移入回收站')
+    fileStore.clearSelection()
+    fileStore.refresh()
+  } catch {
+    // 错误已在拦截器中提示
+  }
+}
+
+function handleClearSelection() {
+  fileStore.clearSelection()
+}
+
 async function handleRename(row: FileItem) {
   try {
     const { value } = await ElMessageBox.prompt('请输入新名称', '重命名', {
@@ -298,6 +349,23 @@ async function handlePageChange() {
 <style scoped>
 .file-list {
   position: relative;
+}
+
+/* 批量操作条 */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #ecf5ff;
+  border-radius: 4px;
+}
+
+.batch-count {
+  font-size: 13px;
+  color: #409eff;
+  margin-right: 8px;
 }
 
 .file-name {

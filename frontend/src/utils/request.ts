@@ -21,7 +21,11 @@ import { ElMessage } from 'element-plus'
 import type { Result } from '@/types/api'
 
 /** 需要忽略自动错误提示的 code 列表 —— 调用方想自己处理错误时使用 */
-const IGNORE_ERROR_CODES: number[] = []
+/*
+ * 10208（上传任务数超过限制）：上传并发工作池按策略并发，后端仍有其他会话占满时触发。
+ * 该场景只是需要排队，upload store 收到后自动保持"等待中"并延迟重试，不应弹错误提示。
+ */
+const IGNORE_ERROR_CODES: number[] = [10208]
 
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',

@@ -9,6 +9,7 @@
     title="上传文件"
     width="480px"
     :close-on-click-modal="false"
+    draggable
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-upload

@@ -318,7 +318,7 @@
     </el-card>
 
     <!-- 批量调整明细弹窗 -->
-    <el-dialog v-model="batchDetail.visible" title="受影响用户明细" width="860px" :close-on-click-modal="false">
+    <el-dialog v-model="batchDetail.visible" title="受影响用户明细" width="860px" :close-on-click-modal="false" draggable>
       <UserPreviewTable
         :users="batchDetail.users"
         :target-quota-user="batchDetail.targetQuotaUser"
@@ -327,7 +327,7 @@
     </el-dialog>
 
     <!-- 日志查询弹窗 -->
-    <el-dialog v-model="logDialog.visible" title="日志查询" width="900px" :close-on-click-modal="false">
+    <el-dialog v-model="logDialog.visible" title="日志查询" width="900px" :close-on-click-modal="false" draggable>
       <el-tabs v-model="logDialog.tab" @tab-change="switchLogTab">
         <el-tab-pane label="操作日志" name="all" />
         <el-tab-pane label="登录日志" name="login" />

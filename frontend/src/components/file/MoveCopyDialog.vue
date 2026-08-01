@@ -1,6 +1,6 @@
 <!--
-  MoveCopyDialog —— 移动/复制对话框。
-  通过目录树选择目标目录（el-tree-select），确认后调用对应接口。
+  MoveCopyDialog —— 移动/复制对话框（支持单选/多选批量）。
+  通过目录树选择目标目录（el-tree-select），确认后逐项调用对应接口。
   移动仅改数据库 parentId（MinIO 对象不动）；复制为同用户对象复制。
 -->
 <template>
@@ -9,11 +9,13 @@
     :title="mode === 'move' ? '移动' : '复制'"
     width="420px"
     :close-on-click-modal="false"
+    draggable
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-form label-width="80px">
       <el-form-item label="目标文件">
-        <span>{{ target?.name }}</span>
+        <span v-if="targets.length === 1">{{ targets[0].name }}</span>
+        <span v-else>已选 {{ targets.length }} 项</span>
       </el-form-item>
       <el-form-item label="目标目录">
         <el-tree-select
@@ -45,7 +47,7 @@ import type { FileItem } from '@/types/file'
 
 const props = defineProps<{
   visible: boolean
-  target: FileItem | null
+  targets: FileItem[]
   mode: 'move' | 'copy'
 }>()
 
@@ -75,18 +77,19 @@ watch(
 )
 
 async function handleConfirm() {
-  if (!props.target) return
+  if (props.targets.length === 0) return
 
   submitting.value = true
   try {
     if (props.mode === 'move') {
-      await moveFile(props.target.id, { targetParentId: targetParentId.value })
-      ElMessage.success('移动成功')
+      await Promise.all(props.targets.map((f) => moveFile(f.id, { targetParentId: targetParentId.value })))
+      ElMessage.success(`已移动 ${props.targets.length} 项`)
     } else {
-      await copyFile(props.target.id, { targetParentId: targetParentId.value })
-      ElMessage.success('复制成功')
+      await Promise.all(props.targets.map((f) => copyFile(f.id, { targetParentId: targetParentId.value })))
+      ElMessage.success(`已复制 ${props.targets.length} 项`)
     }
     emit('update:visible', false)
+    fileStore.clearSelection()
     fileStore.refresh()
     fileStore.loadTree(true)
   } catch {

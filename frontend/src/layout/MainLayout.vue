@@ -34,6 +34,10 @@
             <el-icon><Folder /></el-icon>
             <span>我的文件</span>
           </el-menu-item>
+          <el-menu-item index="/recycle-bin">
+            <el-icon><Delete /></el-icon>
+            <span>回收站</span>
+          </el-menu-item>
 
           <!--
             管理员菜单组 —— 仅在当前用户 role >= ADMIN 时显示。
@@ -62,6 +66,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { Folder, Delete, DataAnalysis } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()

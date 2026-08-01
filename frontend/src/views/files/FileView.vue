@@ -61,7 +61,7 @@
             </el-button>
           </div>
           <div class="toolbar-right">
-            <el-button @click="recycleRef?.open()">
+            <el-button @click="router.push('/recycle-bin')">
               <el-icon><Delete /></el-icon>
               <span>回收站</span>
             </el-button>
@@ -77,6 +77,7 @@
         <FileList
           @preview="handlePreview"
           @move-copy="handleMoveCopy"
+          @batch-move-copy="handleBatchMoveCopy"
         />
       </el-card>
     </div>
@@ -84,14 +85,14 @@
     <!-- 对话框 -->
     <UploadDialog v-model:visible="uploadDialogVisible" :parent-id="fileStore.currentDirId" />
     <PreviewDialog v-model:visible="previewVisible" :file="previewFile" />
-    <MoveCopyDialog v-model:visible="moveCopyVisible" :target="moveCopyTarget" :mode="moveCopyMode" />
+    <MoveCopyDialog v-model:visible="moveCopyVisible" :targets="moveCopyTargets" :mode="moveCopyMode" />
     <TransferQueue ref="queueRef" />
-    <RecycleBinDialog ref="recycleRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Download, FolderAdd, Search, List, Delete } from '@element-plus/icons-vue'
 import { useFileStore } from '@/stores/file'
@@ -104,17 +105,16 @@ import UploadDialog from '@/components/file/UploadDialog.vue'
 import PreviewDialog from '@/components/file/PreviewDialog.vue'
 import MoveCopyDialog from '@/components/file/MoveCopyDialog.vue'
 import TransferQueue from '@/components/file/TransferQueue.vue'
-import RecycleBinDialog from '@/components/file/RecycleBinDialog.vue'
 import type { FileCategory, FileItem } from '@/types/file'
 
 const fileStore = useFileStore()
 const uploadStore = useUploadStore()
+const router = useRouter()
 
 /* ========== 工具栏 ========== */
 
 const uploadDialogVisible = ref(false)
 const queueRef = ref<InstanceType<typeof TransferQueue> | null>(null)
-const recycleRef = ref<InstanceType<typeof RecycleBinDialog> | null>(null)
 
 async function handleCreateDirectory() {
   try {
@@ -179,11 +179,18 @@ function handlePreview(file: FileItem) {
 }
 
 const moveCopyVisible = ref(false)
-const moveCopyTarget = ref<FileItem | null>(null)
+const moveCopyTargets = ref<FileItem[]>([])
 const moveCopyMode = ref<'move' | 'copy'>('move')
 
 function handleMoveCopy(file: FileItem, mode: 'move' | 'copy') {
-  moveCopyTarget.value = file
+  moveCopyTargets.value = [file]
+  moveCopyMode.value = mode
+  moveCopyVisible.value = true
+}
+
+/** 批量移动/复制（列表多选触发） */
+function handleBatchMoveCopy(files: FileItem[], mode: 'move' | 'copy') {
+  moveCopyTargets.value = files
   moveCopyMode.value = mode
   moveCopyVisible.value = true
 }

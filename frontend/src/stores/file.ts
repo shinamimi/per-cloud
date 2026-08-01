@@ -57,8 +57,8 @@ export const useFileStore = defineStore('file', () => {
 
   /* ========== Getters ========== */
 
-  /** 是否处于搜索模式 */
-  const isSearching = computed(() => keyword.value.trim() !== '')
+  /** 是否处于搜索模式（关键字或类型过滤任一生效即视为搜索） */
+  const isSearching = computed(() => keyword.value.trim() !== '' || category.value !== undefined)
 
   /** 选中项是否全为文件（用于「预览」类仅文件操作） */
   const hasSelection = computed(() => selectedFiles.value.length > 0)

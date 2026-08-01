@@ -10,6 +10,7 @@
     width="760px"
     top="6vh"
     :close-on-click-modal="false"
+    draggable
     destroy-on-close
     @closed="reset"
   >

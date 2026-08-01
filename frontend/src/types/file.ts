@@ -158,9 +158,9 @@ export interface CopyRequest {
   targetParentId: number
 }
 
-/** 批量打包下载请求体 —— POST /api/files/download/batch（异步任务） */
+/** 批量打包下载请求体 —— POST /api/files/download/batch（异步任务），字段与后端 BatchDownloadRequest 对齐 */
 export interface BatchDownloadRequest {
-  ids: number[]
+  fileIds: number[]
 }
 
 /** 批量下载任务响应 —— taskId 用于匹配 WebSocket 进度通知，status/total/done/url 为轮询快照 */

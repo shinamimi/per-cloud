@@ -79,6 +79,9 @@ export const useUploadStore = defineStore('upload', () => {
       // 上传进度：按 uploadId 匹配（task.uploadId 在 init 后回填）
       const task = tasks.value.find((t) => t.uploadId === message.uploadId)
       if (!task) return
+      // 状态已进入更靠后的阶段（合并中）或已终态（完成/失败）时，忽略迟到的 WS 进度消息，
+      // 否则最后一片的进度（99%）会覆盖合并中/已完成状态，造成"卡在上传中 99%"假象
+      if (task.status === 'merging' || task.status === 'completed' || task.status === 'failed') return
       task.status = 'uploading'
       task.progress =
         message.total > 0 ? Math.min(Math.round((message.uploaded / message.total) * 100), 99) : 0
@@ -106,7 +109,8 @@ export const useUploadStore = defineStore('upload', () => {
       return
     }
 
-    // PACKING：按已打包文件数 / 总数
+    // PACKING：按已打包文件数 / 总数（终态任务忽略迟到消息）
+    if (task.status === 'completed' || task.status === 'failed') return
     task.status = 'packing'
     task.progress =
       message.total > 0 ? Math.min(Math.round((message.done / message.total) * 100), 99) : 0
@@ -168,8 +172,10 @@ export const useUploadStore = defineStore('upload', () => {
     }
     if (accepted.length === 0) return 0
 
-    // 合法文件入队：全部先标记等待中，由并发工作池调度
-    const queue: Array<{ file: File; task: TransferTask }> = accepted.map((file) => {
+    // 合法文件入队：全部先标记等待中，由并发工作池调度。
+    // 注意：worker 中修改任务状态必须通过 tasks.value 取响应式引用，
+    // 若持有入队前的原始对象引用，属性修改不会触发 UI 更新（任务完成后不移动至"已完成"分组）。
+    const queue: Array<{ file: File; taskId: string }> = accepted.map((file) => {
       const task: TransferTask = {
         id: nextTaskId(),
         name: file.name,
@@ -179,7 +185,7 @@ export const useUploadStore = defineStore('upload', () => {
         progress: 0,
       }
       tasks.value.unshift(task)
-      return { file, task }
+      return { file, taskId: task.id }
     })
 
     runWorkers(queue, Math.min(maxConcurrent, queue.length), parentId)
@@ -188,7 +194,7 @@ export const useUploadStore = defineStore('upload', () => {
 
   /** 并发工作池：同时最多 workerCount 个任务，其余等待；内部消化全部错误 */
   function runWorkers(
-    queue: Array<{ file: File; task: TransferTask }>,
+    queue: Array<{ file: File; taskId: string }>,
     workerCount: number,
     parentId: number,
   ): void {
@@ -197,7 +203,10 @@ export const useUploadStore = defineStore('upload', () => {
       while (cursor < queue.length) {
         const item = queue[cursor]
         cursor += 1
-        const { file, task } = item
+        const { file, taskId } = item
+        // 从响应式列表取任务引用（见 uploadFiles 注释），找不到说明已被用户移除
+        const task = tasks.value.find((t) => t.id === taskId)
+        if (!task) continue
         try {
           const result = await uploadOneFile(file, parentId, {
             onStatus: (status) => {
@@ -212,9 +221,6 @@ export const useUploadStore = defineStore('upload', () => {
           })
           task.status = 'completed'
           task.progress = 100
-          if (result.mode === 'sec') {
-            ElMessage.success(`「${file.name}」秒传完成`)
-          }
         } catch (e) {
           const code = (e as Error & { code?: number }).code
           if (code === UPLOAD_TASK_EXCEEDED) {
@@ -252,7 +258,7 @@ export const useUploadStore = defineStore('upload', () => {
     tasks.value.unshift(task)
 
     try {
-      const res = await batchDownload({ ids })
+      const res = await batchDownload({ fileIds: ids })
       // 后端任务 ID 是 WS 进度匹配的唯一依据
       task.id = res.taskId
       task.status = 'packing'

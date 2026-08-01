@@ -55,6 +55,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/files/FileView.vue'),
     meta: { layout: 'main', title: '我的文件', requiresAuth: true },
   },
+  {
+    path: '/recycle-bin',
+    name: 'RecycleBin',
+    component: () => import('@/views/recycle/RecycleBinView.vue'),
+    meta: { layout: 'main', title: '回收站', requiresAuth: true },
+  },
 
   /*
    * 管理后台页面组 —— 使用 MainLayout，需要 ADMIN 及以上角色
