@@ -237,6 +237,22 @@ export interface LogSettingsRequest {
   loginDays: number | null
 }
 
+/** 团队默认值（GET /api/admin/settings 的 team 分组） */
+export interface TeamSettings {
+  maxPerUser: number
+  defaultQuota: number
+  recycleBinDays: number
+  maxMembers: number
+}
+
+/** 团队默认值保存请求（null 恢复默认） */
+export interface TeamSettingsRequest {
+  maxPerUser: number | null
+  defaultQuota: number | null
+  recycleBinDays: number | null
+  maxMembers: number | null
+}
+
 /** 日志查询结果项（GET /api/admin/settings/logs） */
 export interface LogItem {
   id: number
@@ -266,6 +282,7 @@ export interface AdminSettingsResponse {
   file: FileSettings
   mail: MailSettings
   log: LogSettings
+  team: TeamSettings
 }
 
 /** 老用户配额批量调整请求体（POST /api/admin/settings/users/quota-batch） */

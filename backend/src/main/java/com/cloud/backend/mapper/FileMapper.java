@@ -53,4 +53,20 @@ public interface FileMapper {
     int deleteByIds(@Param("ids") List<Long> ids);
 
     List<File> findAll();
+
+    /* ==================== 团队维度（docs/team-module.md §四：同表 + teamId） ==================== */
+
+    List<File> findByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
+
+    List<File> pageByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId,
+                                       @Param("offset") int offset, @Param("size") int size);
+
+    long countByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
+
+    /** 团队空间同名检查（同团队同目录 name 唯一，跨 user_id 共享命名空间） */
+    File findByTeamIdAndParentIdAndName(@Param("teamId") Long teamId, @Param("parentId") Long parentId,
+                                        @Param("name") String name);
+
+    /** 团队全部正常文件（目录树、递归子树收集） */
+    List<File> findByTeamId(Long teamId);
 }

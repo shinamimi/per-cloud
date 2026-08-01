@@ -60,12 +60,14 @@ public class UploadServiceImpl implements UploadService {
     private final FileService fileService;
     private final ProgressWebSocketHandler progressHandler;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
+    private final com.cloud.backend.service.team.TeamService teamService;
 
     public UploadServiceImpl(StringRedisTemplate redis, FileProperties fileProperties, FileMapper fileMapper,
                              FileHashMapper fileHashMapper, FileHashService fileHashService,
                              StorageService storageService, UserService userService,
                              FileService fileService, ProgressWebSocketHandler progressHandler,
-                             com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
+                             com.cloud.backend.service.admin.AdminSettingsService adminSettingsService,
+                             com.cloud.backend.service.team.TeamService teamService) {
         this.redis = redis;
         this.fileProperties = fileProperties;
         this.fileMapper = fileMapper;
@@ -76,6 +78,7 @@ public class UploadServiceImpl implements UploadService {
         this.fileService = fileService;
         this.progressHandler = progressHandler;
         this.adminSettingsService = adminSettingsService;
+        this.teamService = teamService;
     }
 
     /* ==================== init ==================== */
@@ -95,15 +98,21 @@ public class UploadServiceImpl implements UploadService {
         if (fileName.isEmpty() || fileName.length() > 255) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件名长度需在 1-255 之间");
         }
-        validateParent(userId, request.getParentId());
+        long teamId = normalizeTeamId(request.getTeamId());
+        validateParent(userId, teamId, request.getParentId());
         long fileSize = request.getFileSize();
         if (fileSize <= 0) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件大小必须大于 0");
         }
-        // 配额校验
-        long remaining = userService.getRemainingQuota(userId);
-        if (fileSize > remaining) {
-            throw new BusinessException(ErrorCode.FILE_QUOTA_EXCEEDED);
+        // 配额校验：团队上传占团队配额（docs/team-module.md §五），个人上传占个人配额
+        if (teamId > 0) {
+            teamService.requireMember(teamId, userId);
+            teamService.checkQuota(teamId, fileSize);
+        } else {
+            long remaining = userService.getRemainingQuota(userId);
+            if (fileSize > remaining) {
+                throw new BusinessException(ErrorCode.FILE_QUOTA_EXCEEDED);
+            }
         }
         // 单文件大小上限（管理员配置，VIP 差异化）
         long maxSize = isVip(userId) ? adminSettingsService.getMaxSizeVip() : adminSettingsService.getMaxSizeUser();
@@ -128,7 +137,7 @@ public class UploadServiceImpl implements UploadService {
         meta.put("parentId", String.valueOf(request.getParentId()));
         meta.put("chunkSize", String.valueOf(chunkSize));
         meta.put("chunkCount", String.valueOf(totalChunks));
-        meta.put("teamId", "0");
+        meta.put("teamId", String.valueOf(teamId));
         Duration ttl = Duration.ofHours(fileProperties.getUploadExpireHours());
         redis.opsForHash().putAll(RedisConstants.UPLOAD_META_PREFIX + uploadId, meta);
         redis.expire(RedisConstants.UPLOAD_META_PREFIX + uploadId, ttl);
@@ -140,6 +149,11 @@ public class UploadServiceImpl implements UploadService {
         response.setChunkSize(chunkSize);
         response.setTotalChunks(totalChunks);
         return response;
+    }
+
+    /** 团队 id 归一化：null/<=0 视为个人空间（teamId=0） */
+    private long normalizeTeamId(Long teamId) {
+        return teamId == null || teamId <= 0 ? 0L : teamId;
     }
 
     private void checkConcurrentTasks(Long userId, String uploadId) {
@@ -234,6 +248,7 @@ public class UploadServiceImpl implements UploadService {
         String fileHash = (String) meta.get("fileHash");
         long parentId = Long.parseLong((String) meta.get("parentId"));
         int chunkCount = Integer.parseInt((String) meta.get("chunkCount"));
+        long teamId = Long.parseLong((String) meta.get("teamId"));
 
         // 合并分布式锁，防并发合并
         String lockKey = RedisConstants.MERGE_LOCK_PREFIX + uploadId;
@@ -256,7 +271,7 @@ public class UploadServiceImpl implements UploadService {
             }
 
             // 插入占位记录拿 fileId（对象路径含 fileId）
-            File file = buildFileRecord(userId, fileName, fileSize, fileHash, parentId);
+            File file = buildFileRecord(userId, teamId, fileName, fileSize, fileHash, parentId);
             fileMapper.insert(file);
             String objectName = IdUtil.fileObject(userId, file.getId(), fileName);
 
@@ -306,8 +321,12 @@ public class UploadServiceImpl implements UploadService {
                 }
                 fileMapper.update(file);
 
-                // 配额原子扣减（merge 完成一次性扣）
-                userService.changeUsedSpace(userId, fileSize);
+                // 配额原子扣减（merge 完成一次性扣）：团队上传扣团队配额，个人扣个人配额
+                if (teamId > 0) {
+                    teamService.changeUsedSpace(teamId, fileSize);
+                } else {
+                    userService.changeUsedSpace(userId, fileSize);
+                }
                 success = true;
                 return FileNodeResponse.from(file);
             } catch (RuntimeException e) {
@@ -342,7 +361,8 @@ public class UploadServiceImpl implements UploadService {
         if (fileName.isEmpty() || fileName.length() > 255) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件名长度需在 1-255 之间");
         }
-        validateParent(userId, request.getParentId());
+        long teamId = normalizeTeamId(request.getTeamId());
+        validateParent(userId, teamId, request.getParentId());
         FileHash hash = fileHashMapper.findByHash(request.getFileHash());
         if (hash == null) {
             return SecUploadResponse.miss();
@@ -350,19 +370,30 @@ public class UploadServiceImpl implements UploadService {
         if (!hash.getSize().equals(request.getFileSize())) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件大小与秒传索引不一致");
         }
-        // 配额校验
-        long remaining = userService.getRemainingQuota(userId);
-        if (request.getFileSize() > remaining) {
-            throw new BusinessException(ErrorCode.FILE_QUOTA_EXCEEDED);
+        // 配额校验：团队上传占团队配额，个人上传占个人配额
+        if (teamId > 0) {
+            teamService.requireMember(teamId, userId);
+            teamService.checkQuota(teamId, request.getFileSize());
+        } else {
+            long remaining = userService.getRemainingQuota(userId);
+            if (request.getFileSize() > remaining) {
+                throw new BusinessException(ErrorCode.FILE_QUOTA_EXCEEDED);
+            }
         }
         // 共享引用 +1 + 新增记录
-        String uniqueName = fileService.resolveUniqueName(userId, request.getParentId(), fileName);
-        File file = buildFileRecord(userId, uniqueName, request.getFileSize(), request.getFileHash(),
+        String uniqueName = teamId > 0
+                ? resolveTeamUniqueName(teamId, request.getParentId(), fileName)
+                : fileService.resolveUniqueName(userId, request.getParentId(), fileName);
+        File file = buildFileRecord(userId, teamId, uniqueName, request.getFileSize(), request.getFileHash(),
                 request.getParentId());
         file.setObjectName(hash.getObjectName());
         fileMapper.insert(file);
         fileHashService.shareRef(request.getFileHash());
-        userService.changeUsedSpace(userId, request.getFileSize());
+        if (teamId > 0) {
+            teamService.changeUsedSpace(teamId, request.getFileSize());
+        } else {
+            userService.changeUsedSpace(userId, request.getFileSize());
+        }
         return SecUploadResponse.hit(FileNodeResponse.from(file));
     }
 
@@ -379,14 +410,43 @@ public class UploadServiceImpl implements UploadService {
         return meta;
     }
 
-    private void validateParent(Long userId, Long parentId) {
+    private void validateParent(Long userId, Long teamId, Long parentId) {
         if (parentId == null || parentId == FileConstants.ROOT_PARENT_ID) {
             return;
         }
-        File parent = fileService.getOwnedFile(userId, parentId);
-        if (!parent.isDir()) {
+        File parent = fileMapper.findById(parentId);
+        if (parent == null || !parent.isDir() || parent.getStatus() != FileStatus.NORMAL) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "父目录不存在");
         }
+        if (teamId > 0) {
+            if (parent.getTeamId() == null || parent.getTeamId() != teamId) {
+                throw new BusinessException(ErrorCode.UPLOAD_INVALID, "父目录不属于该团队");
+            }
+        } else {
+            if (parent.getTeamId() == null || parent.getTeamId() != 0) {
+                throw new BusinessException(ErrorCode.UPLOAD_INVALID, "父目录不属于个人空间");
+            }
+        }
+    }
+
+    /** 团队空间同名唯一化（同团队同目录 name 唯一，跨 user_id 共享命名空间） */
+    private String resolveTeamUniqueName(Long teamId, Long parentId, String baseName) {
+        String name = baseName;
+        int suffix = 2;
+        while (fileMapper.findByTeamIdAndParentIdAndName(teamId, parentId, name) != null) {
+            String stem = baseName.lastIndexOf('.') > 0
+                    ? baseName.substring(0, baseName.lastIndexOf('.'))
+                    : baseName;
+            String ext = baseName.lastIndexOf('.') > 0
+                    ? baseName.substring(baseName.lastIndexOf('.'))
+                    : "";
+            name = stem + "（" + suffix + "）" + ext;
+            suffix++;
+            if (suffix > 1000) {
+                throw new BusinessException(ErrorCode.FILE_NAME_DUPLICATE);
+            }
+        }
+        return name;
     }
 
     private boolean isVip(Long userId) {
@@ -394,11 +454,11 @@ public class UploadServiceImpl implements UploadService {
         return Boolean.TRUE.equals(user.getIsVip());
     }
 
-    private File buildFileRecord(Long userId, String fileName, long fileSize, String fileHash, Long parentId) {
+    private File buildFileRecord(Long userId, long teamId, String fileName, long fileSize, String fileHash, Long parentId) {
         String extension = FileUtil.getExtension(fileName);
         File file = new File();
         file.setUserId(userId);
-        file.setTeamId(0L);
+        file.setTeamId(teamId);
         file.setParentId(parentId);
         file.setName(fileName);
         file.setPath(buildPath(userId, parentId, fileName));

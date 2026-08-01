@@ -18,11 +18,12 @@
     </select>
 
     <select id="findByIdAndUserId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE id = #{id} AND user_id = #{userId} LIMIT 1
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND user_id = #{userId} AND team_id = 0 LIMIT 1
     </select>
 
+    <!-- 个人回收站列表：仅个人空间记录（团队记录走团队回收站接口） -->
     <select id="findByUserId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} ORDER BY deleted_time DESC
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} AND team_id = 0 ORDER BY deleted_time DESC
     </select>
 
     <select id="findByExpireTimeBefore" resultType="com.cloud.backend.entity.RecycleBin">
@@ -39,6 +40,24 @@
 
     <delete id="deleteByUserIdAndParentId">
         DELETE FROM t_recycle_bin WHERE user_id = #{userId} AND parent_id = #{parentId}
+    </delete>
+
+    <!-- ==================== 团队回收站 ==================== -->
+
+    <select id="findByTeamId" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE team_id = #{teamId} ORDER BY deleted_time DESC
+    </select>
+
+    <select id="findByIdAndTeamId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND team_id = #{teamId} LIMIT 1
+    </select>
+
+    <select id="findByTeamIdAndParentId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE team_id = #{teamId} AND parent_id = #{parentId}
+    </select>
+
+    <delete id="deleteByTeamIdAndParentId">
+        DELETE FROM t_recycle_bin WHERE team_id = #{teamId} AND parent_id = #{parentId}
     </delete>
 
 </mapper>

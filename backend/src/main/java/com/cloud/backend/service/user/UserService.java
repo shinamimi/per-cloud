@@ -54,4 +54,7 @@ public interface UserService {
     List<User> listCandidates();
 
     void batchUpdateAdminRole(List<RoleChangeRequest> changes);
+
+    /** 用户搜索（好友/团队拉人）：用户名/邮箱前缀模糊，最多 20 条 */
+    List<User> searchUsers(String keyword);
 }

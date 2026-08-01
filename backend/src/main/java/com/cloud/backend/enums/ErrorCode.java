@@ -72,6 +72,18 @@ public enum ErrorCode {
     TEAM_MEMBER_EXISTS(10402, "成员已在团队中"),
     TEAM_OWNER_CANNOT_LEAVE(10403, "所有者不能退出团队"),
     TEAM_QUOTA_EXCEEDED(10404, "团队空间配额不足"),
+    TEAM_MEMBER_NOT_FOUND(10405, "成员不存在"),
+    TEAM_NOT_MEMBER(10406, "你不是团队成员"),
+    TEAM_PERMISSION_DENIED(10407, "没有团队操作权限"),
+    TEAM_LIMIT_EXCEEDED(10408, "团队数量已达上限"),
+    TEAM_MEMBER_LIMIT_EXCEEDED(10409, "团队成员数已达上限"),
+
+    /* ==================== 好友 (10600-10699) ==================== */
+    FRIEND_NOT_FOUND(10600, "好友关系不存在"),
+    FRIEND_REQUEST_NOT_FOUND(10601, "好友请求不存在"),
+    FRIEND_CANNOT_ADD_SELF(10602, "不能添加自己为好友"),
+    FRIEND_ALREADY(10603, "你们已经是好友了"),
+    FRIEND_REQUEST_PENDING(10604, "好友请求处理中，请勿重复发送"),
 
     /* ==================== 存储 ==================== */
     MINIO_ERROR(10501, "MinIO 存储异常");

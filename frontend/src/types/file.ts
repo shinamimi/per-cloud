@@ -83,12 +83,13 @@ export interface CreateDirectoryRequest {
   name: string
 }
 
-/** 分片上传初始化请求体 —— POST /api/files/upload/init */
+/** 分片上传初始化请求体 —— POST /api/files/upload/init（teamId 缺省为个人空间） */
 export interface UploadInitRequest {
   fileName: string
   fileSize: number
   fileHash: string
   parentId: number
+  teamId?: number
 }
 
 /**
@@ -124,12 +125,13 @@ export interface UploadProgressResponse {
   teamId: number | null
 }
 
-/** 秒传请求体 —— POST /api/files/upload/sec（全站 SHA256 索引 + 引用计数） */
+/** 秒传请求体 —— POST /api/files/upload/sec（全站 SHA256 索引 + 引用计数；teamId 缺省为个人空间） */
 export interface SecUploadRequest {
   fileHash: string
   fileName: string
   fileSize: number
   parentId: number
+  teamId?: number
 }
 
 /** 秒传响应 —— instant=true 表示命中全站 Hash，秒传完成（file 为新记录节点） */

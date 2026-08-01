@@ -108,4 +108,36 @@
         SELECT * FROM t_file ORDER BY created_at DESC
     </select>
 
+    <!-- ==================== 团队维度（docs/team-module.md §四：同表 + teamId） ==================== -->
+
+    <select id="findByTeamIdAndParentId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+        ORDER BY type DESC, name ASC
+    </select>
+
+    <select id="pageByTeamIdAndParentId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+        ORDER BY type DESC, created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByTeamIdAndParentId" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_file
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+    </select>
+
+    <!-- 团队空间同名检查（同团队同目录 name 唯一；跨 user_id 共享同一命名空间） -->
+    <select id="findByTeamIdAndParentIdAndName" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND name = #{name} AND status = 1
+        LIMIT 1
+    </select>
+
+    <!-- 团队全部正常文件（目录树、递归子树收集） -->
+    <select id="findByTeamId" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file WHERE team_id = #{teamId} AND status = 1
+    </select>
+
 </mapper>

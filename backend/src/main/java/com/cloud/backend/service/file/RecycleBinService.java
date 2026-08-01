@@ -25,4 +25,7 @@ public interface RecycleBinService {
 
     /** 定时清理：删除所有已过期记录（30 天） */
     void purgeExpired();
+
+    /** 物理清理单条记录（权限已由调用方校验；团队回收站复用） */
+    void purgeRecord(RecycleBin record);
 }

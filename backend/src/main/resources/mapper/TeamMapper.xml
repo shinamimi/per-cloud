@@ -19,13 +19,18 @@
         SELECT * FROM t_team ORDER BY created_at DESC
     </select>
 
+    <select id="findByUserId" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.Team">
+        SELECT t.* FROM t_team t
+        INNER JOIN t_team_member m ON m.team_id = t.id
+        WHERE m.user_id = #{userId} AND m.status = 1 AND t.status = 1
+        ORDER BY t.created_at DESC
+    </select>
+
     <update id="update" parameterType="com.cloud.backend.entity.Team">
         UPDATE t_team
         SET name = #{name},
             avatar = #{avatar},
             description = #{description},
-            quota = #{quota},
-            used_space = #{usedSpace},
             updated_at = NOW()
         WHERE id = #{id}
     </update>
@@ -33,5 +38,17 @@
     <update id="dissolve" parameterType="java.lang.Long">
         UPDATE t_team SET status = 0, updated_at = NOW() WHERE id = #{id}
     </update>
+
+    <update id="updateQuota">
+        UPDATE t_team SET quota = #{quota}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <update id="updateUsedSpace">
+        UPDATE t_team SET used_space = GREATEST(used_space + #{delta}, 0), updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <select id="findByName" parameterType="java.lang.String" resultType="com.cloud.backend.entity.Team">
+        SELECT * FROM t_team WHERE name = #{name} AND status = 1 LIMIT 1
+    </select>
 
 </mapper>

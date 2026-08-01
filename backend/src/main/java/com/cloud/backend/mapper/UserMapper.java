@@ -47,4 +47,7 @@ public interface UserMapper {
 
     /** 批量更新配额（quota-batch 执行） */
     int batchUpdateQuota(@Param("ids") List<Long> ids, @Param("quota") long quota);
+
+    /** 用户搜索（好友/团队拉人）：用户名或邮箱前缀模糊匹配，最多 20 条 */
+    List<User> searchByKeyword(@Param("keyword") String keyword, @Param("limit") int limit);
 }

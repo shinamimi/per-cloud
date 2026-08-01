@@ -56,6 +56,30 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', title: '我的文件', requiresAuth: true },
   },
   {
+    path: '/friends',
+    name: 'Friends',
+    component: () => import('@/views/friends/FriendsView.vue'),
+    meta: { layout: 'main', title: '好友', requiresAuth: true },
+  },
+  {
+    path: '/teams',
+    name: 'Teams',
+    component: () => import('@/views/teams/TeamsView.vue'),
+    meta: { layout: 'main', title: '团队', requiresAuth: true },
+  },
+  {
+    path: '/teams/:id/files',
+    name: 'TeamFiles',
+    component: () => import('@/views/teams/TeamFilesView.vue'),
+    meta: { layout: 'main', title: '团队文件', requiresAuth: true },
+  },
+  {
+    path: '/teams/:id/recycle',
+    name: 'TeamRecycle',
+    component: () => import('@/views/teams/TeamRecycleView.vue'),
+    meta: { layout: 'main', title: '团队回收站', requiresAuth: true },
+  },
+  {
     path: '/recycle-bin',
     name: 'RecycleBin',
     component: () => import('@/views/recycle/RecycleBinView.vue'),
@@ -82,6 +106,12 @@ const routes: RouteRecordRaw[] = [
     name: 'AdminAdmins',
     component: () => import('@/views/admin/AdminAdminView.vue'),
     meta: { layout: 'main', title: '管理员管理', requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/teams',
+    name: 'AdminTeams',
+    component: () => import('@/views/admin/AdminTeamView.vue'),
+    meta: { layout: 'main', title: '团队管理', requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/settings',

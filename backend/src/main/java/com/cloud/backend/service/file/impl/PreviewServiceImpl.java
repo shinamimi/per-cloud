@@ -55,7 +55,11 @@ public class PreviewServiceImpl implements PreviewService {
 
     @Override
     public FilePreviewResponse preview(Long userId, Long fileId) {
-        File file = fileService.getOwnedFile(userId, fileId);
+        return previewFile(userId, fileService.getOwnedFile(userId, fileId));
+    }
+
+    @Override
+    public FilePreviewResponse previewFile(Long userId, File file) {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
         }
@@ -100,7 +104,7 @@ public class PreviewServiceImpl implements PreviewService {
                 response.setContent(content);
                 return response;
             } catch (IOException e) {
-                log.warn("Read text content failed: fileId={}", fileId, e);
+                log.warn("Read text content failed: fileId={}", file.getId(), e);
                 response.setType(TYPE_UNSUPPORTED);
                 return response;
             }

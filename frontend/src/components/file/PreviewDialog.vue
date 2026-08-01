@@ -48,6 +48,8 @@ import type { FileItem, FilePreviewResponse } from '@/types/file'
 const props = defineProps<{
   visible: boolean
   file: FileItem | null
+  /** 预览信息加载器（默认个人文件预览；团队文件页传入团队版） */
+  loader?: (file: FileItem) => Promise<FilePreviewResponse>
 }>()
 
 const emit = defineEmits<{
@@ -76,7 +78,8 @@ watch(
     loading.value = true
     preview.value = null
     try {
-      preview.value = await previewFile(props.file.id)
+      const load = props.loader ?? ((f: FileItem) => previewFile(f.id))
+      preview.value = await load(props.file)
     } catch {
       // 错误已在拦截器中提示
     } finally {

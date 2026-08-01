@@ -19,4 +19,24 @@
         SELECT COUNT(*) FROM t_team_member WHERE team_id = #{teamId} AND status = 1
     </select>
 
+    <select id="findByUserIdAndStatus" resultType="com.cloud.backend.entity.TeamMember">
+        SELECT * FROM t_team_member WHERE user_id = #{userId} AND status = #{status}
+    </select>
+
+    <select id="findByTeamIdAndUserId" resultType="com.cloud.backend.entity.TeamMember">
+        SELECT * FROM t_team_member WHERE team_id = #{teamId} AND user_id = #{userId} LIMIT 1
+    </select>
+
+    <update id="updateRole">
+        UPDATE t_team_member SET role = #{role} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE t_team_member SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <select id="countTeamsByUserId" parameterType="java.lang.Long" resultType="long">
+        SELECT COUNT(*) FROM t_team_member WHERE user_id = #{userId} AND status = 1
+    </select>
+
 </mapper>

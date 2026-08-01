@@ -120,6 +120,13 @@ public class RecycleBinServiceImpl implements RecycleBinService {
     }
 
     @Override
+    public void purgeRecord(RecycleBin record) {
+        if (record != null) {
+            purgeInternal(record);
+        }
+    }
+
+    @Override
     public void purgeExpired() {
         List<RecycleBin> expired = recycleBinMapper.findByExpireTimeBefore(LocalDateTime.now());
         for (RecycleBin record : expired) {
@@ -137,9 +144,17 @@ public class RecycleBinServiceImpl implements RecycleBinService {
             return;
         }
         if (latest.getType() != null && latest.getType() == 1) {
-            List<RecycleBin> children = recycleBinMapper.findByUserIdAndParentId(latest.getUserId(), latest.getFileId());
-            for (RecycleBin child : children) {
-                purgeInternal(child);
+            // 团队目录的子记录可能由不同成员上传（userId 不同），须按团队维度递归
+            if (latest.getTeamId() != null && latest.getTeamId() > 0) {
+                List<RecycleBin> children = recycleBinMapper.findByTeamIdAndParentId(latest.getTeamId(), latest.getFileId());
+                for (RecycleBin child : children) {
+                    purgeInternal(child);
+                }
+            } else {
+                List<RecycleBin> children = recycleBinMapper.findByUserIdAndParentId(latest.getUserId(), latest.getFileId());
+                for (RecycleBin child : children) {
+                    purgeInternal(child);
+                }
             }
         }
         releaseObject(latest);

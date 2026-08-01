@@ -161,4 +161,21 @@ public interface AdminSettingsService {
 
     /** 按日期范围 + 角色/状态过滤查询用户（quota-batch 预览与执行共用） */
     QuotaBatchResponse quotaBatch(QuotaBatchRequest request);
+
+    /* ==================== 团队默认值（docs/team-module.md §八） ==================== */
+
+    /** 每人团队数上限，默认 10 */
+    int getTeamMaxPerUser();
+
+    /** 新团队默认配额（字节），默认 10GB */
+    long getTeamDefaultQuota();
+
+    /** 团队回收站保留天数，默认 30 */
+    int getTeamRecycleBinDays();
+
+    /** 团队最大成员数，默认 50 */
+    int getTeamMaxMembers();
+
+    /** 更新团队配置（null 字段恢复配置默认值） */
+    void updateTeam(Integer maxPerUser, Long defaultQuota, Integer recycleBinDays, Integer maxMembers);
 }

@@ -252,6 +252,39 @@
           </div>
         </el-tab-pane>
 
+        <!-- ============ 团队默认值 ============ -->
+        <el-tab-pane label="团队" name="team">
+          <div class="pane">
+            <p class="pane-desc">团队模块默认值：新团队配额、每人团队数上限、团队回收站保留天数、团队最大成员数。</p>
+            <el-form label-width="180px" class="config-form">
+              <el-form-item label="每人团队数上限">
+                <el-input-number v-model="teamSettings.maxPerUser" :min="1" :max="100" />
+              </el-form-item>
+              <el-form-item label="新团队默认配额">
+                <div class="quota-input-row">
+                  <el-input-number
+                    v-model="teamSettings.defaultQuota"
+                    :min="1"
+                    style="flex: 1"
+                  />
+                  <el-select v-model="teamSettings.defaultQuotaUnit" style="width: 90px">
+                    <el-option v-for="unit in SIZE_UNITS" :key="unit" :label="unit" :value="unit" />
+                  </el-select>
+                </div>
+              </el-form-item>
+              <el-form-item label="团队回收站保留天数">
+                <el-input-number v-model="teamSettings.recycleBinDays" :min="1" :max="3650" />
+              </el-form-item>
+              <el-form-item label="团队最大成员数">
+                <el-input-number v-model="teamSettings.maxMembers" :min="1" :max="1000" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :loading="saving.team" @click="saveTeam">保存团队配置</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </el-tab-pane>
+
         <!-- ============ 邮件服务（ADMIN） ============ -->
         <el-tab-pane label="邮件服务" name="mail">
           <div class="pane">
@@ -385,6 +418,7 @@ import {
   updateFileSettings,
   updateMailSettings,
   updateLogSettings,
+  updateTeamSettings,
   quotaBatchUsers,
   queryLogs,
 } from '@/api/admin/settings'
@@ -424,6 +458,7 @@ const saving = reactive({
   file: false,
   mail: false,
   log: false,
+  team: false,
   batch: false,
 })
 
@@ -501,6 +536,15 @@ const logSettings = reactive<LogSettings>({
   loginDays: 30,
 })
 
+/** 团队默认值（defaultQuota 按所选单位输入，提交时换算为字节） */
+const teamSettings = reactive({
+  maxPerUser: 10,
+  defaultQuota: 10,
+  defaultQuotaUnit: 'GB' as SizeUnit,
+  recycleBinDays: 30,
+  maxMembers: 50,
+})
+
 /* ========== 批量调整状态 ========== */
 
 const batch = reactive({
@@ -559,6 +603,9 @@ function loadSettings() {
     })
     Object.assign(mail, s.mail, { password: null })
     Object.assign(logSettings, s.log)
+    Object.assign(teamSettings, s.team, {
+      defaultQuota: toUnit(s.team.defaultQuota, teamSettings.defaultQuotaUnit),
+    })
   })
 }
 
@@ -719,6 +766,23 @@ async function saveLog() {
     // 错误已在拦截器中提示
   } finally {
     saving.log = false
+  }
+}
+
+async function saveTeam() {
+  saving.team = true
+  try {
+    await updateTeamSettings({
+      maxPerUser: orNull(teamSettings.maxPerUser),
+      defaultQuota: sizeToBytesOrNull(teamSettings.defaultQuota, teamSettings.defaultQuotaUnit),
+      recycleBinDays: orNull(teamSettings.recycleBinDays),
+      maxMembers: orNull(teamSettings.maxMembers),
+    })
+    ElMessage.success('团队配置已保存')
+  } catch {
+    // 错误已在拦截器中提示
+  } finally {
+    saving.team = false
   }
 }
 

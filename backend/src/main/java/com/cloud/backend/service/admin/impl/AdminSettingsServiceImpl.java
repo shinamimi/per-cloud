@@ -79,6 +79,12 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     private static final String KEY_LOG_OPERATION_DAYS = "log.operation-days";
     private static final String KEY_LOG_LOGIN_DAYS = "log.login-days";
 
+    /* ==================== 团队默认值 ==================== */
+    private static final String KEY_TEAM_MAX_PER_USER = "team.max-per-user";
+    private static final String KEY_TEAM_DEFAULT_QUOTA = "team.default-quota";
+    private static final String KEY_TEAM_RECYCLE_BIN_DAYS = "team.recycle-bin-days";
+    private static final String KEY_TEAM_MAX_MEMBERS = "team.max-members";
+
     /** SMTP 密码脱敏占位符（GET 返回时替代真实值；PUT 提交该值表示不修改密码） */
     private static final String PASSWORD_MASK = "********";
 
@@ -366,6 +372,36 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     public void updateLog(Integer operationDays, Integer loginDays) {
         upsertOrReset(KEY_LOG_OPERATION_DAYS, operationDays, "操作日志保存天数");
         upsertOrReset(KEY_LOG_LOGIN_DAYS, loginDays, "登录日志保存天数");
+    }
+
+    /* ==================== 团队默认值 ==================== */
+
+    @Override
+    public int getTeamMaxPerUser() {
+        return readInt(KEY_TEAM_MAX_PER_USER, 10);
+    }
+
+    @Override
+    public long getTeamDefaultQuota() {
+        return readLong(KEY_TEAM_DEFAULT_QUOTA, 10737418240L);
+    }
+
+    @Override
+    public int getTeamRecycleBinDays() {
+        return readInt(KEY_TEAM_RECYCLE_BIN_DAYS, 30);
+    }
+
+    @Override
+    public int getTeamMaxMembers() {
+        return readInt(KEY_TEAM_MAX_MEMBERS, 50);
+    }
+
+    @Override
+    public void updateTeam(Integer maxPerUser, Long defaultQuota, Integer recycleBinDays, Integer maxMembers) {
+        upsertOrReset(KEY_TEAM_MAX_PER_USER, maxPerUser, "每人团队数上限");
+        upsertOrReset(KEY_TEAM_DEFAULT_QUOTA, defaultQuota, "新团队默认配额（字节）");
+        upsertOrReset(KEY_TEAM_RECYCLE_BIN_DAYS, recycleBinDays, "团队回收站保留天数");
+        upsertOrReset(KEY_TEAM_MAX_MEMBERS, maxMembers, "团队最大成员数");
     }
 
     /* ==================== 老用户配额批量调整 ==================== */

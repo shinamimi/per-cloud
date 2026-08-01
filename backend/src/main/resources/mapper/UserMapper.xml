@@ -91,4 +91,13 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
+    <!-- 用户搜索：用户名/邮箱前缀模糊（手机号字段预留，本期未绑定） -->
+    <select id="searchByKeyword" resultType="com.cloud.backend.entity.User">
+        SELECT * FROM t_user
+        WHERE status = 1
+          AND (username LIKE CONCAT(#{keyword}, '%') OR email LIKE CONCAT(#{keyword}, '%'))
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
 </mapper>

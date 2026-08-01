@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.FriendshipMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.Friendship"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_friendship (user_a_id, user_b_id)
+        VALUES (#{userAId}, #{userBId})
+    </insert>
+
+    <!-- 好友列表：成对存储，命中任一端即返回 -->
+    <select id="findByUserId" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.Friendship">
+        SELECT * FROM t_friendship
+        WHERE user_a_id = #{userId} OR user_b_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 成对查询：入参按小大归一化，命中唯一索引 -->
+    <select id="findByPair" resultType="com.cloud.backend.entity.Friendship">
+        SELECT * FROM t_friendship
+        WHERE user_a_id = #{userIdA} AND user_b_id = #{userIdB}
+        LIMIT 1
+    </select>
+
+    <delete id="deleteByPair">
+        DELETE FROM t_friendship WHERE user_a_id = #{userIdA} AND user_b_id = #{userIdB}
+    </delete>
+
+</mapper>

@@ -73,6 +73,11 @@ public class AdminSettingsController {
         settings.put("log", Map.of(
                 "operationDays", adminSettingsService.getOperationLogDays(),
                 "loginDays", adminSettingsService.getLoginLogDays()));
+        settings.put("team", Map.of(
+                "maxPerUser", adminSettingsService.getTeamMaxPerUser(),
+                "defaultQuota", adminSettingsService.getTeamDefaultQuota(),
+                "recycleBinDays", adminSettingsService.getTeamRecycleBinDays(),
+                "maxMembers", adminSettingsService.getTeamMaxMembers()));
         return Result.success(settings);
     }
 
@@ -167,6 +172,16 @@ public class AdminSettingsController {
     @PutMapping("/log")
     public Result<Void> updateLog(@RequestBody LogSettingsRequest request) {
         adminSettingsService.updateLog(request.getOperationDays(), request.getLoginDays());
+        return Result.success();
+    }
+
+    @PutMapping("/team")
+    public Result<Void> updateTeam(@RequestBody TeamSettingsRequest request) {
+        adminSettingsService.updateTeam(
+                request.getMaxPerUser(),
+                request.getDefaultQuota(),
+                request.getRecycleBinDays(),
+                request.getMaxMembers());
         return Result.success();
     }
 

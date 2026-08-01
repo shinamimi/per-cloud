@@ -17,6 +17,7 @@ import type {
   MailSettingsRequest,
   LogSettingsRequest,
   LogPageResponse,
+  TeamSettingsRequest,
 } from '@/types/admin'
 
 /** 获取全部分组配置（SMTP 密码已脱敏） */
@@ -62,6 +63,11 @@ export function updateMailSettings(data: MailSettingsRequest): Promise<void> {
 /** 保存日志配置 */
 export function updateLogSettings(data: LogSettingsRequest): Promise<void> {
   return request.put('/api/admin/settings/log', data)
+}
+
+/** 保存团队默认值（新团队配额/上限/回收站天数） */
+export function updateTeamSettings(data: TeamSettingsRequest): Promise<void> {
+  return request.put('/api/admin/settings/team', data)
 }
 
 /** 老用户配额批量调整（preview=true 仅预览明细，false 执行） */

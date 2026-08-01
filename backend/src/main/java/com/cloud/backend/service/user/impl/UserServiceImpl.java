@@ -283,4 +283,13 @@ public class UserServiceImpl implements UserService {
             operationLogService.log(log);
         }
     }
+
+    @Override
+    public List<User> searchUsers(String keyword) {
+        String kw = keyword == null ? "" : keyword.trim();
+        if (kw.isEmpty()) {
+            return List.of();
+        }
+        return userMapper.searchByKeyword(kw, 20);
+    }
 }

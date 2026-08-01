@@ -34,6 +34,14 @@
             <el-icon><Folder /></el-icon>
             <span>我的文件</span>
           </el-menu-item>
+          <el-menu-item index="/friends">
+            <el-icon><User /></el-icon>
+            <span>好友</span>
+          </el-menu-item>
+          <el-menu-item index="/teams">
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>团队</span>
+          </el-menu-item>
           <el-menu-item index="/recycle-bin">
             <el-icon><Delete /></el-icon>
             <span>回收站</span>
@@ -50,6 +58,7 @@
             </template>
             <el-menu-item index="/admin">仪表盘</el-menu-item>
             <el-menu-item index="/admin/users">用户管理</el-menu-item>
+            <el-menu-item index="/admin/teams">团队管理</el-menu-item>
             <el-menu-item index="/admin/admins">管理员管理</el-menu-item>
             <el-menu-item index="/admin/settings">系统设置</el-menu-item>
           </el-sub-menu>
@@ -66,7 +75,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { Folder, Delete, DataAnalysis } from '@element-plus/icons-vue'
+import { Folder, Delete, DataAnalysis, User, OfficeBuilding } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()

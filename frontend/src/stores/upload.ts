@@ -145,8 +145,10 @@ export const useUploadStore = defineStore('upload', () => {
    *
    * 任务入队后立即返回入队数量，进度在传输队列中持续更新；
    * 工作池内部消化全部错误（任务标记 failed），不会产生未处理拒绝。
+   *
+   * @param teamId 团队 ID（缺省为个人空间）
    */
-  async function uploadFiles(files: File[], parentId: number): Promise<number> {
+  async function uploadFiles(files: File[], parentId: number, teamId?: number): Promise<number> {
     if (files.length === 0) return 0
     ensureConnected()
 
@@ -188,7 +190,7 @@ export const useUploadStore = defineStore('upload', () => {
       return { file, taskId: task.id }
     })
 
-    runWorkers(queue, Math.min(maxConcurrent, queue.length), parentId)
+    runWorkers(queue, Math.min(maxConcurrent, queue.length), parentId, teamId)
     return accepted.length
   }
 
@@ -197,6 +199,7 @@ export const useUploadStore = defineStore('upload', () => {
     queue: Array<{ file: File; taskId: string }>,
     workerCount: number,
     parentId: number,
+    teamId?: number,
   ): void {
     let cursor = 0
     const worker = async () => {
@@ -218,7 +221,7 @@ export const useUploadStore = defineStore('upload', () => {
             onUploadId: (uploadId) => {
               task.uploadId = uploadId
             },
-          })
+          }, teamId)
           task.status = 'completed'
           task.progress = 100
         } catch (e) {

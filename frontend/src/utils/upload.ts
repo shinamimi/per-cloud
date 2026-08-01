@@ -44,11 +44,13 @@ export async function sha256(file: File): Promise<string> {
  * @param file     待上传文件
  * @param parentId 目标目录 ID
  * @param handlers 状态/进度回调（驱动上传队列 UI）
+ * @param teamId   团队 ID（缺省为个人空间）
  */
 export async function uploadOneFile(
   file: File,
   parentId: number,
   handlers: UploadHandlers,
+  teamId?: number,
 ): Promise<UploadResult> {
   // 1. 计算 SHA256 → 秒传校验
   handlers.onStatus('hashing')
@@ -60,6 +62,7 @@ export async function uploadOneFile(
     fileName: file.name,
     fileSize: file.size,
     parentId,
+    teamId,
   })
   if (sec.instant) {
     return { mode: 'sec', uploadId: '' }
@@ -71,6 +74,7 @@ export async function uploadOneFile(
     fileSize: file.size,
     fileHash: hash,
     parentId,
+    teamId,
   })
   const { uploadId, chunkSize, totalChunks } = init
   handlers.onUploadId?.(uploadId)
