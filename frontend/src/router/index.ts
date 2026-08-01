@@ -87,19 +87,20 @@ const routes: RouteRecordRaw[] = [
   },
 
   /*
-   * 管理后台页面组 —— 使用 MainLayout，需要 ADMIN 及以上角色
+   * 管理后台页面组 —— 使用 MainLayout，需要 OPERATOR 及以上角色。
+   * 其中管理员管理页（/admin/admins）需要 ADMIN 及以上（OPERATOR 不可进入）。
    */
   {
     path: '/admin',
     name: 'AdminDashboard',
     component: () => import('@/views/admin/AdminDashboardView.vue'),
-    meta: { layout: 'main', title: '仪表盘', requiresAuth: true, requiresAdmin: true },
+    meta: { layout: 'main', title: '仪表盘', requiresAuth: true, requiresOperator: true },
   },
   {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/AdminUserView.vue'),
-    meta: { layout: 'main', title: '用户管理', requiresAuth: true, requiresAdmin: true },
+    meta: { layout: 'main', title: '用户管理', requiresAuth: true, requiresOperator: true },
   },
   {
     path: '/admin/admins',
@@ -111,13 +112,13 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/teams',
     name: 'AdminTeams',
     component: () => import('@/views/admin/AdminTeamView.vue'),
-    meta: { layout: 'main', title: '团队管理', requiresAuth: true, requiresAdmin: true },
+    meta: { layout: 'main', title: '团队管理', requiresAuth: true, requiresOperator: true },
   },
   {
     path: '/admin/settings',
     name: 'SystemConfigCenter',
     component: () => import('@/views/admin/SystemConfigCenterView.vue'),
-    meta: { layout: 'main', title: '系统设置', requiresAuth: true, requiresAdmin: true },
+    meta: { layout: 'main', title: '系统设置', requiresAuth: true, requiresOperator: true },
   },
 
   {
@@ -155,6 +156,11 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  if (to.meta.requiresOperator && !userStore.isOperator) {
+    next({ name: 'Files' })
     return
   }
 

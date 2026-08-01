@@ -8,7 +8,6 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -33,10 +32,6 @@ public class EmailService {
     private final ObjectProvider<JavaMailSender> defaultMailSenderProvider;
     private final MailProperties mailProperties;
     private final AdminSettingsService settingsService;
-
-    /** yml spring.mail.from（local/dev 环境，发件人地址） */
-    @Value("${spring.mail.from:}")
-    private String ymlFrom;
 
     public EmailService(ObjectProvider<JavaMailSender> defaultMailSenderProvider,
                         MailProperties mailProperties,
@@ -99,6 +94,7 @@ public class EmailService {
         String host = settingsService.getMailHost();
         if (host != null && !host.isBlank()) {
             return buildSender(host, settingsService.getMailPort(),
+                    settingsService.getMailEncryption(),
                     settingsService.getMailUsername(), settingsService.getMailPassword());
         }
         JavaMailSender auto = defaultMailSenderProvider.getIfAvailable();
@@ -107,12 +103,14 @@ public class EmailService {
         }
         if (mailProperties.getHost() != null && !mailProperties.getHost().isBlank()) {
             return buildSender(mailProperties.getHost(), mailProperties.getPort(),
+                    "STARTTLS",
                     mailProperties.getUsername(), mailProperties.getPassword());
         }
         throw new BusinessException(ErrorCode.MAIL_NOT_ENABLED, "邮件服务未配置");
     }
 
-    private JavaMailSender buildSender(String host, int port, String username, String password) {
+    private JavaMailSender buildSender(String host, int port, String encryption,
+                                       String username, String password) {
         JavaMailSenderImpl sender = new JavaMailSenderImpl();
         sender.setHost(host);
         sender.setPort(port);
@@ -123,15 +121,32 @@ public class EmailService {
         Properties props = sender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.starttls.required", "true");
+        String enc = encryption == null ? "" : encryption.trim().toUpperCase();
+        switch (enc) {
+            case "SSL" -> {
+                props.put("mail.smtp.ssl.enable", "true");
+                props.put("mail.smtp.starttls.enable", "false");
+                props.put("mail.smtp.starttls.required", "false");
+            }
+            case "NONE" -> {
+                props.put("mail.smtp.ssl.enable", "false");
+                props.put("mail.smtp.starttls.enable", "false");
+                props.put("mail.smtp.starttls.required", "false");
+            }
+            default -> { // STARTTLS
+                props.put("mail.smtp.ssl.enable", "false");
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.starttls.required", "true");
+            }
+        }
         return sender;
     }
 
-    /** 发件人地址：spring.mail.from（local/dev）→ 顶层 mail.from（prod）→ 兜底 */
+    /** 发件人地址：配置中心 mail.from（含 yml spring.mail.from 兜底）→ 顶层 mail.from（prod）→ 兜底 */
     private String defaultFrom() {
-        if (ymlFrom != null && !ymlFrom.isBlank()) {
-            return ymlFrom;
+        String configured = settingsService.getMailFrom();
+        if (configured != null && !configured.isBlank()) {
+            return configured;
         }
         if (mailProperties.getFrom() != null && !mailProperties.getFrom().isBlank()) {
             return mailProperties.getFrom();

@@ -28,6 +28,10 @@ public class AuthorizationPolicy {
                 && loginUser.getRole().getValue() >= Role.ADMIN.getValue();
     }
 
+    public static boolean isSuperAdmin(LoginUser loginUser) {
+        return loginUser != null && loginUser.getRole() == Role.SUPER_ADMIN;
+    }
+
     public static void canManageUser(User targetUser) {
         if (targetUser.getRole() == Role.ADMIN || targetUser.getRole() == Role.SUPER_ADMIN) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "不能操作管理员账号");

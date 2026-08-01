@@ -83,6 +83,7 @@ export interface AdminCandidate {
   id: number
   username: string
   nickname: string | null
+  role: RoleKey
 }
 
 /** 批量角色变更项 —— 对应 PUT /api/admin/admins/batch 请求体元素 */
@@ -208,8 +209,10 @@ export interface MailSettings {
   enabled: boolean
   host: string
   port: number
+  encryption: string
   username: string
   password: string | null
+  from: string
   fromName: string
   frequencyLimit: number
 }
@@ -219,8 +222,10 @@ export interface MailSettingsRequest {
   enabled: boolean
   host: string | null
   port: number | null
+  encryption: string | null
   username: string | null
   password: string | null
+  from: string | null
   fromName: string | null
   frequencyLimit: number | null
 }

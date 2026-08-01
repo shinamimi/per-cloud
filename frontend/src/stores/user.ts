@@ -51,8 +51,14 @@ export const useUserStore = defineStore('user', () => {
   /** 角色数值等级（方便比较） */
   const roleLevel = computed(() => role.value)
 
-  /** 是否有管理员及以上权限 */
+  /** 是否有运营（OPERATOR）及以上权限 —— 可进入后台管理 */
+  const isOperator = computed(() => role.value >= Role.OPERATOR)
+
+  /** 是否有管理员及以上权限 —— 可进入管理员管理页面 */
   const isAdmin = computed(() => role.value >= Role.ADMIN)
+
+  /** 是否超级管理员 —— 唯一可管理 ADMIN（超级管理员）角色的权限档 */
+  const isSuperAdmin = computed(() => role.value >= Role.SUPER_ADMIN)
 
   /* ========== Actions ========== */
 
@@ -173,7 +179,9 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     isLoggedIn,
     roleLevel,
+    isOperator,
     isAdmin,
+    isSuperAdmin,
     login,
     register,
     logout,

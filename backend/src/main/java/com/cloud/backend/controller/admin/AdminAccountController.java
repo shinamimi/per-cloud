@@ -1,5 +1,6 @@
 package com.cloud.backend.controller.admin;
 
+import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.dto.Result;
 import com.cloud.backend.dto.admin.AdminUserResponse;
 import com.cloud.backend.dto.admin.CreateAdminRequest;
@@ -25,9 +26,10 @@ public class AdminAccountController {
     }
 
     @GetMapping
-    public Result<List<AdminUserResponse>> listAdmins() {
+    public Result<List<AdminUserResponse>> listAdmins(@AuthenticationPrincipal LoginUser loginUser) {
+        boolean isSuperAdmin = AuthorizationPolicy.isSuperAdmin(loginUser);
         List<AdminUserResponse> admins = userService.findAll().stream()
-                .filter(u -> u.getRole() == Role.OPERATOR || u.getRole() == Role.ADMIN)
+                .filter(u -> u.getRole() == Role.OPERATOR || (isSuperAdmin && u.getRole() == Role.ADMIN))
                 .map(u -> new AdminUserResponse(u.getId(), u.getUsername(), u.getEmail(),
                         u.getNickname(), u.getAvatar(), u.getRole(), u.getQuota(),
                         userService.calculateTotalQuota(u), u.getAdminBonusQuota(), u.getRewardQuota(),

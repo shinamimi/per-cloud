@@ -114,6 +114,10 @@ public class UserServiceImpl implements UserService {
         if (role == null || role == Role.SUPER_ADMIN) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不能创建超级管理员");
         }
+        // 只有超级管理员可以授予 ADMIN（超级管理员）权限
+        if (role == Role.ADMIN && !AuthorizationPolicy.isSuperAdmin(AuthorizationPolicy.getCurrentUser())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只有超级管理员可以创建超级管理员");
+        }
         if (existsByUsername(username)) {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
         }
@@ -185,6 +189,10 @@ public class UserServiceImpl implements UserService {
         if (user.getRole() == Role.SUPER_ADMIN) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不能删除超级管理员");
         }
+        // 只有超级管理员可以删除 ADMIN（超级管理员）账号
+        if (user.getRole() == Role.ADMIN && !AuthorizationPolicy.isSuperAdmin(AuthorizationPolicy.getCurrentUser())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只有超级管理员可以删除超级管理员");
+        }
         user.setStatus(UserStatus.DISABLED);
         userMapper.update(user);
 
@@ -204,12 +212,20 @@ public class UserServiceImpl implements UserService {
         if (role == null || role == Role.SUPER_ADMIN) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不能授予超级管理员");
         }
+        if (id.equals(AuthorizationPolicy.getCurrentUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能修改自己的角色");
+        }
         User user = userMapper.findById(id);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         if (user.getRole() == Role.SUPER_ADMIN) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "不能操作超级管理员");
+        }
+        // 只有超级管理员可以授予/变更 ADMIN（超级管理员）角色
+        if ((role == Role.ADMIN || user.getRole() == Role.ADMIN)
+                && !AuthorizationPolicy.isSuperAdmin(AuthorizationPolicy.getCurrentUser())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只有超级管理员可以操作超级管理员角色");
         }
         user.setRole(role);
         userMapper.update(user);
@@ -260,9 +276,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void batchUpdateAdminRole(List<RoleChangeRequest> changes) {
+        boolean isSuperAdmin = AuthorizationPolicy.isSuperAdmin(AuthorizationPolicy.getCurrentUser());
+        Long currentUserId = AuthorizationPolicy.getCurrentUserId();
         for (RoleChangeRequest change : changes) {
             if (change.getNewRole() == Role.SUPER_ADMIN) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "不能通过批量接口授予超级管理员");
+            }
+            if (change.getUserId().equals(currentUserId)) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "不能修改自己的角色");
             }
             User user = userMapper.findById(change.getUserId());
             if (user == null) {
@@ -271,11 +292,15 @@ public class UserServiceImpl implements UserService {
             if (user.getRole() == Role.SUPER_ADMIN) {
                 throw new BusinessException(ErrorCode.FORBIDDEN, "不能修改超级管理员角色");
             }
+            // 只有超级管理员可以授予/变更 ADMIN（超级管理员）角色
+            if ((change.getNewRole() == Role.ADMIN || user.getRole() == Role.ADMIN) && !isSuperAdmin) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "只有超级管理员可以操作超级管理员角色");
+            }
             user.setRole(change.getNewRole());
             userMapper.update(user);
 
             OperationLog log = new OperationLog();
-            log.setUserId(AuthorizationPolicy.getCurrentUserId());
+            log.setUserId(currentUserId);
             log.setOperation(OperationType.UPDATE_USER);
             log.setTargetType(TargetType.USER);
             log.setTargetId(user.getId());

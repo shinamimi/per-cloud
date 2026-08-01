@@ -132,6 +132,9 @@ public interface AdminSettingsService {
 
     int getMailPort();
 
+    /** SMTP 加密方式：STARTTLS / SSL / NONE（默认 STARTTLS） */
+    String getMailEncryption();
+
     String getMailUsername();
 
     String getMailPassword();
@@ -139,12 +142,15 @@ public interface AdminSettingsService {
     /** 发件人显示名 */
     String getMailFromName();
 
+    /** 发件人邮箱地址（null = 未在 t_setting 配置，用 yml spring.mail.from） */
+    String getMailFrom();
+
     /** 邮件频率限制（秒），默认 60 */
     long getMailFrequencyLimitSeconds();
 
     /** 更新邮件服务配置（null 字段恢复配置默认值；password 为空或脱敏占位符时不更新密码） */
     void updateMail(Boolean enabled, String host, Integer port, String username, String password,
-                    String fromName, Long frequencyLimit);
+                    String encryption, String from, String fromName, Long frequencyLimit);
 
     /* ==================== 日志 ==================== */
 

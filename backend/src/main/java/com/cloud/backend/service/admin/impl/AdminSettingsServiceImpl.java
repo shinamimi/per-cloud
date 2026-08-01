@@ -70,9 +70,11 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     private static final String KEY_MAIL_ENABLED = "mail.enabled";
     private static final String KEY_MAIL_HOST = "mail.host";
     private static final String KEY_MAIL_PORT = "mail.port";
+    private static final String KEY_MAIL_ENCRYPTION = "mail.encryption";
     private static final String KEY_MAIL_USERNAME = "mail.username";
     private static final String KEY_MAIL_PASSWORD = "mail.password";
     private static final String KEY_MAIL_FROM_NAME = "mail.from-name";
+    private static final String KEY_MAIL_FROM = "mail.from";
     private static final String KEY_MAIL_FREQUENCY_LIMIT = "mail.frequency-limit";
 
     /* ==================== 日志 ==================== */
@@ -99,6 +101,10 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
 
     @Value("${quota.default-vip:107374182400}")
     private long ymlDefaultQuotaVip;
+
+    /** yml spring.mail.from 兜底（发件人邮箱地址） */
+    @Value("${spring.mail.from:}")
+    private String ymlMailFrom;
 
     public AdminSettingsServiceImpl(SettingMapper settingMapper, FileProperties fileProperties,
                                     JwtProperties jwtProperties, UserMapper userMapper) {
@@ -322,6 +328,11 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     }
 
     @Override
+    public String getMailEncryption() {
+        return readString(KEY_MAIL_ENCRYPTION, "STARTTLS");
+    }
+
+    @Override
     public String getMailUsername() {
         return readString(KEY_MAIL_USERNAME, null);
     }
@@ -337,21 +348,32 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     }
 
     @Override
+    public String getMailFrom() {
+        String from = readString(KEY_MAIL_FROM, null);
+        if (from != null && !from.isBlank()) {
+            return from;
+        }
+        return ymlMailFrom;
+    }
+
+    @Override
     public long getMailFrequencyLimitSeconds() {
         return readLong(KEY_MAIL_FREQUENCY_LIMIT, 60);
     }
 
     @Override
     public void updateMail(Boolean enabled, String host, Integer port, String username, String password,
-                           String fromName, Long frequencyLimit) {
+                           String encryption, String from, String fromName, Long frequencyLimit) {
         upsertOrReset(KEY_MAIL_ENABLED, enabled, "SMTP 开关");
         upsertOrReset(KEY_MAIL_HOST, host, "SMTP 服务器地址");
         upsertOrReset(KEY_MAIL_PORT, port, "SMTP 端口");
+        upsertOrReset(KEY_MAIL_ENCRYPTION, encryption, "SMTP 加密方式");
         upsertOrReset(KEY_MAIL_USERNAME, username, "SMTP 登录名");
         // 密码为空或脱敏占位符 = 不修改密码（保留原值）
         if (password != null && !password.isBlank() && !PASSWORD_MASK.equals(password)) {
             upsertOrReset(KEY_MAIL_PASSWORD, password, "SMTP 密码");
         }
+        upsertOrReset(KEY_MAIL_FROM, from, "发件人邮箱");
         upsertOrReset(KEY_MAIL_FROM_NAME, fromName, "发件人显示名");
         upsertOrReset(KEY_MAIL_FREQUENCY_LIMIT, frequencyLimit, "邮件频率限制（秒）");
     }

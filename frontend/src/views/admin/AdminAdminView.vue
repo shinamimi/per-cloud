@@ -59,6 +59,7 @@
         :candidates="transferDialog.candidates"
         :selected="transferDialog.selected"
         :role-options="transferRoleOptions"
+        :current-user-id="userStore.userId"
         @confirm="handleTransferConfirm"
         @cancel="transferDialog.visible = false"
       />
@@ -160,9 +161,11 @@ import {
 import type { AdminUserResponse, AdminCandidate, AdminRoleChange, RoleKey } from '@/types/admin'
 import { MetaGroup } from '@/types/meta'
 import { useMetaStore } from '@/stores/meta'
+import { useUserStore } from '@/stores/user'
 import Transfer from '@/components/common/Transfer.vue'
 
 const metaStore = useMetaStore()
+const userStore = useUserStore()
 
 /* ========== 数据加载 ========== */
 
@@ -191,11 +194,13 @@ function roleLabel(role: RoleKey): string {
  * 可选角色档位 —— 来自字典 role 组过滤。
  * 排除 USER（普通用户档）和 SUPER_ADMIN（不暴露在此页 UI），
  * 剩余 OPERATOR（显示"管理员"）与 ADMIN（显示"超级管理员"）两档。
+ * 非超级管理员（ADMIN 档）不可操作 ADMIN 权限，仅剩 OPERATOR 一档。
  */
 const transferRoleOptions = computed(() =>
   metaStore
     .getGroup(MetaGroup.ROLE)
-    .filter((opt) => opt.value !== 'USER' && opt.value !== 'SUPER_ADMIN'),
+    .filter((opt) => opt.value !== 'USER' && opt.value !== 'SUPER_ADMIN')
+    .filter((opt) => userStore.isSuperAdmin || opt.value !== 'ADMIN'),
 )
 
 const transferDialog = reactive({
@@ -203,7 +208,7 @@ const transferDialog = reactive({
   /** 数据加载中 —— 为 true 时不渲染 Transfer，显示骨架屏 */
   loading: false,
   candidates: [] as AdminCandidate[],
-  selected: [] as { id: number; username: string; nickname: string }[],
+  selected: [] as { id: number; username: string; nickname: string; role: RoleKey }[],
 })
 
 /**
@@ -220,6 +225,7 @@ async function openTransferDialog() {
       id: a.id,
       username: a.username,
       nickname: a.nickname,
+      role: a.role,
     }))
   } catch {
     // 拉取失败直接关闭对话框（错误信息已在拦截器中提示）

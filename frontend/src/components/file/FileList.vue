@@ -26,16 +26,18 @@
       size="default"
       style="width: 100%"
       @selection-change="handleSelectionChange"
-      @row-dblclick="handleRowDblClick"
     >
       <el-table-column type="selection" width="45" />
       <el-table-column label="名称" min-width="260">
         <template #default="{ row }">
-          <div class="file-name">
+          <div class="file-name" @click="handleNameClick(row)">
             <el-icon :size="18" :class="fileIconClass(row)">
               <component :is="fileIcon(row)" />
             </el-icon>
-            <span class="file-name-text">{{ row.name }}</span>
+            <span
+              class="file-name-text"
+              :class="{ 'name-clickable': isNameClickable(row) }"
+            >{{ row.name }}</span>
           </div>
         </template>
       </el-table-column>
@@ -51,15 +53,6 @@
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button
-            v-if="fileCan('preview', row) && isPreviewable(row.name, row.type)"
-            link
-            type="primary"
-            size="small"
-            @click="$emit('preview', row)"
-          >
-            预览
-          </el-button>
           <el-button
             v-if="fileCan('rename', row)"
             link
@@ -222,8 +215,19 @@ function handleIconClick(item: FileItem) {
   iconSelected.value = iconSelected.value === item.id ? null : item.id
 }
 
-/** 双击：目录进入，文件预览（可预览时） */
+/** 双击：目录进入，文件预览（可预览时）。已由单击名称承载，保留以兼容图标视图双击 */
 function handleRowDblClick(row: FileItem) {
+  handleNameClick(row)
+}
+
+/** 名称是否可点击：目录（进入）或可预览文件 */
+function isNameClickable(row: FileItem): boolean {
+  if (row.type === 'DIRECTORY') return true
+  return fileCan('preview', row) && isPreviewable(row.name, row.type)
+}
+
+/** 单击名称：目录进入，可预览文件打开预览 */
+function handleNameClick(row: FileItem) {
   if (row.type === 'DIRECTORY') {
     fileStore.navigate(row.id)
     return
@@ -378,6 +382,15 @@ async function handlePageChange() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.name-clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.name-clickable:hover {
+  color: #409eff;
 }
 
 .icon-grid {

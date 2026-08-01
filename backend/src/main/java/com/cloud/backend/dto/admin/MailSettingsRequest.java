@@ -14,10 +14,17 @@ public class MailSettingsRequest {
 
     private String host;
     private Integer port;
+
+    /** SMTP 加密方式：STARTTLS / SSL / NONE */
+    private String encryption;
+
     private String username;
 
     /** SMTP 密码（空/脱敏占位符 = 不更新） */
     private String password;
+
+    /** 发件人邮箱地址 */
+    private String from;
 
     /** 发件人显示名 */
     private String fromName;

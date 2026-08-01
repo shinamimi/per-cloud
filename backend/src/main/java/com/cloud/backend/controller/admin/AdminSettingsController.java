@@ -87,8 +87,10 @@ public class AdminSettingsController {
         mail.put("enabled", adminSettingsService.isMailEnabled());
         mail.put("host", adminSettingsService.getMailHost());
         mail.put("port", adminSettingsService.getMailPort());
+        mail.put("encryption", adminSettingsService.getMailEncryption());
         mail.put("username", adminSettingsService.getMailUsername());
         mail.put("password", adminSettingsService.getMailPassword() == null ? null : PASSWORD_MASK);
+        mail.put("from", adminSettingsService.getMailFrom());
         mail.put("fromName", adminSettingsService.getMailFromName());
         mail.put("frequencyLimit", adminSettingsService.getMailFrequencyLimitSeconds());
         return mail;
@@ -164,6 +166,8 @@ public class AdminSettingsController {
                 request.getPort(),
                 request.getUsername(),
                 request.getPassword(),
+                request.getEncryption(),
+                request.getFrom(),
                 request.getFromName(),
                 request.getFrequencyLimit());
         return Result.success();

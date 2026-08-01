@@ -289,22 +289,45 @@
         <el-tab-pane label="邮件服务" name="mail">
           <div class="pane">
             <p class="pane-desc">
-              SMTP 连接信息（含密码）为敏感配置，仅 ADMIN 及以上可编辑；密码留空保存 = 不修改。
+              配置邮件发送服务器（支持转发或自有域名直发）。含密码的配置为敏感信息，仅 ADMIN 及以上可编辑；密码留空保存 = 不修改。
             </p>
+            <el-alert
+              v-if="canEditSensitive"
+              type="warning"
+              :closable="false"
+              show-icon
+              class="mail-domain-tip"
+            >
+              <template #title>如何配置：到你的邮件服务商官网搜索「SMTP 设置」，按文档填写下面各字段</template>
+              查询步骤：① 打开你的邮箱服务商帮助中心，搜索「SMTP 服务器地址 / 端口 / 加密方式」；② 服务器地址、端口、加密方式三者以服务商文档为准（例如 465 对应 SSL，587 对应 STARTTLS）；③ 发件人邮箱填写你的域名邮箱账号（如 noreply@你的域名.com），登录账号、登录密码用服务商提供的 SMTP 专用账号与授权码。服务器地址与发件人邮箱需属于同一域名，否则会被拒收。
+            </el-alert>
             <el-form label-width="180px" class="config-form">
-              <el-form-item label="SMTP 开关">
+              <el-form-item label="启用邮件服务">
                 <el-switch v-model="mail.enabled" :disabled="!canEditSensitive" />
               </el-form-item>
-              <el-form-item label="SMTP 主机">
-                <el-input v-model="mail.host" placeholder="如 smtp-relay.brevo.com" :disabled="!canEditSensitive" />
+              <el-form-item label="发件人邮箱">
+                <el-input v-model="mail.from" placeholder="如 noreply@你的域名.com" :disabled="!canEditSensitive" />
               </el-form-item>
-              <el-form-item label="SMTP 端口">
+              <el-form-item label="发件人名称">
+                <el-input v-model="mail.fromName" placeholder="如 Cloud 云盘" :disabled="!canEditSensitive" />
+              </el-form-item>
+              <el-form-item label="服务器地址">
+                <el-input v-model="mail.host" placeholder="如 smtp.你的域名.com 或 smtp-relay.brevo.com" :disabled="!canEditSensitive" />
+              </el-form-item>
+              <el-form-item label="服务器端口">
                 <el-input-number v-model="mail.port" :min="1" :max="65535" :disabled="!canEditSensitive" />
               </el-form-item>
-              <el-form-item label="SMTP 登录名">
+              <el-form-item label="加密方式">
+                <el-select v-model="mail.encryption" :disabled="!canEditSensitive" style="width: 200px">
+                  <el-option label="STARTTLS（端口 587）" value="STARTTLS" />
+                  <el-option label="SSL（端口 465）" value="SSL" />
+                  <el-option label="无加密" value="NONE" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="登录账号">
                 <el-input v-model="mail.username" placeholder="SMTP 登录账号" :disabled="!canEditSensitive" />
               </el-form-item>
-              <el-form-item label="SMTP 密码">
+              <el-form-item label="登录密码">
                 <el-input
                   v-model="mail.password"
                   type="password"
@@ -313,10 +336,7 @@
                   :disabled="!canEditSensitive"
                 />
               </el-form-item>
-              <el-form-item label="发件人显示名">
-                <el-input v-model="mail.fromName" placeholder="如 Cloud 云盘" :disabled="!canEditSensitive" />
-              </el-form-item>
-              <el-form-item label="邮件频率限制（秒）">
+              <el-form-item label="发送频率限制（秒）">
                 <el-input-number v-model="mail.frequencyLimit" :min="5" :step="5" :disabled="!canEditSensitive" />
               </el-form-item>
               <el-form-item>
@@ -525,8 +545,10 @@ const mail = reactive<MailSettings>({
   enabled: true,
   host: '',
   port: 587,
+  encryption: 'STARTTLS',
   username: '',
   password: null,
+  from: '',
   fromName: '',
   frequencyLimit: 60,
 })
@@ -741,8 +763,10 @@ async function saveMail() {
       enabled: mail.enabled,
       host: mail.host || null,
       port: mail.port || null,
+      encryption: mail.encryption || null,
       username: mail.username || null,
       password: mail.password && mail.password.trim().length > 0 ? mail.password : null,
+      from: mail.from || null,
       fromName: mail.fromName || null,
       frequencyLimit: orNull(mail.frequencyLimit),
     })
@@ -923,6 +947,10 @@ onMounted(() => {
 
 .readonly-tip {
   margin-bottom: 16px;
+}
+
+.mail-domain-tip {
+  margin: 0 0 16px;
 }
 
 .config-tabs :deep(.el-tabs__item) {

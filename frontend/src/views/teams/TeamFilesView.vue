@@ -60,10 +60,13 @@
       >
         <el-table-column label="名称" min-width="240">
           <template #default="{ row }">
-            <div class="file-name">
+            <div class="file-name" @click="handleNameClick(row)">
               <el-icon v-if="row.isDirectory"><Folder /></el-icon>
               <el-icon v-else class="file-icon"><Document /></el-icon>
-              <span class="name-text">{{ row.name }}</span>
+              <span
+                class="name-text"
+                :class="{ 'name-clickable': isPreviewable(row.name, row.type) || row.isDirectory }"
+              >{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
@@ -78,11 +81,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="170" />
-        <el-table-column label="操作" width="260">
+        <el-table-column label="操作" width="220">
           <template #default="{ row }">
             <el-button v-if="row.isDirectory" link type="primary" @click="openDir(row)">打开</el-button>
             <template v-else>
-              <el-button link type="primary" @click="handlePreview(row)">预览</el-button>
               <el-button link type="primary" @click="handleDownload(row)">下载</el-button>
             </template>
             <el-button link type="primary" @click="handleRename(row)">重命名</el-button>
@@ -169,6 +171,7 @@ import MoveCopyTeamDialog from '@/components/team/MoveCopyTeamDialog.vue'
 import type { UploadUserFile } from 'element-plus'
 import { formatBytesAuto } from '@/utils/format'
 import type { FileItem, FilePreviewResponse } from '@/types/file'
+import { isPreviewable } from '@/types/file'
 import type { Team } from '@/types/team'
 
 const route = useRoute()
@@ -215,7 +218,18 @@ function navTo(id: number, depth?: number) {
 }
 
 function handleRowDoubleClick(row: FileItem) {
-  if (row.isDirectory) openDir(row)
+  handleNameClick(row)
+}
+
+/** 单击名称：目录进入，文件打开预览 */
+function handleNameClick(row: FileItem) {
+  if (row.isDirectory) {
+    openDir(row)
+    return
+  }
+  if (isPreviewable(row.name, row.type)) {
+    handlePreview(row)
+  }
 }
 
 async function handleCreateDirectory() {
@@ -374,6 +388,15 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.name-clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.name-clickable:hover {
+  color: #409eff;
 }
 
 .pager {

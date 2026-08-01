@@ -38,6 +38,8 @@ echo "       MinIO:   localhost:9000 (API) / localhost:9001 (Console)"
 # 2. 启动后端（后台运行，等待就绪）
 echo "[2/3] 启动后端 (Spring Boot :8081)..."
 cd "$ROOT_DIR/backend"
+# 加载根目录 .env（SMTP 等敏感配置），随后启动 Spring Boot
+set -a; source "$ROOT_DIR/.env" 2>/dev/null; set +a
 ./mvnw spring-boot:run &
 BACKEND_PID=$!
 cd "$ROOT_DIR"

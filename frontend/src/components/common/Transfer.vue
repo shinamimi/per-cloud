@@ -4,7 +4,10 @@
     用于批量调整"成员/角色"归属：左列候选集合，右列已选集合，移动即变更。
 
     交互规则：
-    - 全局角色选择器：顶部选择目标角色（管理员/超级管理员），默认第一档
+    - 全局角色选择器：顶部选择目标角色（管理员 OPERATOR / 超级管理员 ADMIN），默认第一档
+    - 左列/右列按目标角色过滤：
+      目标 OPERATOR → 左列 USER，右列 OPERATOR
+      目标 ADMIN → 左列 USER + OPERATOR，右列 ADMIN
     - 左列 → 右列：移入，设为所选角色
     - 右列 → 左列：移出，降级为普通用户（USER）
     - 确认：一次提交全部变更，携带变更数组 [{ userId, newRole }]
@@ -96,7 +99,7 @@
  * 同一用户可能被反复移入/移出，Map 天然去重，最终只提交最后一次状态，
  * 避免对同一用户产生冲突的变更项。
  */
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import type { AdminRoleChange, RoleKey } from '@/types/admin'
 
@@ -104,6 +107,7 @@ interface TransferItem {
   id: number
   username: string
   nickname?: string | null
+  role: RoleKey
 }
 
 interface RoleOption {
@@ -118,6 +122,8 @@ const props = defineProps<{
   selected: TransferItem[]
   /** 可选角色档位，来自字典 role 组过滤（排除 USER 和 SUPER_ADMIN） */
   roleOptions: RoleOption[]
+  /** 当前登录用户 id —— 排除自己，防止误操作自己的角色 */
+  currentUserId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -130,10 +136,39 @@ const emit = defineEmits<{
 /** 全局目标角色 —— 默认第一档（通常为"管理员"） */
 const targetRole = ref(props.roleOptions[0]?.value ?? '')
 
-/** 左列本地副本 */
-const leftList = ref<TransferItem[]>(props.candidates.map((c) => ({ ...c })))
-/** 右列本地副本 */
-const rightList = ref<TransferItem[]>(props.selected.map((s) => ({ ...s })))
+/** 候选 + 已选合并后的全量用户（candidates 与 selected 可能重叠，按 id 去重；排除当前用户自己） */
+const allUsers = computed(() => {
+  const map = new Map<number, TransferItem>()
+  for (const c of props.candidates) {
+    if (c.id !== props.currentUserId) map.set(c.id, c)
+  }
+  for (const s of props.selected) {
+    if (s.id !== props.currentUserId) map.set(s.id, s)
+  }
+  return Array.from(map.values())
+})
+
+/** 用户当前角色 = 待提交变更优先，否则取原始角色 */
+function currentRole(id: number): RoleKey {
+  return changes.get(id) ?? allUsers.value.find((u) => u.id === id)?.role ?? 'USER'
+}
+
+/**
+ * 左列候选 —— 按目标角色过滤：
+ * - 目标 OPERATOR（管理员）：仅 USER 可作为候选人
+ * - 目标 ADMIN（超级管理员）：USER + OPERATOR 都可被提升
+ */
+const leftList = computed(() =>
+  allUsers.value.filter((u) => {
+    const role = currentRole(u.id)
+    return targetRole.value === 'OPERATOR' ? role === 'USER' : role === 'USER' || role === 'OPERATOR'
+  }),
+)
+
+/** 右列已选 —— 当前已是目标角色的用户 */
+const rightList = computed(() =>
+  allUsers.value.filter((u) => currentRole(u.id) === targetRole.value),
+)
 
 /** 左列勾选中的用户 id */
 const leftChecked = ref<number[]>([])
@@ -148,11 +183,16 @@ const pendingChanges = computed(() =>
   Array.from(changes.entries()).map(([userId, newRole]) => ({ userId, newRole })),
 )
 
+/** 切换目标角色时清空勾选与待提交变更，避免跨档位残留 */
+watch(targetRole, () => {
+  leftChecked.value = []
+  rightChecked.value = []
+  changes.clear()
+})
+
 /** 左列 → 右列：移入，设为所选角色 */
 function moveRight() {
   const moving = leftList.value.filter((item) => leftChecked.value.includes(item.id))
-  rightList.value.push(...moving)
-  leftList.value = leftList.value.filter((item) => !leftChecked.value.includes(item.id))
   for (const item of moving) {
     changes.set(item.id, targetRole.value as RoleKey)
   }
@@ -162,8 +202,6 @@ function moveRight() {
 /** 右列 → 左列：移出，降级为普通用户（USER） */
 function moveLeft() {
   const moving = rightList.value.filter((item) => rightChecked.value.includes(item.id))
-  leftList.value.push(...moving)
-  rightList.value = rightList.value.filter((item) => !rightChecked.value.includes(item.id))
   for (const item of moving) {
     changes.set(item.id, 'USER')
   }

@@ -48,10 +48,11 @@
           </el-menu-item>
 
           <!--
-            管理员菜单组 —— 仅在当前用户 role >= ADMIN 时显示。
-            使用 v-if="userStore.isAdmin" 阻止非管理员看到管理入口。
+            管理员菜单组 —— 仅在当前用户 role >= OPERATOR 时显示。
+            使用 v-if="userStore.isOperator" 阻止低权限用户看到管理入口。
+            其中「管理员管理」仅 ADMIN 及以上可见（OPERATOR 不可进入）。
           -->
-          <el-sub-menu v-if="userStore.isAdmin" index="/admin">
+          <el-sub-menu v-if="userStore.isOperator" index="/admin">
             <template #title>
               <el-icon><DataAnalysis /></el-icon>
               <span>管理后台</span>
@@ -59,7 +60,7 @@
             <el-menu-item index="/admin">仪表盘</el-menu-item>
             <el-menu-item index="/admin/users">用户管理</el-menu-item>
             <el-menu-item index="/admin/teams">团队管理</el-menu-item>
-            <el-menu-item index="/admin/admins">管理员管理</el-menu-item>
+            <el-menu-item v-if="userStore.isAdmin" index="/admin/admins">管理员管理</el-menu-item>
             <el-menu-item index="/admin/settings">系统设置</el-menu-item>
           </el-sub-menu>
         </el-menu>
