@@ -10,6 +10,7 @@ import type {
   AdminFileQueryParams,
   AdminFileStatusRequest,
   AdminRecycleItem,
+  DisableScopeKey,
 } from '@/types/admin'
 
 /** 全局文件列表（筛选+分页）—— GET /api/admin/files */
@@ -32,9 +33,13 @@ export function adminDownloadUrl(id: number): string {
   return `/api/admin/files/${id}/download`
 }
 
-/** 禁用/启用 —— PUT /api/admin/files/{id}/status */
-export function updateAdminFileStatus(id: number, status: 'NORMAL' | 'DISABLED'): Promise<void> {
-  return request.put(`/api/admin/files/${id}/status`, { status })
+/** 禁用/启用 —— PUT /api/admin/files/{id}/status（scope 仅禁用时生效） */
+export function updateAdminFileStatus(
+  id: number,
+  status: 'NORMAL' | 'DISABLED',
+  scope?: DisableScopeKey,
+): Promise<void> {
+  return request.put(`/api/admin/files/${id}/status`, { status, scope })
 }
 
 /** 批量禁用/启用 —— POST /api/admin/files/batch-status */

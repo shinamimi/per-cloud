@@ -6,6 +6,7 @@ import com.cloud.backend.entity.File;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.FileStatus;
 import com.cloud.backend.exception.BusinessException;
+import com.cloud.backend.mapper.DisabledObjectMapper;
 import com.cloud.backend.service.file.FileService;
 import com.cloud.backend.service.file.PreviewService;
 import com.cloud.backend.service.file.StorageService;
@@ -45,13 +46,16 @@ public class PreviewServiceImpl implements PreviewService {
     private final StorageService storageService;
     private final FileProperties fileProperties;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
+    private final DisabledObjectMapper disabledObjectMapper;
 
     public PreviewServiceImpl(FileService fileService, StorageService storageService, FileProperties fileProperties,
-                              com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
+                              com.cloud.backend.service.admin.AdminSettingsService adminSettingsService,
+                              DisabledObjectMapper disabledObjectMapper) {
         this.fileService = fileService;
         this.storageService = storageService;
         this.fileProperties = fileProperties;
         this.adminSettingsService = adminSettingsService;
+        this.disabledObjectMapper = disabledObjectMapper;
     }
 
     @Override
@@ -64,10 +68,27 @@ public class PreviewServiceImpl implements PreviewService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
         }
-        // 禁用文件不可预览（docs/adr/012：用户可见但不可下载/预览/分享）
+        // 禁用/对象级禁用文件不可预览（docs/admin-file-management.md：用户端不可下载/预览，管理员后台可预览）
         if (file.getStatus() == FileStatus.DISABLED) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
+        if (file.getFileHash() != null && !file.getFileHash().isEmpty()
+                && disabledObjectMapper.countBlocked(file.getFileHash(), userId) > 0) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
+        }
+        return previewContent(userId, file);
+    }
+
+    @Override
+    public FilePreviewResponse previewFileForAdmin(File file) {
+        if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
+            throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
+        }
+        // 管理员后台预览不受禁用限制（docs/admin-file-management.md：用于决定解禁）
+        return previewContent(file.getUserId(), file);
+    }
+
+    private FilePreviewResponse previewContent(Long userId, File file) {
         String extension = file.getExtension() == null ? "" : file.getExtension().toLowerCase();
         String url = storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
 

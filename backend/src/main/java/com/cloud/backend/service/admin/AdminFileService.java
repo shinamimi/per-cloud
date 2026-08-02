@@ -5,6 +5,7 @@ import com.cloud.backend.dto.Page;
 import com.cloud.backend.dto.admin.AdminFileResponse;
 import com.cloud.backend.dto.admin.AdminRecycleResponse;
 import com.cloud.backend.dto.file.FilePreviewResponse;
+import com.cloud.backend.enums.DisableScope;
 import com.cloud.backend.enums.FileStatus;
 
 import java.util.List;
@@ -32,8 +33,8 @@ public interface AdminFileService {
     /** 管理端下载 URL（不做禁用校验，管理员可下载禁用文件） */
     String generateDownloadUrl(com.cloud.backend.entity.File file);
 
-    /** 禁用/启用 */
-    void changeStatus(Long id, FileStatus status);
+    /** 禁用/启用（scope 仅禁用时生效：GLOBAL=全站禁，USER=仅用户，docs/admin-file-management.md 5.1） */
+    void changeStatus(Long id, FileStatus status, DisableScope scope);
 
     /** 删除（进全局回收站，支持批量） */
     void deleteToGlobalRecycleBin(List<Long> ids);

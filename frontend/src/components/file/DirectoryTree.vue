@@ -11,7 +11,7 @@
       @click="handleSelect(0)"
     >
       <el-icon><Folder /></el-icon>
-      <span>全部文件</span>
+      <span>查看根目录</span>
     </div>
     <el-tree
       :data="fileStore.tree"

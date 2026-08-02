@@ -50,6 +50,17 @@ public interface FileMapper {
 
     int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") Integer status);
 
+    /* ==================== 对象级禁用（docs/admin-file-management.md 5.1，按内容 hash） ==================== */
+
+    /** 按内容 hash 禁用全部引用（全站禁） */
+    int disableByHash(String fileHash);
+
+    /** 按内容 hash 禁用指定用户引用（仅用户禁） */
+    int disableByHashAndUser(@Param("fileHash") String fileHash, @Param("userId") Long userId);
+
+    /** 按内容 hash 恢复全部引用（启用时先统一恢复，再重放剩余禁用记录） */
+    int restoreByHash(String fileHash);
+
     int deleteByIds(@Param("ids") List<Long> ids);
 
     List<File> findAll();

@@ -6,16 +6,19 @@ import com.cloud.backend.dto.AdminFileQuery;
 import com.cloud.backend.dto.Page;
 import com.cloud.backend.dto.admin.AdminFileResponse;
 import com.cloud.backend.dto.admin.AdminRecycleResponse;
+import com.cloud.backend.entity.DisabledObject;
 import com.cloud.backend.entity.File;
 import com.cloud.backend.entity.OperationLog;
 import com.cloud.backend.entity.RecycleBin;
 import com.cloud.backend.entity.Team;
 import com.cloud.backend.entity.User;
+import com.cloud.backend.enums.DisableScope;
 import com.cloud.backend.enums.ErrorCode;
 import com.cloud.backend.enums.FileStatus;
 import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
+import com.cloud.backend.mapper.DisabledObjectMapper;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.mapper.RecycleBinMapper;
 import com.cloud.backend.mapper.TeamMapper;
@@ -59,6 +62,7 @@ public class AdminFileServiceImpl implements AdminFileService {
     private final FileMapper fileMapper;
     private final RecycleBinMapper recycleBinMapper;
     private final RecycleBinService recycleBinService;
+    private final DisabledObjectMapper disabledObjectMapper;
     private final UserMapper userMapper;
     private final TeamMapper teamMapper;
     private final UserService userService;
@@ -68,13 +72,14 @@ public class AdminFileServiceImpl implements AdminFileService {
     private final StorageService storageService;
 
     public AdminFileServiceImpl(FileMapper fileMapper, RecycleBinMapper recycleBinMapper,
-                                RecycleBinService recycleBinService, UserMapper userMapper,
-                                TeamMapper teamMapper, UserService userService, TeamService teamService,
-                                OperationLogService operationLogService, AdminSettingsService adminSettingsService,
-                                StorageService storageService) {
+                                RecycleBinService recycleBinService, DisabledObjectMapper disabledObjectMapper,
+                                UserMapper userMapper, TeamMapper teamMapper, UserService userService,
+                                TeamService teamService, OperationLogService operationLogService,
+                                AdminSettingsService adminSettingsService, StorageService storageService) {
         this.fileMapper = fileMapper;
         this.recycleBinMapper = recycleBinMapper;
         this.recycleBinService = recycleBinService;
+        this.disabledObjectMapper = disabledObjectMapper;
         this.userMapper = userMapper;
         this.teamMapper = teamMapper;
         this.userService = userService;
@@ -130,7 +135,7 @@ public class AdminFileServiceImpl implements AdminFileService {
 
     @Override
     @Transactional
-    public void changeStatus(Long id, FileStatus status) {
+    public void changeStatus(Long id, FileStatus status, DisableScope scope) {
         if (status == null || status == FileStatus.DELETED) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "状态仅支持 NORMAL/DISABLED");
         }
@@ -138,18 +143,62 @@ public class AdminFileServiceImpl implements AdminFileService {
         if (file == null) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
-        if (file.getStatus() == status) {
-            return;
+        boolean hasHash = file.getFileHash() != null && !file.getFileHash().isEmpty();
+        if (status == FileStatus.DISABLED) {
+            if (hasHash) {
+                disableObject(file, scope == null ? DisableScope.USER : scope);
+            } else {
+                fileMapper.updateStatus(id, FileStatus.DISABLED.getValue());
+            }
+        } else {
+            if (hasHash) {
+                enableObject(file, scope == null ? DisableScope.USER : scope);
+            } else {
+                fileMapper.updateStatus(id, FileStatus.NORMAL.getValue());
+            }
         }
-        fileMapper.updateStatus(id, status.getValue());
 
         OperationLog log = new OperationLog();
         log.setUserId(AuthorizationPolicy.getCurrentUserId());
         log.setOperation(status == FileStatus.DISABLED ? OperationType.DISABLE_FILE : OperationType.ENABLE_FILE);
         log.setTargetType(TargetType.FILE);
         log.setTargetId(id);
-        log.setDetail((status == FileStatus.DISABLED ? "禁用文件: " : "启用文件: ") + file.getName());
+        log.setDetail((status == FileStatus.DISABLED ? "禁用文件: " : "启用文件: ") + file.getName()
+                + (status == FileStatus.DISABLED && scope == DisableScope.GLOBAL ? "（全站禁）" : ""));
         operationLogService.log(log);
+    }
+
+    /** 对象级禁用：写 t_disabled_object + 按范围更新文件状态（docs/admin-file-management.md 5.1） */
+    private void disableObject(File file, DisableScope scope) {
+        DisabledObject record = new DisabledObject();
+        record.setFileHash(file.getFileHash());
+        record.setScope(scope.getValue());
+        record.setUserId(scope == DisableScope.USER ? file.getUserId() : 0L);
+        record.setCreatedBy(AuthorizationPolicy.getCurrentUserId());
+        try {
+            disabledObjectMapper.insert(record);
+        } catch (org.springframework.dao.DuplicateKeyException ignored) {
+            // 已存在相同禁用记录，幂等
+        }
+        if (scope == DisableScope.GLOBAL) {
+            fileMapper.disableByHash(file.getFileHash());
+        } else {
+            fileMapper.disableByHashAndUser(file.getFileHash(), file.getUserId());
+        }
+    }
+
+    /** 对象级启用：删除禁用记录后重算（先全部恢复，再重放剩余禁用记录） */
+    private void enableObject(File file, DisableScope scope) {
+        long userId = scope == DisableScope.USER ? file.getUserId() : 0L;
+        disabledObjectMapper.deleteByHashAndScopeAndUser(file.getFileHash(), scope.getValue(), userId);
+        fileMapper.restoreByHash(file.getFileHash());
+        for (DisabledObject record : disabledObjectMapper.findByHash(file.getFileHash())) {
+            if (record.getScope() == DisableScope.GLOBAL.getValue()) {
+                fileMapper.disableByHash(record.getFileHash());
+            } else {
+                fileMapper.disableByHashAndUser(record.getFileHash(), record.getUserId());
+            }
+        }
     }
 
     @Override

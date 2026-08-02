@@ -4,7 +4,9 @@ import com.cloud.backend.config.FileProperties;
 import com.cloud.backend.dto.file.BatchDownloadResponse;
 import com.cloud.backend.entity.File;
 import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.FileStatus;
 import com.cloud.backend.exception.BusinessException;
+import com.cloud.backend.mapper.DisabledObjectMapper;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.service.file.DownloadService;
 import com.cloud.backend.service.file.FileService;
@@ -54,18 +56,21 @@ public class DownloadServiceImpl implements DownloadService {
     private final ProgressWebSocketHandler progressHandler;
     private final ExecutorService packExecutor;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
+    private final DisabledObjectMapper disabledObjectMapper;
 
     private final Map<String, BatchTask> tasks = new ConcurrentHashMap<>();
 
     public DownloadServiceImpl(FileService fileService, FileMapper fileMapper, StorageService storageService,
                                FileProperties fileProperties, ProgressWebSocketHandler progressHandler,
-                               com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
+                               com.cloud.backend.service.admin.AdminSettingsService adminSettingsService,
+                               DisabledObjectMapper disabledObjectMapper) {
         this.fileService = fileService;
         this.fileMapper = fileMapper;
         this.storageService = storageService;
         this.fileProperties = fileProperties;
         this.progressHandler = progressHandler;
         this.adminSettingsService = adminSettingsService;
+        this.disabledObjectMapper = disabledObjectMapper;
         this.packExecutor = Executors.newFixedThreadPool(2, runnable -> {
             Thread thread = new Thread(runnable, "pack-task");
             thread.setDaemon(true);
@@ -79,7 +84,7 @@ public class DownloadServiceImpl implements DownloadService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
-        requireEnabled(file);
+        requireEnabled(userId, file);
         try {
             return storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
         } catch (Exception e) {
@@ -95,7 +100,7 @@ public class DownloadServiceImpl implements DownloadService {
             if (file.isDir()) {
                 collectFiles(userId, file.getId(), files);
             } else {
-                requireEnabled(file);
+                requireEnabled(userId, file);
                 files.add(file);
             }
         }
@@ -224,9 +229,13 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
-    /** 禁用文件不可下载（docs/adr/012：用户可见但不可下载/预览/分享） */
-    private void requireEnabled(File file) {
+    /** 禁用/对象级禁用文件不可下载（docs/admin-file-management.md：用户端不可下载，管理员后台可下载） */
+    private void requireEnabled(Long userId, File file) {
         if (file.getStatus() == com.cloud.backend.enums.FileStatus.DISABLED) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
+        }
+        if (file.getFileHash() != null && !file.getFileHash().isEmpty()
+                && disabledObjectMapper.countBlocked(file.getFileHash(), userId) > 0) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
     }

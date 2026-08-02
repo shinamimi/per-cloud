@@ -4,7 +4,8 @@ import lombok.Data;
 
 /**
  * 管理端全局文件查询条件 —— GET /api/admin/files。
- * userId 可选（按用户筛选）；teamId 可选（0=个人空间，>0=具体团队，-1=全部团队，null=全部）；
+ * userId 可选（按用户 ID 精确筛选）；username 可选（按用户名或昵称模糊筛选）；
+ * teamId 可选（0=个人空间，>0=具体团队，-1=全部团队，null=全部）；
  * category 类型过滤；status 可选（1=NORMAL 2=DISABLED，null=全部未删除）；
  * sort：timeDesc（默认）/ sizeDesc / sizeAsc。
  */
@@ -12,6 +13,7 @@ import lombok.Data;
 public class AdminFileQuery {
 
     private Long userId;
+    private String username;
     private Long teamId;
     private Integer category;
     private Integer status;

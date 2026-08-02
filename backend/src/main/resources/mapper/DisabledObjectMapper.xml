@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cloud.backend.mapper.DisabledObjectMapper">
+
+    <insert id="insert" parameterType="com.cloud.backend.entity.DisabledObject"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_disabled_object (file_hash, scope, user_id, created_by, reason)
+        VALUES (#{fileHash}, #{scope}, #{userId}, #{createdBy}, #{reason})
+    </insert>
+
+    <select id="findByHash" parameterType="java.lang.String" resultType="com.cloud.backend.entity.DisabledObject">
+        SELECT * FROM t_disabled_object WHERE file_hash = #{fileHash}
+    </select>
+
+    <delete id="deleteByHashAndScopeAndUser">
+        DELETE FROM t_disabled_object
+        WHERE file_hash = #{fileHash} AND scope = #{scope} AND user_id = #{userId}
+    </delete>
+
+    <select id="countBlocked" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM t_disabled_object
+        WHERE file_hash = #{fileHash}
+          AND (scope = 1 OR (scope = 2 AND user_id = #{userId}))
+    </select>
+</mapper>

@@ -24,7 +24,7 @@
         <el-table-column prop="nickname" label="昵称" min-width="120" />
         <el-table-column label="角色" width="130">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'SUPER_ADMIN' ? 'danger' : 'warning'" size="small">
+            <el-tag :type="roleTagType(row.role)" size="small">
               {{ roleLabel(row.role) }}
             </el-tag>
           </template>
@@ -109,7 +109,7 @@
           <span>{{ editRoleDialog.target?.username }}</span>
         </el-form-item>
         <el-form-item label="当前角色">
-          <el-tag :type="editRoleDialog.target?.role === 'SUPER_ADMIN' ? 'danger' : 'warning'" size="small">
+          <el-tag :type="roleTagType(editRoleDialog.target?.role ?? 'ADMIN')" size="small">
             {{ roleLabel(editRoleDialog.target?.role || 'ADMIN') }}
           </el-tag>
         </el-form-item>
@@ -159,6 +159,7 @@ import {
   updateAdminRolesBatch,
 } from '@/api/admin/admin'
 import type { AdminUserResponse, AdminCandidate, AdminRoleChange, RoleKey } from '@/types/admin'
+import { ROLE_TAG_TYPE } from '@/types/admin'
 import { MetaGroup } from '@/types/meta'
 import { useMetaStore } from '@/stores/meta'
 import { useUserStore } from '@/stores/user'
@@ -186,6 +187,11 @@ async function loadAdmins() {
 /** 角色 label 从字典 role 组获取（后端已做显示层混淆），字典未加载时回退为原始值 */
 function roleLabel(role: RoleKey): string {
   return metaStore.getGroup(MetaGroup.ROLE).find((opt) => opt.value === role)?.label ?? role
+}
+
+/** 角色 Tag 颜色 —— 共用映射（types/admin.ts ROLE_TAG_TYPE，与用户管理页保持一致） */
+function roleTagType(role: RoleKey): string {
+  return ROLE_TAG_TYPE[role] ?? 'info'
 }
 
 /* ========== 穿梭器（添加管理员） ========== */

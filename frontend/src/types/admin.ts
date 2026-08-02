@@ -14,6 +14,14 @@ export type UserStatusKey = 'NORMAL' | 'DISABLED' | 'LOCKED' | 'INACTIVE'
 /** 角色字符串值 —— 对应后端 Role 枚举 name */
 export type RoleKey = 'USER' | 'OPERATOR' | 'ADMIN' | 'SUPER_ADMIN'
 
+/** 角色 Tag 颜色 —— 用户管理/管理员管理两页共用（UI 样式属前端职责） */
+export const ROLE_TAG_TYPE: Record<RoleKey, string> = {
+  USER: 'info',
+  OPERATOR: 'warning',
+  ADMIN: 'danger',
+  SUPER_ADMIN: 'danger',
+}
+
 /**
  * 管理员用户管理响应 —— 对应用户列表/管理员列表返回的数据。
  *
@@ -333,9 +341,10 @@ export interface AdminFileItem {
   updatedAt: string
 }
 
-/** 管理端全局文件查询参数 —— GET /api/admin/files；status: 1=正常 2=禁用 */
+/** 管理端全局文件查询参数 —— GET /api/admin/files；status: 1=正常 2=禁用；username: 用户名/昵称模糊 */
 export interface AdminFileQueryParams {
   userId?: number
+  username?: string
   teamId?: number
   category?: number
   status?: 1 | 2
@@ -359,8 +368,12 @@ export interface AdminRecycleItem {
   expireTime: string
 }
 
-/** 禁用/启用请求 —— PUT /api/admin/files/{id}/status、POST /api/admin/files/batch-status */
+/** 禁用范围 —— 对应后端 DisableScope 枚举 name（docs/admin-file-management.md 5.1） */
+export type DisableScopeKey = 'GLOBAL' | 'USER'
+
+/** 禁用/启用请求 —— PUT /api/admin/files/{id}/status、POST /api/admin/files/batch-status；scope 仅禁用时生效 */
 export interface AdminFileStatusRequest {
   ids?: number[]
   status: 'NORMAL' | 'DISABLED'
+  scope?: DisableScopeKey
 }

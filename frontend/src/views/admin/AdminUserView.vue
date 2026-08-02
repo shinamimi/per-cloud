@@ -10,7 +10,7 @@
     <el-card shadow="never" class="search-card">
       <el-form :model="search" inline size="default">
         <el-form-item label="用户名">
-          <el-input v-model="search.username" placeholder="搜索用户名" clearable />
+          <el-input v-model="search.username" placeholder="搜索用户名" clearable @keyup.enter="loadUsers" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="search.status" placeholder="全部" clearable style="width: 130px">
@@ -203,7 +203,7 @@ import {
   resetUserPassword,
 } from '@/api/admin/user'
 import type { AdminUserResponse, RoleKey, UserStatusKey } from '@/types/admin'
-import { USER_STATUS_TAG_TYPE } from '@/types/admin'
+import { ROLE_TAG_TYPE, USER_STATUS_TAG_TYPE } from '@/types/admin'
 import { MetaGroup } from '@/types/meta'
 import { useMetaStore } from '@/stores/meta'
 import { useUserStore } from '@/stores/user'
@@ -277,15 +277,9 @@ function roleLabel(role: RoleKey): string {
   )
 }
 
-/** 角色 Tag 颜色属于前端 UI 样式，前端维护映射 */
+/** 角色 Tag 颜色 —— 共用映射（types/admin.ts ROLE_TAG_TYPE，与管理页保持一致） */
 function roleTagType(role: RoleKey): string {
-  const map: Record<RoleKey, string> = {
-    USER: 'info',
-    OPERATOR: 'warning',
-    ADMIN: 'danger',
-    SUPER_ADMIN: 'danger',
-  }
-  return map[role] ?? 'info'
+  return ROLE_TAG_TYPE[role] ?? 'info'
 }
 
 /* ========== 工具函数 ========== */

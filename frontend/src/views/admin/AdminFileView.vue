@@ -11,7 +11,21 @@
         <!-- ==================== 文件管理 ==================== -->
         <el-tab-pane label="文件管理" name="files">
           <div class="filter-bar">
-            <el-input v-model="filters.userId" placeholder="用户 ID（按上传者筛选）" clearable class="filter-user" />
+            <el-input
+              v-model="filters.username"
+              placeholder="用户名/昵称"
+              clearable
+              class="filter-username"
+              @keyup.enter="handleSearch"
+            />
+            <el-input
+              v-model="filters.userId"
+              placeholder="用户 ID（仅可以输入数字）"
+              clearable
+              class="filter-user"
+              @input="onUserIdInput"
+              @keyup.enter="handleSearch"
+            />
             <el-select v-model="filters.teamId" placeholder="归属" clearable class="filter-ownership">
               <el-option label="个人空间" :value="0" />
               <el-option label="团队空间" :value="-1" />
@@ -41,7 +55,7 @@
             <el-button
               :disabled="selectedIds.length === 0"
               type="warning"
-              @click="batchStatus('DISABLED')"
+              @click="openDisableDialog(selectedRows)"
             >
               批量禁用（{{ selectedIds.length }}）
             </el-button>
@@ -107,7 +121,7 @@
                 <el-button v-if="row.status === 'DISABLED'" link type="success" @click="toggleStatus(row, 'NORMAL')">
                   启用
                 </el-button>
-                <el-button v-else link type="warning" @click="toggleStatus(row, 'DISABLED')">禁用</el-button>
+                <el-button v-else link type="warning" @click="openDisableDialog([row])">禁用</el-button>
                 <el-button link type="danger" @click="deleteOne(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -212,7 +226,7 @@
           >
             启用
           </el-button>
-          <el-button v-else type="warning" @click="toggleStatus(detail, 'DISABLED')">禁用</el-button>
+          <el-button v-else type="warning" @click="openDisableDialog([detail])">禁用</el-button>
           <el-button type="danger" @click="deleteOne(detail)">删除</el-button>
         </div>
       </template>
@@ -220,6 +234,21 @@
 
     <!-- 预览（复用用户端预览弹窗，loader 指向管理端预览接口） -->
     <PreviewDialog v-model:visible="previewVisible" :file="previewFileItem" :loader="previewLoader" />
+
+    <!-- 禁用范围（docs/admin-file-management.md 5.1：全站禁 / 仅用户） -->
+    <el-dialog v-model="disableDialogVisible" title="禁用文件" width="440px">
+      <p class="disable-tip">
+        禁用后用户仍可见文件，但不可下载/预览/分享；秒传或重新上传相同内容将被拦截。
+      </p>
+      <el-radio-group v-model="disableScope">
+        <el-radio value="USER">仅该用户（只影响文件所属用户）</el-radio>
+        <el-radio value="GLOBAL">全站禁（相同内容的所有用户文件一并禁用）</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button @click="disableDialogVisible = false">取消</el-button>
+        <el-button type="warning" @click="confirmDisable">确定禁用</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -245,7 +274,7 @@ import { saveBlob } from '@/utils/download'
 import { formatBytesAuto } from '@/utils/format'
 import { fileCategoryFromCode, FILE_CATEGORY_CODE } from '@/types/file'
 import type { FileItem, FilePreviewResponse } from '@/types/file'
-import type { AdminFileItem, AdminRecycleItem } from '@/types/admin'
+import type { AdminFileItem, AdminRecycleItem, DisableScopeKey } from '@/types/admin'
 
 const CATEGORY_LABEL: Record<string, string> = {
   IMAGE: '图片',
@@ -267,19 +296,25 @@ const page = ref(1)
 const size = ref(20)
 const selectedRows = ref<AdminFileItem[]>([])
 const filters = reactive<{
+  username: string
   userId: string
   teamId: number | null
   category: number | null
   status: 1 | 2 | null
   sort: string
-}>({ userId: '', teamId: null, category: null, status: null, sort: 'timeDesc' })
+}>({ username: '', userId: '', teamId: null, category: null, status: null, sort: 'timeDesc' })
 
 const selectedIds = computed(() => selectedRows.value.map((r) => r.id))
+
+function onUserIdInput(val: string) {
+  filters.userId = val.replace(/\D/g, '')
+}
 
 async function load() {
   loading.value = true
   try {
     const res = await getAdminFiles({
+      username: filters.username || undefined,
       userId: filters.userId ? Number(filters.userId) : undefined,
       teamId: filters.teamId ?? undefined,
       category: filters.category ?? undefined,
@@ -301,6 +336,7 @@ function handleSearch() {
 }
 
 function handleReset() {
+  filters.username = ''
   filters.userId = ''
   filters.teamId = null
   filters.category = null
@@ -316,6 +352,30 @@ function handleSizeChange() {
 }
 
 /* ========== 状态/删除 ========== */
+
+/* 禁用范围弹窗（docs/admin-file-management.md 5.1：GLOBAL=全站禁 / USER=仅用户） */
+const disableDialogVisible = ref(false)
+const disableRows = ref<AdminFileItem[]>([])
+const disableScope = ref<DisableScopeKey>('USER')
+
+function openDisableDialog(rows: AdminFileItem[]) {
+  disableRows.value = rows
+  disableScope.value = 'USER'
+  disableDialogVisible.value = true
+}
+
+async function confirmDisable() {
+  const ids = disableRows.value.map((r) => r.id)
+  if (ids.length === 1) {
+    await updateAdminFileStatus(ids[0], 'DISABLED', disableScope.value)
+  } else {
+    await batchUpdateAdminFileStatus({ ids, status: 'DISABLED', scope: disableScope.value })
+  }
+  disableDialogVisible.value = false
+  ElMessage.success(`已禁用 ${ids.length} 个文件`)
+  await load()
+  for (const row of disableRows.value) await loadDetailIfOpen(row.id)
+}
 
 async function toggleStatus(row: AdminFileItem, status: 'NORMAL' | 'DISABLED') {
   await updateAdminFileStatus(row.id, status)
@@ -478,7 +538,18 @@ onMounted(() => {
 }
 
 .filter-user {
-  width: 160px;
+  width: 180px;
+}
+
+.filter-username {
+  width: 150px;
+}
+
+.disable-tip {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
 }
 
 .filter-ownership {

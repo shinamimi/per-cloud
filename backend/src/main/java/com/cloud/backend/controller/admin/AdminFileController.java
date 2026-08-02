@@ -51,17 +51,17 @@ public class AdminFileController {
         response.setHeader("Location", url);
     }
 
-    /** 管理员预览 —— GET /api/admin/files/{id}/preview */
+    /** 管理员预览 —— GET /api/admin/files/{id}/preview（不受禁用限制，用于决定解禁） */
     @GetMapping("/{id}/preview")
     public Result<FilePreviewResponse> preview(@PathVariable Long id) {
         com.cloud.backend.entity.File file = adminFileService.detailEntity(id);
-        return Result.success(previewService.previewFile(file.getUserId(), file));
+        return Result.success(previewService.previewFileForAdmin(file));
     }
 
-    /** 禁用/启用 —— PUT /api/admin/files/{id}/status */
+    /** 禁用/启用 —— PUT /api/admin/files/{id}/status（scope：GLOBAL=全站禁/USER=仅用户，默认 USER） */
     @PutMapping("/{id}/status")
     public Result<Void> changeStatus(@PathVariable Long id, @RequestBody FileStatusRequest request) {
-        adminFileService.changeStatus(id, request.getStatus());
+        adminFileService.changeStatus(id, request.getStatus(), request.getScope());
         return Result.success();
     }
 
@@ -69,7 +69,7 @@ public class AdminFileController {
     @PostMapping("/batch-status")
     public Result<Void> batchChangeStatus(@RequestBody com.cloud.backend.dto.admin.BatchFileStatusRequest request) {
         for (Long id : request.getIds()) {
-            adminFileService.changeStatus(id, request.getStatus());
+            adminFileService.changeStatus(id, request.getStatus(), request.getScope());
         }
         return Result.success();
     }

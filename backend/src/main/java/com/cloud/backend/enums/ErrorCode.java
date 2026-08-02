@@ -60,6 +60,7 @@ public enum ErrorCode {
     BATCH_TASK_NOT_FOUND(10214, "打包任务不存在"),
     MOVE_INVALID(10215, "不能移动到自身或其子目录"),
     FILE_DISABLED(10216, "文件已被管理员禁用"),
+    UPLOAD_BLOCKED(10217, "上传违规文件"),
 
     /* ==================== 分享 (10300-10399) ==================== */
     SHARE_EXPIRED(10300, "分享已过期"),

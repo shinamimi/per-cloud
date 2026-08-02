@@ -18,6 +18,7 @@ import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.enums.TeamMemberRole;
 import com.cloud.backend.exception.BusinessException;
+import com.cloud.backend.mapper.DisabledObjectMapper;
 import com.cloud.backend.mapper.FileHashMapper;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.mapper.RecycleBinMapper;
@@ -58,13 +59,15 @@ public class TeamFileServiceImpl implements TeamFileService {
     private final AdminSettingsService adminSettingsService;
     private final com.cloud.backend.service.file.RecycleBinService recycleBinService;
     private final com.cloud.backend.mapper.UserMapper userMapper;
+    private final DisabledObjectMapper disabledObjectMapper;
 
     public TeamFileServiceImpl(FileMapper fileMapper, FileHashMapper fileHashMapper,
                                RecycleBinMapper recycleBinMapper, StorageService storageService,
                                TeamService teamService, PreviewService previewService,
                                OperationLogService operationLogService, AdminSettingsService adminSettingsService,
                                com.cloud.backend.service.file.RecycleBinService recycleBinService,
-                               com.cloud.backend.mapper.UserMapper userMapper) {
+                               com.cloud.backend.mapper.UserMapper userMapper,
+                               DisabledObjectMapper disabledObjectMapper) {
         this.fileMapper = fileMapper;
         this.fileHashMapper = fileHashMapper;
         this.recycleBinMapper = recycleBinMapper;
@@ -75,6 +78,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         this.adminSettingsService = adminSettingsService;
         this.recycleBinService = recycleBinService;
         this.userMapper = userMapper;
+        this.disabledObjectMapper = disabledObjectMapper;
     }
 
     /* ==================== 列表 / 树 / 目录 ==================== */
@@ -319,8 +323,12 @@ public class TeamFileServiceImpl implements TeamFileService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
-        // 禁用文件不可下载（docs/adr/012：用户可见但不可下载/预览/分享）
+        // 禁用/对象级禁用文件不可下载（docs/admin-file-management.md：用户端不可下载，管理员后台可下载）
         if (file.getStatus() == FileStatus.DISABLED) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
+        }
+        if (file.getFileHash() != null && !file.getFileHash().isEmpty()
+                && disabledObjectMapper.countBlocked(file.getFileHash(), userId) > 0) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
         try {

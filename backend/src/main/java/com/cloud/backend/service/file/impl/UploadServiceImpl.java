@@ -19,6 +19,7 @@ import com.cloud.backend.enums.FileType;
 import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.TargetType;
 import com.cloud.backend.exception.BusinessException;
+import com.cloud.backend.mapper.DisabledObjectMapper;
 import com.cloud.backend.mapper.FileHashMapper;
 import com.cloud.backend.mapper.FileMapper;
 import com.cloud.backend.service.file.FileHashService;
@@ -61,13 +62,15 @@ public class UploadServiceImpl implements UploadService {
     private final ProgressWebSocketHandler progressHandler;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
     private final com.cloud.backend.service.team.TeamService teamService;
+    private final DisabledObjectMapper disabledObjectMapper;
 
     public UploadServiceImpl(StringRedisTemplate redis, FileProperties fileProperties, FileMapper fileMapper,
                              FileHashMapper fileHashMapper, FileHashService fileHashService,
                              StorageService storageService, UserService userService,
                              FileService fileService, ProgressWebSocketHandler progressHandler,
                              com.cloud.backend.service.admin.AdminSettingsService adminSettingsService,
-                             com.cloud.backend.service.team.TeamService teamService) {
+                             com.cloud.backend.service.team.TeamService teamService,
+                             DisabledObjectMapper disabledObjectMapper) {
         this.redis = redis;
         this.fileProperties = fileProperties;
         this.fileMapper = fileMapper;
@@ -79,6 +82,7 @@ public class UploadServiceImpl implements UploadService {
         this.progressHandler = progressHandler;
         this.adminSettingsService = adminSettingsService;
         this.teamService = teamService;
+        this.disabledObjectMapper = disabledObjectMapper;
     }
 
     /* ==================== init ==================== */
@@ -250,6 +254,9 @@ public class UploadServiceImpl implements UploadService {
         int chunkCount = Integer.parseInt((String) meta.get("chunkCount"));
         long teamId = Long.parseLong((String) meta.get("teamId"));
 
+        // 内容 hash 命中对象级禁用（全站禁/仅该用户禁）→ 拦截（docs/admin-file-management.md 5.1）
+        requireNotBlocked(fileHash, userId);
+
         // 合并分布式锁，防并发合并
         String lockKey = RedisConstants.MERGE_LOCK_PREFIX + uploadId;
         Boolean locked = redis.opsForValue().setIfAbsent(lockKey, "1", Duration.ofMinutes(5));
@@ -363,6 +370,7 @@ public class UploadServiceImpl implements UploadService {
         }
         long teamId = normalizeTeamId(request.getTeamId());
         validateParent(userId, teamId, request.getParentId());
+        requireNotBlocked(request.getFileHash(), userId);
         FileHash hash = fileHashMapper.findByHash(request.getFileHash());
         if (hash == null) {
             return SecUploadResponse.miss();
@@ -398,6 +406,14 @@ public class UploadServiceImpl implements UploadService {
     }
 
     /* ==================== helpers ==================== */
+
+    /** 内容 hash 命中对象级禁用（全站禁或仅该用户禁）→ 拦截"上传违规文件"（docs/admin-file-management.md 5.1） */
+    private void requireNotBlocked(String fileHash, Long userId) {
+        if (fileHash != null && !fileHash.isEmpty()
+                && disabledObjectMapper.countBlocked(fileHash, userId) > 0) {
+            throw new BusinessException(ErrorCode.UPLOAD_BLOCKED);
+        }
+    }
 
     private Map<Object, Object> getMeta(Long userId, String uploadId) {
         Map<Object, Object> meta = redis.opsForHash().entries(RedisConstants.UPLOAD_META_PREFIX + uploadId);

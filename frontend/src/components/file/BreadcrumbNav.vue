@@ -5,7 +5,7 @@
 <template>
   <el-breadcrumb separator="/">
     <el-breadcrumb-item>
-      <a class="breadcrumb-link" @click="handleNavigate(0)">全部文件</a>
+      <a class="breadcrumb-link" @click="handleNavigate(0)">查看根目录</a>
     </el-breadcrumb-item>
     <el-breadcrumb-item v-for="node in fileStore.breadcrumb" :key="node.id">
       <a class="breadcrumb-link" @click="handleNavigate(node.id)">{{ node.name }}</a>
