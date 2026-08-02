@@ -8,9 +8,9 @@
     <insert id="insert" parameterType="com.cloud.backend.entity.RecycleBin"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO t_recycle_bin (user_id, file_id, original_name, object_name, file_hash, type, team_id,
-                                   parent_id, size, mime_type, deleted_time, expire_time)
+                                   deleted_by, parent_id, size, mime_type, deleted_time, expire_time)
         VALUES (#{userId}, #{fileId}, #{originalName}, #{objectName}, #{fileHash}, #{type}, #{teamId},
-                #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
+                #{deletedBy}, #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
     </insert>
 
     <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.RecycleBin">
@@ -18,12 +18,12 @@
     </select>
 
     <select id="findByIdAndUserId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE id = #{id} AND user_id = #{userId} AND team_id = 0 LIMIT 1
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND user_id = #{userId} AND team_id = 0 AND deleted_by = 0 LIMIT 1
     </select>
 
-    <!-- 个人回收站列表：仅个人空间记录（团队记录走团队回收站接口） -->
+    <!-- 个人回收站列表：仅个人空间用户自删记录（管理员删除的记录进全局回收站，用户不可见） -->
     <select id="findByUserId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} AND team_id = 0 ORDER BY deleted_time DESC
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} AND team_id = 0 AND deleted_by = 0 ORDER BY deleted_time DESC
     </select>
 
     <select id="findByExpireTimeBefore" resultType="com.cloud.backend.entity.RecycleBin">
@@ -42,14 +42,14 @@
         DELETE FROM t_recycle_bin WHERE user_id = #{userId} AND parent_id = #{parentId}
     </delete>
 
-    <!-- ==================== 团队回收站 ==================== -->
+    <!-- ==================== 团队回收站（仅用户/成员自删记录，管理员删除的走全局回收站） ==================== -->
 
     <select id="findByTeamId" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE team_id = #{teamId} ORDER BY deleted_time DESC
+        SELECT * FROM t_recycle_bin WHERE team_id = #{teamId} AND deleted_by = 0 ORDER BY deleted_time DESC
     </select>
 
     <select id="findByIdAndTeamId" resultType="com.cloud.backend.entity.RecycleBin">
-        SELECT * FROM t_recycle_bin WHERE id = #{id} AND team_id = #{teamId} LIMIT 1
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND team_id = #{teamId} AND deleted_by = 0 LIMIT 1
     </select>
 
     <select id="findByTeamIdAndParentId" resultType="com.cloud.backend.entity.RecycleBin">
@@ -59,5 +59,24 @@
     <delete id="deleteByTeamIdAndParentId">
         DELETE FROM t_recycle_bin WHERE team_id = #{teamId} AND parent_id = #{parentId}
     </delete>
+
+    <!-- ==================== 全局回收站（管理员删除的记录，仅 ADMIN 可见） ==================== -->
+
+    <select id="findGlobal" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE deleted_by = 1 ORDER BY deleted_time DESC
+    </select>
+
+    <select id="findGlobalById" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE id = #{id} AND deleted_by = 1 LIMIT 1
+    </select>
+
+    <!-- 全局回收站目录的子记录（管理员恢复目录时递归处理；删除时子记录 parentId 指向原父目录 id） -->
+    <select id="findGlobalChildrenByUserId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE user_id = #{userId} AND parent_id = #{parentId} AND deleted_by = 1
+    </select>
+
+    <select id="findGlobalChildrenByTeamId" resultType="com.cloud.backend.entity.RecycleBin">
+        SELECT * FROM t_recycle_bin WHERE team_id = #{teamId} AND parent_id = #{parentId} AND deleted_by = 1
+    </select>
 
 </mapper>

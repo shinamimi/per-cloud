@@ -1,7 +1,6 @@
 package com.cloud.backend.service.file.impl;
 
 import com.cloud.backend.annotation.Log;
-import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dao.FileDao;
 import com.cloud.backend.dto.FileQuery;
@@ -115,26 +114,6 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<File> findAll() {
         return fileMapper.findAll();
-    }
-
-    @Override
-    public void adminDeleteFile(Long id) {
-        File file = fileMapper.findById(id);
-        if (file == null) {
-            throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
-        }
-        if (file.getObjectName() != null && !file.getObjectName().isEmpty()) {
-            storageService.delete(file.getObjectName());
-        }
-        fileMapper.deleteById(id);
-
-        OperationLog log = new OperationLog();
-        log.setUserId(AuthorizationPolicy.getCurrentUserId());
-        log.setOperation(OperationType.DELETE_FILE);
-        log.setTargetType(TargetType.FILE);
-        log.setTargetId(id);
-        log.setDetail("管理员删除文件: " + file.getName());
-        operationLogService.log(log);
     }
 
     @Override
@@ -340,6 +319,7 @@ public class FileServiceImpl implements FileService {
             recycleBin.setFileHash(node.getFileHash() == null ? "" : node.getFileHash());
             recycleBin.setType(node.isDir() ? 1 : 0);
             recycleBin.setTeamId(0L);
+            recycleBin.setDeletedBy(0);
             recycleBin.setParentId(node.getParentId());
             recycleBin.setSize(node.getSize() == null ? 0 : node.getSize());
             recycleBin.setMimeType(node.getMimeType() == null ? "" : node.getMimeType());
@@ -372,7 +352,8 @@ public class FileServiceImpl implements FileService {
         if (file == null || !file.getUserId().equals(userId) || file.getTeamId() != null && file.getTeamId() != 0) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
-        if (file.getStatus() != FileStatus.NORMAL) {
+        // 仅已删除文件拒绝；禁用文件（DISABLED）用户仍可见/可管理，仅下载/预览被拒（docs/adr/012）
+        if (file.getStatus() == FileStatus.DELETED) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "文件已在回收站");
         }
         return file;

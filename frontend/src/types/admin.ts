@@ -306,3 +306,61 @@ export interface QuotaBatchResponse {
   count: number
   users: AdminUserResponse[]
 }
+
+/* ==================== 文件管控（ADR-012，仅 ADMIN+） ==================== */
+
+/** 文件状态字符串值 —— 对应后端 FileStatus 枚举 name */
+export type FileStatusKey = 'NORMAL' | 'DISABLED' | 'DELETED'
+
+/** 管理端全局文件项 —— GET /api/admin/files */
+export interface AdminFileItem {
+  id: number
+  userId: number
+  userName: string
+  teamId: number | null
+  teamName: string | null
+  parentId: number
+  name: string
+  path: string
+  size: number
+  mimeType: string | null
+  extension: string | null
+  isDirectory: boolean
+  type: 'FILE' | 'DIRECTORY'
+  category: number
+  status: FileStatusKey
+  createdAt: string
+  updatedAt: string
+}
+
+/** 管理端全局文件查询参数 —— GET /api/admin/files；status: 1=正常 2=禁用 */
+export interface AdminFileQueryParams {
+  userId?: number
+  teamId?: number
+  category?: number
+  status?: 1 | 2
+  sort?: 'timeDesc' | 'sizeDesc' | 'sizeAsc'
+  page: number
+  size: number
+}
+
+/** 管理端全局回收站记录 —— GET /api/admin/files/recycle-bin */
+export interface AdminRecycleItem {
+  id: number
+  fileId: number
+  userId: number
+  userName: string
+  teamId: number | null
+  teamName: string | null
+  originalName: string
+  type: number
+  size: number
+  deletedTime: string
+  expireTime: string
+}
+
+/** 禁用/启用请求 —— PUT /api/admin/files/{id}/status、POST /api/admin/files/batch-status */
+export interface AdminFileStatusRequest {
+  ids?: number[]
+  status: 'NORMAL' | 'DISABLED'
+}

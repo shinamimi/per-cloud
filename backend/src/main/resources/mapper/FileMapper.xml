@@ -20,38 +20,38 @@
     <!-- 按用户和父目录查找子文件和目录（仅 status=1 正常文件） -->
     <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, name ASC
     </select>
 
     <select id="pageByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, created_at DESC
         LIMIT #{offset}, #{size}
     </select>
 
     <select id="countByUserIdAndParentId" resultType="java.lang.Long">
         SELECT COUNT(*) FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status = 1
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
     </select>
 
     <!-- 同名检查（仅正常记录，回收站中的不算） -->
     <select id="findByUserIdAndParentIdAndName" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND name = #{name} AND status = 1
+        WHERE user_id = #{userId} AND parent_id = #{parentId} AND name = #{name} AND status != 0
         LIMIT 1
     </select>
 
     <!-- 按用户和路径查找（用于防止同一目录下创建同名文件） -->
     <select id="findByUserIdAndPath" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND path = #{path} AND status = 1
+        WHERE user_id = #{userId} AND path = #{path} AND status != 0
     </select>
 
     <!-- 用户全部正常文件（目录树、递归删除收集） -->
     <select id="findByUserId" resultType="com.cloud.backend.entity.File">
-        SELECT * FROM t_file WHERE user_id = #{userId} AND status = 1
+        SELECT * FROM t_file WHERE user_id = #{userId} AND status != 0
     </select>
 
     <update id="update" parameterType="com.cloud.backend.entity.File">
@@ -112,32 +112,61 @@
 
     <select id="findByTeamIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, name ASC
     </select>
 
     <select id="pageByTeamIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, created_at DESC
         LIMIT #{offset}, #{size}
     </select>
 
     <select id="countByTeamIdAndParentId" resultType="java.lang.Long">
         SELECT COUNT(*) FROM t_file
-        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status = 1
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND status != 0
     </select>
 
     <!-- 团队空间同名检查（同团队同目录 name 唯一；跨 user_id 共享同一命名空间） -->
     <select id="findByTeamIdAndParentIdAndName" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND name = #{name} AND status = 1
+        WHERE team_id = #{teamId} AND parent_id = #{parentId} AND name = #{name} AND status != 0
         LIMIT 1
     </select>
 
     <!-- 团队全部正常文件（目录树、递归子树收集） -->
     <select id="findByTeamId" resultType="com.cloud.backend.entity.File">
-        SELECT * FROM t_file WHERE team_id = #{teamId} AND status = 1
+        SELECT * FROM t_file WHERE team_id = #{teamId} AND status != 0
+    </select>
+
+    <!-- ==================== 管理端全局文件（docs/adr/012：个人+团队统一，仅 ADMIN） ==================== -->
+
+    <sql id="adminWhere">
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="teamId != null and teamId == -1">AND team_id &gt; 0</if>
+            <if test="teamId != null and teamId != -1">AND team_id = #{teamId}</if>
+            <if test="category != null">AND category = #{category}</if>
+            <if test="status != null">AND status = #{status}</if>
+            AND status != 0
+        </where>
+    </sql>
+
+    <select id="adminPage" parameterType="com.cloud.backend.dto.AdminFileQuery" resultType="com.cloud.backend.entity.File">
+        SELECT * FROM t_file
+        <include refid="adminWhere"/>
+        <choose>
+            <when test="sort == 'sizeDesc'">ORDER BY size DESC, id DESC</when>
+            <when test="sort == 'sizeAsc'">ORDER BY size ASC, id DESC</when>
+            <otherwise>ORDER BY created_at DESC, id DESC</otherwise>
+        </choose>
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="adminCount" parameterType="com.cloud.backend.dto.AdminFileQuery" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_file
+        <include refid="adminWhere"/>
     </select>
 
 </mapper>

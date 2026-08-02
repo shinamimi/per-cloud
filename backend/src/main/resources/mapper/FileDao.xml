@@ -9,7 +9,7 @@
     <sql id="searchWhere">
         <where>
             AND user_id = #{userId}
-            AND status = 1
+            AND status != 0
             <if test="teamId == null">AND team_id = 0</if>
             <if test="teamId != null">AND team_id = #{teamId}</if>
             <if test="parentId != null">AND parent_id = #{parentId}</if>

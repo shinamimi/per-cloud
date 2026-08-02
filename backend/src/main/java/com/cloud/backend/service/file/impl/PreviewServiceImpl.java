@@ -4,6 +4,7 @@ import com.cloud.backend.config.FileProperties;
 import com.cloud.backend.dto.file.FilePreviewResponse;
 import com.cloud.backend.entity.File;
 import com.cloud.backend.enums.ErrorCode;
+import com.cloud.backend.enums.FileStatus;
 import com.cloud.backend.exception.BusinessException;
 import com.cloud.backend.service.file.FileService;
 import com.cloud.backend.service.file.PreviewService;
@@ -62,6 +63,10 @@ public class PreviewServiceImpl implements PreviewService {
     public FilePreviewResponse previewFile(Long userId, File file) {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
+        }
+        // 禁用文件不可预览（docs/adr/012：用户可见但不可下载/预览/分享）
+        if (file.getStatus() == FileStatus.DISABLED) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
         String extension = file.getExtension() == null ? "" : file.getExtension().toLowerCase();
         String url = storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());

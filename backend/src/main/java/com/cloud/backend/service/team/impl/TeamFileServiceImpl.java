@@ -282,6 +282,7 @@ public class TeamFileServiceImpl implements TeamFileService {
             recycleBin.setFileHash(node.getFileHash() == null ? "" : node.getFileHash());
             recycleBin.setType(node.isDir() ? 1 : 0);
             recycleBin.setTeamId(teamId);
+            recycleBin.setDeletedBy(0);
             recycleBin.setParentId(node.getParentId());
             recycleBin.setSize(node.getSize() == null ? 0 : node.getSize());
             recycleBin.setMimeType(node.getMimeType() == null ? "" : node.getMimeType());
@@ -318,6 +319,10 @@ public class TeamFileServiceImpl implements TeamFileService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
+        // 禁用文件不可下载（docs/adr/012：用户可见但不可下载/预览/分享）
+        if (file.getStatus() == FileStatus.DISABLED) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
+        }
         try {
             return storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
         } catch (Exception e) {
@@ -351,14 +356,22 @@ public class TeamFileServiceImpl implements TeamFileService {
             throw new BusinessException(ErrorCode.RECYCLE_NOT_FOUND);
         }
         requireRecordPermission(teamId, userId, record);
+        restoreRecord(teamId, userId, record);
+    }
 
+    /**
+     * 递归恢复单条记录：先恢复父（占配额）再恢复子。
+     * 删除时子树节点 status 一并置 DELETED 且每节点都有回收站记录，
+     * 只恢复顶层会让目录内容丢失，故须递归（子记录 parentId 仍指向原父目录 id）。
+     */
+    private void restoreRecord(Long teamId, Long userId, RecycleBin record) {
         File file = fileMapper.findById(record.getFileId());
         if (file == null) {
             throw new BusinessException(ErrorCode.RECYCLE_NOT_FOUND, "原始文件记录不存在");
         }
         if (file.getParentId() != null && file.getParentId() != FileConstants.ROOT_PARENT_ID) {
             File parent = fileMapper.findById(file.getParentId());
-            if (parent == null || parent.getStatus() != FileStatus.NORMAL) {
+            if (parent == null || parent.getStatus() == FileStatus.DELETED) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "父目录不可用，请先恢复父目录");
             }
         }
@@ -373,6 +386,13 @@ public class TeamFileServiceImpl implements TeamFileService {
         }
         fileMapper.updateStatus(record.getFileId(), FileStatus.NORMAL.getValue());
         recycleBinMapper.deleteById(record.getId());
+
+        if (record.getType() != null && record.getType() == 1) {
+            List<RecycleBin> children = recycleBinMapper.findByTeamIdAndParentId(teamId, record.getFileId());
+            for (RecycleBin child : children) {
+                restoreRecord(teamId, userId, child);
+            }
+        }
 
         OperationLog log = new OperationLog();
         log.setUserId(userId);
@@ -453,13 +473,14 @@ public class TeamFileServiceImpl implements TeamFileService {
         }
     }
 
-    /** 团队文件列表必须属于该团队且状态正常 */
+    /** 团队文件列表必须属于该团队且状态可用（已删除拒绝；禁用仅拒绝下载，见 getTeamFile 调用方） */
     private File getTeamFile(Long teamId, Long fileId) {
         File file = fileMapper.findById(fileId);
         if (file == null || file.getTeamId() == null || file.getTeamId() != teamId) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
-        if (file.getStatus() != FileStatus.NORMAL) {
+        // 仅已删除文件拒绝；禁用文件（DISABLED）成员仍可见/可管理，仅下载/预览被拒（docs/adr/012）
+        if (file.getStatus() == FileStatus.DELETED) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "文件已在回收站");
         }
         return file;

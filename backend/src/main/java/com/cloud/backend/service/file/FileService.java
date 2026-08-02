@@ -26,8 +26,6 @@ public interface FileService {
 
     List<File> findAll();
 
-    void adminDeleteFile(Long id);
-
     /** 文件列表（分页，按 parentId 过滤） */
     Page<FileNodeResponse> pageByUserAndParent(Long userId, Long parentId, int page, int size);
 

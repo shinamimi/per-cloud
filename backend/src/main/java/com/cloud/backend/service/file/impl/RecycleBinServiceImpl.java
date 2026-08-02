@@ -76,33 +76,49 @@ public class RecycleBinServiceImpl implements RecycleBinService {
         if (record == null) {
             throw new BusinessException(ErrorCode.RECYCLE_NOT_FOUND);
         }
+        restoreRecord(record);
+    }
+
+    /**
+     * 递归恢复单条记录：先恢复父（占配额）再恢复子。
+     * 删除时子树节点 status 一并置 DELETED 且每节点都有回收站记录，
+     * 只恢复顶层会让目录内容丢失，故须递归（子记录 parentId 仍指向原父目录 id）。
+     */
+    private void restoreRecord(RecycleBin record) {
         com.cloud.backend.entity.File file = fileMapper.findById(record.getFileId());
         if (file == null) {
             throw new BusinessException(ErrorCode.RECYCLE_NOT_FOUND, "原始文件记录不存在");
         }
         if (file.getParentId() != null && file.getParentId() != FileConstants.ROOT_PARENT_ID) {
             com.cloud.backend.entity.File parent = fileMapper.findById(file.getParentId());
-            if (parent == null || parent.getStatus() != FileStatus.NORMAL) {
+            if (parent == null || parent.getStatus() == FileStatus.DELETED) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "父目录不可用，请先恢复父目录");
             }
         }
         if (record.getSize() > 0) {
-            long remaining = userService.getRemainingQuota(userId);
+            long remaining = userService.getRemainingQuota(record.getUserId());
             if (record.getSize() > remaining) {
                 throw new BusinessException(ErrorCode.FILE_QUOTA_EXCEEDED, "恢复后空间不足，请先清理其他文件");
             }
-            userService.changeUsedSpace(userId, record.getSize());
+            userService.changeUsedSpace(record.getUserId(), record.getSize());
         }
         // 删除时顶层节点已改内部名，此处还原唯一名（若同名已被占用则自动追加后缀）
-        String uniqueName = FileUtil.resolveUniqueName(fileMapper, userId, file.getParentId(), record.getOriginalName());
+        String uniqueName = FileUtil.resolveUniqueName(fileMapper, record.getUserId(), file.getParentId(), record.getOriginalName());
         if (!uniqueName.equals(file.getName())) {
             fileMapper.updateName(record.getFileId(), uniqueName);
         }
         fileMapper.updateStatus(record.getFileId(), FileStatus.NORMAL.getValue());
         recycleBinMapper.deleteById(record.getId());
 
+        if (record.getType() != null && record.getType() == 1) {
+            List<RecycleBin> children = recycleBinMapper.findByUserIdAndParentId(record.getUserId(), record.getFileId());
+            for (RecycleBin child : children) {
+                restoreRecord(child);
+            }
+        }
+
         OperationLog log = new OperationLog();
-        log.setUserId(userId);
+        log.setUserId(record.getUserId());
         log.setOperation(OperationType.RESTORE_FILE);
         log.setTargetType(TargetType.FILE);
         log.setTargetId(record.getFileId());

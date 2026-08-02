@@ -47,4 +47,17 @@ public interface RecycleBinMapper {
 
     /** 团队级联删除：清理以该目录为父节点的子记录 */
     int deleteByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
+
+    /* ==================== 全局回收站（管理员删除，仅 ADMIN 可见，docs/adr/012） ==================== */
+
+    /** 全局回收站记录（deleted_by=1，倒序） */
+    List<RecycleBin> findGlobal();
+
+    /** 全局回收站单条（恢复/物理删除用） */
+    RecycleBin findGlobalById(Long id);
+
+    /** 全局回收站中某目录下的子记录（管理员恢复目录时递归处理） */
+    List<RecycleBin> findGlobalChildrenByUserId(@Param("userId") Long userId, @Param("parentId") Long parentId);
+
+    List<RecycleBin> findGlobalChildrenByTeamId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
 }

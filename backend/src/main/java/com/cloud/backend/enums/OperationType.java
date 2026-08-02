@@ -19,6 +19,8 @@ public enum OperationType {
     CREATE_SHARE,
     CANCEL_SHARE,
     UPDATE_USER,
+    DISABLE_FILE,
+    ENABLE_FILE,
 
     TEAM_CREATE,
     TEAM_DISSOLVE,

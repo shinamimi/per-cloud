@@ -23,6 +23,7 @@ public class RecycleBin {
     private String fileHash;
     private Integer type;
     private Long teamId;
+    private Integer deletedBy;
     private Long parentId;
     private Long size;
     private String mimeType;

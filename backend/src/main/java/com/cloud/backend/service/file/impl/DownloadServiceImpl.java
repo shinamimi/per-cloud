@@ -79,6 +79,7 @@ public class DownloadServiceImpl implements DownloadService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
+        requireEnabled(file);
         try {
             return storageService.generateDownloadUrl(file.getObjectName(), adminSettingsService.getDownloadLinkTtlMinutes());
         } catch (Exception e) {
@@ -94,6 +95,7 @@ public class DownloadServiceImpl implements DownloadService {
             if (file.isDir()) {
                 collectFiles(userId, file.getId(), files);
             } else {
+                requireEnabled(file);
                 files.add(file);
             }
         }
@@ -204,7 +206,7 @@ public class DownloadServiceImpl implements DownloadService {
         return name;
     }
 
-    /** BFS 收集目录下所有文件（不含子目录本身） */
+    /** BFS 收集目录下所有文件（不含子目录本身；禁用文件不打包） */
     private void collectFiles(Long userId, Long dirId, List<File> result) {
         Map<Long, List<File>> childrenByParent = fileMapper.findByUserId(userId).stream()
                 .collect(java.util.stream.Collectors.groupingBy(File::getParentId));
@@ -215,10 +217,17 @@ public class DownloadServiceImpl implements DownloadService {
             for (File child : childrenByParent.getOrDefault(current, List.of())) {
                 if (child.isDir()) {
                     queue.add(child.getId());
-                } else {
+                } else if (child.getStatus() == com.cloud.backend.enums.FileStatus.NORMAL) {
                     result.add(child);
                 }
             }
+        }
+    }
+
+    /** 禁用文件不可下载（docs/adr/012：用户可见但不可下载/预览/分享） */
+    private void requireEnabled(File file) {
+        if (file.getStatus() == com.cloud.backend.enums.FileStatus.DISABLED) {
+            throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
     }
 

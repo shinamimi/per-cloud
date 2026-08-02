@@ -1,51 +1,54 @@
 package com.cloud.backend.dto.admin;
 
+import com.cloud.backend.entity.File;
 import com.cloud.backend.enums.FileStatus;
+import com.cloud.backend.enums.FileType;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 管理端全局文件响应 —— GET /api/admin/files（列表）、GET /api/admin/files/{id}（详情）。
+ * userName/teamName 由服务层批量填充（所属用户/所属团队显示名）。
+ */
+@Data
 public class AdminFileResponse {
 
     private Long id;
     private Long userId;
+    private String userName;
+    private Long teamId;
+    private String teamName;
     private Long parentId;
     private String name;
     private String path;
     private Long size;
     private String mimeType;
     private String extension;
-    private Integer isDirectory;
+    private Boolean isDirectory;
+    private FileType type;
+    private Integer category;
     private FileStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public AdminFileResponse(Long id, Long userId, Long parentId, String name, String path, Long size,
-                             String mimeType, String extension, Integer isDirectory, FileStatus status,
-                             LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.parentId = parentId;
-        this.name = name;
-        this.path = path;
-        this.size = size;
-        this.mimeType = mimeType;
-        this.extension = extension;
-        this.isDirectory = isDirectory;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+    public static AdminFileResponse from(File file) {
+        AdminFileResponse response = new AdminFileResponse();
+        response.setId(file.getId());
+        response.setUserId(file.getUserId());
+        response.setTeamId(file.getTeamId());
+        response.setParentId(file.getParentId());
+        response.setName(file.getName());
+        response.setPath(file.getPath());
+        response.setSize(file.getSize());
+        response.setMimeType(file.getMimeType());
+        response.setExtension(file.getExtension());
+        response.setIsDirectory(file.isDir());
+        response.setType(file.getType());
+        response.setCategory(file.getCategory());
+        response.setStatus(file.getStatus());
+        response.setCreatedAt(file.getCreatedAt());
+        response.setUpdatedAt(file.getUpdatedAt());
+        return response;
     }
-
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public Long getParentId() { return parentId; }
-    public String getName() { return name; }
-    public String getPath() { return path; }
-    public Long getSize() { return size; }
-    public String getMimeType() { return mimeType; }
-    public String getExtension() { return extension; }
-    public Integer getIsDirectory() { return isDirectory; }
-    public FileStatus getStatus() { return status; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

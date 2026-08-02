@@ -69,4 +69,10 @@ public interface FileMapper {
 
     /** 团队全部正常文件（目录树、递归子树收集） */
     List<File> findByTeamId(Long teamId);
+
+    /* ==================== 管理端全局文件（docs/adr/012，仅 ADMIN） ==================== */
+
+    List<File> adminPage(com.cloud.backend.dto.AdminFileQuery query);
+
+    long adminCount(com.cloud.backend.dto.AdminFileQuery query);
 }

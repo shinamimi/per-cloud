@@ -48,6 +48,8 @@ public class SecurityConfig {
                         // 敏感配置分组（SMTP 连接信息、系统功能开关）仅 ADMIN+ 可改（ADR-009）
                         .requestMatchers("/api/admin/settings/system", "/api/admin/settings/mail")
                         .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // 文件管控（全局文件/全局回收站）仅 ADMIN+（ADR-012）
+                        .requestMatchers("/api/admin/files/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyRole("OPERATOR", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
