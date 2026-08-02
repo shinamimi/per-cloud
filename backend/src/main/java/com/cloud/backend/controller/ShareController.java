@@ -46,10 +46,17 @@ public class ShareController {
         return Result.success();
     }
 
-    /** 取消分享 */
+    /** 取消分享（状态置 CANCELED，保留记录） */
     @DeleteMapping("/{id}")
     public Result<Void> cancelShare(@PathVariable Long id) {
         shareService.cancelShare(AuthorizationPolicy.getCurrentUserId(), id);
+        return Result.success();
+    }
+
+    /** 删除分享记录（物理删除，彻底移除） */
+    @DeleteMapping("/{id}/record")
+    public Result<Void> deleteShareRecord(@PathVariable Long id) {
+        shareService.deleteShareRecord(AuthorizationPolicy.getCurrentUserId(), id);
         return Result.success();
     }
 }

@@ -64,6 +64,7 @@
             <el-menu-item index="/admin">仪表盘</el-menu-item>
             <el-menu-item index="/admin/users">用户管理</el-menu-item>
             <el-menu-item v-if="userStore.isAdmin" index="/admin/files">文件管理</el-menu-item>
+            <el-menu-item v-if="userStore.isAdmin" index="/admin/shares">分享管理</el-menu-item>
             <el-menu-item index="/admin/teams">团队管理</el-menu-item>
             <el-menu-item v-if="userStore.isAdmin" index="/admin/admins">管理员管理</el-menu-item>
             <el-menu-item index="/admin/settings">系统设置</el-menu-item>

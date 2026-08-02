@@ -30,9 +30,12 @@ import com.cloud.backend.service.file.UploadService;
 import com.cloud.backend.service.share.ShareService;
 import com.cloud.backend.service.system.OperationLogService;
 import com.cloud.backend.util.ShareTokenGenerator;
+import com.cloud.backend.utils.IpUtil;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -139,6 +142,31 @@ public class ShareServiceImpl implements ShareService {
         share.setStatus(ShareStatus.CANCELED);
         shareMapper.update(share);
         shareFileMapper.deleteByShareId(share.getId());
+        clearVerified(share.getShareToken());
+    }
+
+    @Override
+    @Log(operation = OperationType.UPDATE_USER, target = TargetType.SHARE,
+         targetId = "#id", detail = "'管理员切换分享下载开关'")
+    public void adminSetAllowDownload(Long id, boolean allowDownload) {
+        Share share = shareMapper.findById(id);
+        if (share == null) {
+            throw new BusinessException(ErrorCode.SHARE_NOT_FOUND);
+        }
+        shareMapper.updateAllowDownload(id, allowDownload ? 1 : 0);
+    }
+
+    @Override
+    @Log(operation = OperationType.DELETE_SHARE, target = TargetType.SHARE,
+         targetId = "#id", detail = "'管理员删除分享记录'")
+    @Transactional
+    public void adminDeleteShare(Long id) {
+        Share share = shareMapper.findById(id);
+        if (share == null) {
+            throw new BusinessException(ErrorCode.SHARE_NOT_FOUND);
+        }
+        shareFileMapper.deleteByShareId(share.getId());
+        shareMapper.deleteById(share.getId());
         clearVerified(share.getShareToken());
     }
 
@@ -264,6 +292,17 @@ public class ShareServiceImpl implements ShareService {
         clearVerified(share.getShareToken());
     }
 
+    @Override
+    @Log(operation = OperationType.DELETE_SHARE, target = TargetType.SHARE,
+         targetId = "#shareId", detail = "'删除分享记录'")
+    @Transactional
+    public void deleteShareRecord(Long userId, Long shareId) {
+        Share share = requireOwnedShare(userId, shareId);
+        shareFileMapper.deleteByShareId(share.getId());
+        shareMapper.deleteById(share.getId());
+        clearVerified(share.getShareToken());
+    }
+
     /* ==================== 访客访问 ==================== */
 
     @Override
@@ -343,7 +382,7 @@ public class ShareServiceImpl implements ShareService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "目录不可直接下载");
         }
         File file = requireShareableFile(share, node);
-        countDownload(share);
+        countDownload(share, dedupKey(share.getId(), snapshotId));
         return downloadService.getDownloadUrlForShare(file);
     }
 
@@ -368,7 +407,7 @@ public class ShareServiceImpl implements ShareService {
         if (files.isEmpty()) {
             throw new BusinessException(ErrorCode.BATCH_TASK_NOT_FOUND, "没有可打包的文件");
         }
-        countDownload(share);
+        countDownload(share, dedupKey(share.getId(), snapshotIds));
         return downloadService.createBatchTaskForGuest(files);
     }
 
@@ -492,6 +531,22 @@ public class ShareServiceImpl implements ShareService {
         redis.delete(RedisConstants.SHARE_PWD_FAIL_PREFIX + token);
     }
 
+    /** 分享下载去重键：share:dl-dedup:{shareId}:{scope}:{clientIp}（scope=单文件 snapshotId 或批量标记） */
+    private String dedupKey(Long shareId, Object scope) {
+        String clientIp = currentClientIp();
+        return RedisConstants.SHARE_DOWNLOAD_DEDUP_PREFIX + shareId + ":" + scope + ":" + clientIp;
+    }
+
+    /** 当前请求客户端 IP（无请求上下文时返回 "anon"） */
+    private String currentClientIp() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return "anon";
+        }
+        String ip = IpUtil.getClientIp(attrs.getRequest());
+        return ip == null || ip.isBlank() ? "anon" : ip;
+    }
+
     /** 快照节点必须在分享快照内（防跨分享越权） */
     private ShareFile requireSnapshot(Long shareId, Long snapshotId) {
         List<ShareFile> nodes = shareFileMapper.findByShareId(shareId);
@@ -512,7 +567,14 @@ public class ShareServiceImpl implements ShareService {
     }
 
     /** 原子下载计数：NORMAL + 未过期 + 未达限才 +1；达限置 EXHAUSTED（状态机 docs/share-module.md §六） */
-    private void countDownload(Share share) {
+    private void countDownload(Share share, String dedupKey) {
+        // 短时间（60s）同一访客对同一文件重复下载只计 1 次，防止刷新/误点刷掉下载上限
+        if (dedupKey != null) {
+            Boolean first = redis.opsForValue().setIfAbsent(dedupKey, "1", Duration.ofSeconds(60));
+            if (!Boolean.TRUE.equals(first)) {
+                return;
+            }
+        }
         if (shareMapper.incrementDownloadCountIfAllowed(share.getId()) > 0) {
             return;
         }

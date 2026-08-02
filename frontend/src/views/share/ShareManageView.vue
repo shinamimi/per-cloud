@@ -40,7 +40,7 @@
           {{ row.downloadCount }}<span v-if="row.maxDownload > 0"> / {{ row.maxDownload }}</span> 次
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="290" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleCopy(row)">复制链接</el-button>
           <el-button
@@ -57,6 +57,7 @@
             size="small"
             @click="handleCancel(row)"
           >取消</el-button>
+          <el-button link type="danger" size="small" @click="handleDelete(row)">删除记录</el-button>
         </template>
       </el-table-column>
       <template #empty>
@@ -93,7 +94,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Folder, Document } from '@element-plus/icons-vue'
-import { cancelShare, listShares, updateShareExpire } from '@/api/share'
+import { cancelShare, deleteShareRecord, listShares, updateShareExpire } from '@/api/share'
 import type { ShareItem, ShareStatusKey, ShareValidType } from '@/types/share'
 
 const router = useRouter()
@@ -168,6 +169,25 @@ async function handleCancel(row: ShareItem) {
   try {
     await cancelShare(row.id)
     ElMessage.success('已取消分享')
+    await load()
+  } catch {
+    // 错误已由拦截器提示
+  }
+}
+
+async function handleDelete(row: ShareItem) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除分享「${row.name || '该文件'}」的记录吗？删除后分享链接将失效且无法恢复。`,
+      '删除分享记录',
+      { confirmButtonText: '确定删除', cancelButtonText: '再想想', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteShareRecord(row.id)
+    ElMessage.success('分享记录已删除')
     await load()
   } catch {
     // 错误已由拦截器提示

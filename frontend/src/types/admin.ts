@@ -8,6 +8,8 @@
  *   label 展示统一从 metaStore 字典组获取（见 docs/frontend-standard.md）。
  */
 
+import type { ShareStatusKey } from '@/types/share'
+
 /** 用户状态字符串值 —— 对应后端 UserStatus 枚举 name */
 export type UserStatusKey = 'NORMAL' | 'DISABLED' | 'LOCKED' | 'INACTIVE'
 
@@ -381,4 +383,23 @@ export interface AdminFileStatusRequest {
   ids?: number[]
   status: 'NORMAL' | 'DISABLED'
   scope?: DisableScopeKey
+}
+
+/** 管理端分享记录 —— GET /api/admin/shares（对应后端 AdminShareResponse） */
+export interface AdminShareItem {
+  id: number
+  userId: number
+  ownerName: string | null
+  fileId: number
+  fileName: string | null
+  isDir: boolean
+  shareToken: string
+  status: ShareStatusKey
+  expireTime: string | null
+  maxDownload: number
+  downloadCount: number
+  allowDownload: boolean
+  allowSave: boolean
+  createdAt: string | null
+  updatedAt: string | null
 }

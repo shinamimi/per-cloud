@@ -18,6 +18,7 @@ public enum OperationType {
     CREATE_DIRECTORY,
     CREATE_SHARE,
     CANCEL_SHARE,
+    DELETE_SHARE,
     UPDATE_USER,
     DISABLE_FILE,
     ENABLE_FILE,

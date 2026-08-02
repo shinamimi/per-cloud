@@ -35,9 +35,14 @@ export function updateShareExpire(id: number, data: ShareUpdateRequest): Promise
   return request.put(`/api/shares/${id}`, data)
 }
 
-/** 取消分享 —— DELETE /api/shares/{id} */
+/** 取消分享 —— DELETE /api/shares/{id}（状态置已取消，保留记录） */
 export function cancelShare(id: number): Promise<void> {
   return request.delete(`/api/shares/${id}`)
+}
+
+/** 删除分享记录 —— DELETE /api/shares/{id}/record（物理删除，彻底移除） */
+export function deleteShareRecord(id: number): Promise<void> {
+  return request.delete(`/api/shares/${id}/record`)
 }
 
 /* ==================== 访客访问（无登录态） ==================== */

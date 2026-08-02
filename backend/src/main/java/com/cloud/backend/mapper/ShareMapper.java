@@ -19,6 +19,9 @@ public interface ShareMapper {
 
     int update(Share share);
 
+    /** 更新下载开关（allow_download） */
+    int updateAllowDownload(@Param("id") Long id, @Param("allowDownload") int allowDownload);
+
     /** 原子下载计数：仅 NORMAL + 未过期 + 未达上限时 +1，否则影响 0 行（防并发超限） */
     int incrementDownloadCountIfAllowed(Long id);
 

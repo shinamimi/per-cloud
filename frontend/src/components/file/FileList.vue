@@ -62,7 +62,11 @@
           >
             重命名
           </el-button>
-          <el-dropdown trigger="click" @command="(cmd: string) => handleMore(row, cmd)">
+          <el-dropdown
+            trigger="click"
+            class="more-dropdown"
+            @command="(cmd: string) => handleMore(row, cmd)"
+          >
             <el-button link type="primary" size="small">
               更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </el-button>
@@ -368,6 +372,15 @@ async function handlePageChange() {
   margin-bottom: 12px;
   background: #ecf5ff;
   border-radius: 4px;
+}
+
+/* 操作列"更多"下拉：el-dropdown 包一层 span 导致比相邻按钮高，这里拉齐基线 */
+.more-dropdown {
+  vertical-align: middle;
+}
+
+.more-dropdown :deep(.el-dropdown__button) {
+  vertical-align: middle;
 }
 
 .batch-count {

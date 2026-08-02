@@ -14,7 +14,9 @@ public class AdminShareResponse {
 
     private Long id;
     private Long userId;
+    private String ownerName;
     private Long fileId;
+    private String fileName;
     private Boolean isDir;
     private String shareToken;
     private ShareStatus status;

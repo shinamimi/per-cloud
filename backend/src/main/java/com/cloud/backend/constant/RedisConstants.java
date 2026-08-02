@@ -21,4 +21,7 @@ public interface RedisConstants {
     String SHARE_PWD_FAIL_PREFIX = "share:pwd-fail:";
     /** 提取码验证通过标记（TTL 24h） */
     String SHARE_PWD_OK_PREFIX = "share:pwd-ok:";
+
+    /** 分享下载去重标记（share:dl-dedup:{shareId}:{snapshotId}:{clientIp}，TTL 60s，防止短时间重复下载刷计数） */
+    String SHARE_DOWNLOAD_DEDUP_PREFIX = "share:dl-dedup:";
 }

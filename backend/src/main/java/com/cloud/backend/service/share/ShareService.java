@@ -31,6 +31,12 @@ public interface ShareService {
 
     void adminCancelShare(Long id);
 
+    /** 管理员切换分享下载开关（允许/禁止下载，立即生效） */
+    void adminSetAllowDownload(Long id, boolean allowDownload);
+
+    /** 管理员删除分享记录（物理删除 t_share + 快照） */
+    void adminDeleteShare(Long id);
+
     /* ==================== 用户侧分享管理 ==================== */
 
     /** 创建分享：单文件或文件夹（快照锁定） */
@@ -44,6 +50,9 @@ public interface ShareService {
 
     /** 用户取消分享（删除快照） */
     void cancelShare(Long userId, Long shareId);
+
+    /** 用户删除分享记录（物理删除 t_share + 快照，彻底移除） */
+    void deleteShareRecord(Long userId, Long shareId);
 
     /* ==================== 访客访问 ==================== */
 

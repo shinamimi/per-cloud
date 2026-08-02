@@ -138,6 +138,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', title: '文件管理', requiresAuth: true, requiresAdmin: true },
   },
   {
+    path: '/admin/shares',
+    name: 'AdminShares',
+    component: () => import('@/views/admin/AdminShareView.vue'),
+    meta: { layout: 'main', title: '分享管理', requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/admin/settings',
     name: 'SystemConfigCenter',
     component: () => import('@/views/admin/SystemConfigCenterView.vue'),

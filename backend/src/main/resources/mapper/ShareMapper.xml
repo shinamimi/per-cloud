@@ -34,6 +34,10 @@
         WHERE id = #{id}
     </update>
 
+    <update id="updateAllowDownload">
+        UPDATE t_share SET allow_download = #{allowDownload}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
     <update id="incrementDownloadCountIfAllowed" parameterType="java.lang.Long">
         UPDATE t_share
         SET download_count = download_count + 1, updated_at = NOW()
