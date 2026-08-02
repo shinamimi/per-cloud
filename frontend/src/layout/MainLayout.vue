@@ -34,6 +34,10 @@
             <el-icon><Folder /></el-icon>
             <span>我的文件</span>
           </el-menu-item>
+          <el-menu-item index="/shares">
+            <el-icon><Share /></el-icon>
+            <span>我的分享</span>
+          </el-menu-item>
           <el-menu-item index="/friends">
             <el-icon><User /></el-icon>
             <span>好友</span>
@@ -77,7 +81,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { Folder, Delete, DataAnalysis, User, OfficeBuilding } from '@element-plus/icons-vue'
+import { Folder, Delete, DataAnalysis, User, OfficeBuilding, Share } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()

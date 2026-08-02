@@ -4,9 +4,10 @@
     认证页面（login/register/forgot-password）使用 AuthLayout（居中卡片式），
     业务页面（files/profile/etc）使用 MainLayout（侧边栏+顶栏+内容区）。
   -->
-  <component :is="layout">
+  <component :is="layout" v-if="layout">
     <router-view />
   </component>
+  <router-view v-else />
 </template>
 
 <script setup lang="ts">
@@ -26,7 +27,9 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const layout = computed(() => {
-  return (route.meta.layout === 'auth') ? AuthLayout : MainLayout
+  if (route.meta.layout === 'auth') return AuthLayout
+  if (route.meta.layout === 'blank') return undefined
+  return MainLayout
 })
 
 onMounted(() => {

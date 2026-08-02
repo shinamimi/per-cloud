@@ -67,6 +67,14 @@ public enum ErrorCode {
     SHARE_PASSWORD_REQUIRED(10301, "需要提取码"),
     SHARE_PASSWORD_INVALID(10302, "提取码错误"),
     SHARE_NOT_FOUND(10303, "分享不存在"),
+    SHARE_EXHAUSTED(10304, "分享下载次数已达上限"),
+    SHARE_SAVE_DISABLED(10305, "该分享不允许转存"),
+    SHARE_CANCELED(10306, "分享已取消"),
+    SHARE_PASSWORD_LOCKED(10307, "提取码错误次数过多，请重新打开链接"),
+    SHARE_DOWNLOAD_DISABLED(10308, "该分享禁止下载"),
+    SHARE_FILE_REMOVED(10309, "分享的文件已不存在"),
+    SHARE_PASSWORD_EMPTY(10310, "请输入提取码"),
+    SHARE_COUNT_LIMIT(10311, "该文件分享次数已达上限"),
 
     /* ==================== 团队 (10400-10499) ==================== */
     TEAM_NAME_DUPLICATE(10400, "团队名已存在"),

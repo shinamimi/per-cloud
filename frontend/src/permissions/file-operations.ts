@@ -21,6 +21,7 @@ export const FILE_OPERATIONS = {
   delete: { minRole: 'USER', targetStatuses: ['*'], type: 'danger' },
   download: { minRole: 'USER', targetStatuses: ['FILE'], type: 'default' },
   preview: { minRole: 'USER', targetStatuses: ['FILE'], type: 'default' },
+  share: { minRole: 'USER', targetStatuses: ['*'], type: 'default' },
 } as const satisfies Record<string, OperationRule>
 
 /** 文件操作名联合类型 */

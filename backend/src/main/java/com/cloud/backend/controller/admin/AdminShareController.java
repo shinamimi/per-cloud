@@ -20,9 +20,7 @@ public class AdminShareController {
     @GetMapping
     public Result<List<AdminShareResponse>> listShares() {
         List<AdminShareResponse> shares = shareService.findAll().stream()
-                .map(s -> new AdminShareResponse(s.getId(), s.getUserId(), s.getFileId(),
-                        s.getShareToken(), s.getStatus(), s.getExpireTime(), s.getMaxDownload(),
-                        s.getDownloadCount(), s.getCreatedAt(), s.getUpdatedAt()))
+                .map(AdminShareResponse::from)
                 .toList();
         return Result.success(shares);
     }

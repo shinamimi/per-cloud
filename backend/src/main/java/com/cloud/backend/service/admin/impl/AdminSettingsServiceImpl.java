@@ -65,6 +65,7 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     private static final String KEY_SHARE_MAX_VALID_DAYS = "share.max-valid-days";
     private static final String KEY_SHARE_MAX_COUNT_PER_FILE = "share.max-count-per-file";
     private static final String KEY_SHARE_DEFAULT_REQUIRE_PASSWORD = "share.default-require-password";
+    private static final String KEY_SHARE_DEFAULT_DOWNLOAD_POLICY = "share.default-download-policy";
 
     /* ==================== 邮件服务 ==================== */
     private static final String KEY_MAIL_ENABLED = "mail.enabled";
@@ -301,13 +302,21 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     }
 
     @Override
+    public String getShareDefaultDownloadPolicy() {
+        String policy = readString(KEY_SHARE_DEFAULT_DOWNLOAD_POLICY, "ALLOW");
+        return "DENY".equalsIgnoreCase(policy) ? "DENY" : "ALLOW";
+    }
+
+    @Override
     public void updateFile(Integer recycleBinDays, Integer shareDefaultValidDays, Integer shareMaxValidDays,
-                           Integer shareMaxCountPerFile, Boolean shareDefaultRequirePassword) {
+                           Integer shareMaxCountPerFile, Boolean shareDefaultRequirePassword,
+                           String shareDefaultDownloadPolicy) {
         upsertOrReset(KEY_RECYCLE_BIN_DAYS, recycleBinDays, "回收站保留天数");
         upsertOrReset(KEY_SHARE_DEFAULT_VALID_DAYS, shareDefaultValidDays, "分享默认有效期（天）");
         upsertOrReset(KEY_SHARE_MAX_VALID_DAYS, shareMaxValidDays, "分享最长有效期（天）");
         upsertOrReset(KEY_SHARE_MAX_COUNT_PER_FILE, shareMaxCountPerFile, "同一文件最大分享次数");
         upsertOrReset(KEY_SHARE_DEFAULT_REQUIRE_PASSWORD, shareDefaultRequirePassword, "分享默认是否要求提取码");
+        upsertOrReset(KEY_SHARE_DEFAULT_DOWNLOAD_POLICY, shareDefaultDownloadPolicy, "分享默认下载策略（ALLOW=允许下载/DENY=禁止下载）");
     }
 
     /* ==================== 邮件服务 ==================== */

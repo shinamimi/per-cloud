@@ -7,8 +7,10 @@
 
     <insert id="insert" parameterType="com.cloud.backend.entity.Share"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_share (user_id, file_id, share_token, access_password, status, expire_time, max_download, download_count)
-        VALUES (#{userId}, #{fileId}, #{shareToken}, #{accessPassword}, #{status}, #{expireTime}, #{maxDownload}, #{downloadCount})
+        INSERT INTO t_share (user_id, file_id, is_dir, share_token, access_password, status, expire_time,
+                             max_download, download_count, allow_download, allow_save)
+        VALUES (#{userId}, #{fileId}, #{isDir}, #{shareToken}, #{accessPassword}, #{status}, #{expireTime},
+                #{maxDownload}, #{downloadCount}, #{allowDownload}, #{allowSave})
     </insert>
 
     <select id="findByToken" parameterType="java.lang.String" resultType="com.cloud.backend.entity.Share">
@@ -20,19 +22,39 @@
     </select>
 
     <select id="findByUserId" resultType="com.cloud.backend.entity.Share">
-        SELECT * FROM t_share WHERE user_id = #{userId}
+        SELECT * FROM t_share WHERE user_id = #{userId} ORDER BY created_at DESC
     </select>
 
     <update id="update" parameterType="com.cloud.backend.entity.Share">
         UPDATE t_share
         SET status = #{status},
+            expire_time = #{expireTime},
             download_count = #{downloadCount},
             updated_at = NOW()
         WHERE id = #{id}
     </update>
 
+    <update id="incrementDownloadCountIfAllowed" parameterType="java.lang.Long">
+        UPDATE t_share
+        SET download_count = download_count + 1, updated_at = NOW()
+        WHERE id = #{id}
+          AND status = 0
+          AND (expire_time IS NULL OR expire_time &gt; NOW())
+          AND (max_download = 0 OR download_count &lt; max_download)
+    </update>
+
+    <select id="countActiveByFileId" parameterType="java.lang.Long" resultType="int">
+        SELECT COUNT(*) FROM t_share
+        WHERE file_id = #{fileId} AND status = 0
+          AND (expire_time IS NULL OR expire_time &gt; NOW())
+    </select>
+
     <delete id="deleteById" parameterType="java.lang.Long">
         DELETE FROM t_share WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByFileId" parameterType="java.lang.Long">
+        DELETE FROM t_share WHERE file_id = #{fileId}
     </delete>
 
     <select id="findAll" resultType="com.cloud.backend.entity.Share">

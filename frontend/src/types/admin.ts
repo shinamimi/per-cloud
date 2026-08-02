@@ -201,6 +201,8 @@ export interface FileSettings {
   shareMaxValidDays: number
   shareMaxCountPerFile: number
   shareDefaultRequirePassword: boolean
+  /** 分享默认下载策略：ALLOW=允许下载 / DENY=禁止下载（创建分享时的默认值） */
+  shareDefaultDownloadPolicy: 'ALLOW' | 'DENY'
 }
 
 /** 文件管理保存请求 */
@@ -210,6 +212,7 @@ export interface FileSettingsRequest {
   shareMaxValidDays: number | null
   shareMaxCountPerFile: number | null
   shareDefaultRequirePassword: boolean
+  shareDefaultDownloadPolicy: 'ALLOW' | 'DENY'
 }
 
 /** 邮件服务分组（key: mail.*，ADMIN 可改；password 为脱敏占位符或空） */

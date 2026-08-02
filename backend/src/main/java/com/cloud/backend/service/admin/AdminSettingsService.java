@@ -118,9 +118,12 @@ public interface AdminSettingsService {
     /** 分享默认是否要求提取码，默认 false */
     boolean isShareDefaultRequirePassword();
 
+    /** 分享默认下载策略：ALLOW=允许下载（默认）/ DENY=禁止下载（docs/share-module.md §4.1） */
+    String getShareDefaultDownloadPolicy();
+
     /** 更新文件管理配置（null 字段恢复配置默认值） */
     void updateFile(Integer recycleBinDays, Integer shareDefaultValidDays, Integer shareMaxValidDays,
-                    Integer shareMaxCountPerFile, Boolean shareDefaultRequirePassword);
+                    Integer shareMaxCountPerFile, Boolean shareDefaultRequirePassword, String shareDefaultDownloadPolicy);
 
     /* ==================== 邮件服务（ADMIN） ==================== */
 

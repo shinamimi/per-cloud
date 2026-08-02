@@ -85,6 +85,23 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/recycle/RecycleBinView.vue'),
     meta: { layout: 'main', title: '回收站', requiresAuth: true },
   },
+  {
+    path: '/shares',
+    name: 'Shares',
+    component: () => import('@/views/share/ShareManageView.vue'),
+    meta: { layout: 'main', title: '我的分享', requiresAuth: true },
+  },
+
+  /*
+   * 访客分享页 —— 使用 blank 布局（无侧边栏/顶栏），无登录要求。
+   * 转存时若未登录由页面引导登录。
+   */
+  {
+    path: '/s/:token',
+    name: 'GuestShare',
+    component: () => import('@/views/share/GuestShareView.vue'),
+    meta: { layout: 'blank', title: '分享' },
+  },
 
   /*
    * 管理后台页面组 —— 使用 MainLayout，需要 OPERATOR 及以上角色。

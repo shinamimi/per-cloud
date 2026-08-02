@@ -51,6 +51,8 @@ public class SecurityConfig {
                         // 文件管控（全局文件/全局回收站）仅 ADMIN+（ADR-012）
                         .requestMatchers("/api/admin/files/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyRole("OPERATOR", "ADMIN", "SUPER_ADMIN")
+                        // 访客分享访问公开（docs/share-module.md §五；转存接口内部再校验登录）
+                        .requestMatchers("/api/shares/access/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

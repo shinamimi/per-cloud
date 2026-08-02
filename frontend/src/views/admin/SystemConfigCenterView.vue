@@ -245,6 +245,12 @@
               <el-form-item label="分享默认要求提取码">
                 <el-switch v-model="fileSettings.shareDefaultRequirePassword" />
               </el-form-item>
+              <el-form-item label="分享默认下载策略">
+                <el-select v-model="fileSettings.shareDefaultDownloadPolicy" style="width: 200px">
+                  <el-option label="允许下载（可设次数上限）" value="ALLOW" />
+                  <el-option label="禁止下载（仅可预览）" value="DENY" />
+                </el-select>
+              </el-form-item>
               <el-form-item>
                 <el-button type="primary" :loading="saving.file" @click="saveFile">保存文件管理</el-button>
               </el-form-item>
@@ -539,6 +545,7 @@ const fileSettings = reactive<FileSettings>({
   shareMaxValidDays: 30,
   shareMaxCountPerFile: 0,
   shareDefaultRequirePassword: false,
+  shareDefaultDownloadPolicy: 'ALLOW',
 })
 
 const mail = reactive<MailSettings>({
@@ -622,6 +629,7 @@ function loadSettings() {
       shareMaxValidDays: s.file.shareMaxValidDays ?? 0,
       shareMaxCountPerFile: s.file.shareMaxCountPerFile ?? 0,
       shareDefaultRequirePassword: s.file.shareDefaultRequirePassword ?? false,
+      shareDefaultDownloadPolicy: s.file.shareDefaultDownloadPolicy ?? 'ALLOW',
     })
     Object.assign(mail, s.mail, { password: null })
     Object.assign(logSettings, s.log)
@@ -735,6 +743,7 @@ async function saveFile() {
       shareMaxValidDays: orNull(fileSettings.shareMaxValidDays),
       shareMaxCountPerFile: orNull(fileSettings.shareMaxCountPerFile),
       shareDefaultRequirePassword: fileSettings.shareDefaultRequirePassword,
+      shareDefaultDownloadPolicy: fileSettings.shareDefaultDownloadPolicy,
     })
     ElMessage.success('文件管理配置已保存')
   } catch {

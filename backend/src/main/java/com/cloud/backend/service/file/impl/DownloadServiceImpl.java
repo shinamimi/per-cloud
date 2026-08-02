@@ -120,6 +120,32 @@ public class DownloadServiceImpl implements DownloadService {
     }
 
     @Override
+    public String getDownloadUrlForShare(File file) {
+        try {
+            return storageService.generateDownloadUrl(file.getObjectName(),
+                    adminSettingsService.getDownloadLinkTtlMinutes());
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.FILE_DOWNLOAD_FAILED, e.getMessage());
+        }
+    }
+
+    @Override
+    public BatchDownloadResponse createBatchTaskForGuest(List<File> files) {
+        if (files.isEmpty()) {
+            throw new BusinessException(ErrorCode.BATCH_TASK_NOT_FOUND, "没有可打包的文件");
+        }
+        BatchTask task = new BatchTask();
+        task.status = "PENDING";
+        task.files = files;
+        task.total = files.size();
+        task.done = 0;
+        task.createdAt = System.currentTimeMillis();
+        tasks.put(task.taskId, task);
+        packExecutor.execute(() -> pack(task));
+        return toResponse(task);
+    }
+
+    @Override
     public BatchDownloadResponse getBatchTask(String taskId) {
         BatchTask task = tasks.get(taskId);
         if (task == null) {

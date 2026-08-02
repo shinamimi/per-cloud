@@ -69,6 +69,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item v-if="fileCan('download', row)" command="download">下载</el-dropdown-item>
+                <el-dropdown-item v-if="fileCan('share', row)" command="share">分享</el-dropdown-item>
                 <el-dropdown-item v-if="fileCan('move', row)" command="move">移动</el-dropdown-item>
                 <el-dropdown-item v-if="fileCan('copy', row)" command="copy">复制</el-dropdown-item>
                 <el-dropdown-item v-if="fileCan('delete', row)" command="delete" divided>删除</el-dropdown-item>
@@ -147,6 +148,7 @@ const emit = defineEmits<{
   preview: [file: FileItem]
   'move-copy': [file: FileItem, mode: 'move' | 'copy']
   'batch-move-copy': [files: FileItem[], mode: 'move' | 'copy']
+  share: [file: FileItem]
 }>()
 
 const fileStore = useFileStore()
@@ -250,6 +252,8 @@ async function handleDownload(row: FileItem) {
 function handleMore(row: FileItem, command: string) {
   if (command === 'download') {
     handleDownload(row)
+  } else if (command === 'share') {
+    emit('share', row)
   } else if (command === 'move' || command === 'copy') {
     emit('move-copy', row, command)
   } else if (command === 'delete') {

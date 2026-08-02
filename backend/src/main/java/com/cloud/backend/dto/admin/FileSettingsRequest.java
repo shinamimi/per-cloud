@@ -22,4 +22,7 @@ public class FileSettingsRequest {
 
     /** 分享默认是否要求提取码 */
     private Boolean shareDefaultRequirePassword;
+
+    /** 分享默认下载策略：ALLOW=允许下载（默认）/ DENY=禁止下载 */
+    private String shareDefaultDownloadPolicy;
 }

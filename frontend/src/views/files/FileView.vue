@@ -78,6 +78,7 @@
           @preview="handlePreview"
           @move-copy="handleMoveCopy"
           @batch-move-copy="handleBatchMoveCopy"
+          @share="handleShare"
         />
       </el-card>
     </div>
@@ -86,6 +87,7 @@
     <UploadDialog v-model:visible="uploadDialogVisible" :parent-id="fileStore.currentDirId" />
     <PreviewDialog v-model:visible="previewVisible" :file="previewFile" />
     <MoveCopyDialog v-model:visible="moveCopyVisible" :targets="moveCopyTargets" :mode="moveCopyMode" />
+    <ShareCreateDialog v-model:visible="shareDialogVisible" :file-id="shareTargetId" @created="handleShareCreated" />
     <TransferQueue ref="queueRef" />
   </div>
 </template>
@@ -105,7 +107,9 @@ import UploadDialog from '@/components/file/UploadDialog.vue'
 import PreviewDialog from '@/components/file/PreviewDialog.vue'
 import MoveCopyDialog from '@/components/file/MoveCopyDialog.vue'
 import TransferQueue from '@/components/file/TransferQueue.vue'
+import ShareCreateDialog from '@/components/share/ShareCreateDialog.vue'
 import type { FileCategory, FileItem } from '@/types/file'
+import type { ShareItem } from '@/types/share'
 
 const fileStore = useFileStore()
 const uploadStore = useUploadStore()
@@ -193,6 +197,26 @@ function handleBatchMoveCopy(files: FileItem[], mode: 'move' | 'copy') {
   moveCopyTargets.value = files
   moveCopyMode.value = mode
   moveCopyVisible.value = true
+}
+
+/* ========== 分享 ========== */
+
+const shareDialogVisible = ref(false)
+const shareTargetId = ref(0)
+
+function handleShare(file: FileItem) {
+  shareTargetId.value = file.id
+  shareDialogVisible.value = true
+}
+
+function handleShareCreated(share: ShareItem) {
+  const link = `${location.origin}${location.pathname}#/s/${share.shareToken}`
+  navigator.clipboard?.writeText(link).catch(() => {})
+  ElMessageBox.alert(
+    `分享链接（已复制到剪贴板）：\n${link}\n\n提取码：${share.requirePassword ? '已设置（创建时填写的密码）' : '无'}`,
+    '分享成功',
+    { confirmButtonText: '知道了' },
+  ).catch(() => {})
 }
 
 /* ========== 初始化 ========== */

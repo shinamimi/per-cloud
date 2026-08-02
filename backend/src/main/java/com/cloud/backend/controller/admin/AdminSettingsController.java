@@ -68,7 +68,8 @@ public class AdminSettingsController {
                 "shareDefaultValidDays", adminSettingsService.getShareDefaultValidDays(),
                 "shareMaxValidDays", adminSettingsService.getShareMaxValidDays(),
                 "shareMaxCountPerFile", adminSettingsService.getShareMaxCountPerFile(),
-                "shareDefaultRequirePassword", adminSettingsService.isShareDefaultRequirePassword()));
+                "shareDefaultRequirePassword", adminSettingsService.isShareDefaultRequirePassword(),
+                "shareDefaultDownloadPolicy", adminSettingsService.getShareDefaultDownloadPolicy()));
         settings.put("mail", mailGroup());
         settings.put("log", Map.of(
                 "operationDays", adminSettingsService.getOperationLogDays(),
@@ -153,7 +154,8 @@ public class AdminSettingsController {
                 request.getShareDefaultValidDays(),
                 request.getShareMaxValidDays(),
                 request.getShareMaxCountPerFile(),
-                request.getShareDefaultRequirePassword());
+                request.getShareDefaultRequirePassword(),
+                request.getShareDefaultDownloadPolicy());
         return Result.success();
     }
 

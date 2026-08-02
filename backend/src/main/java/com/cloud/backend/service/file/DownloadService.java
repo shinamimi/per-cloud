@@ -1,6 +1,7 @@
 package com.cloud.backend.service.file;
 
 import com.cloud.backend.dto.file.BatchDownloadResponse;
+import com.cloud.backend.entity.File;
 
 import java.util.List;
 
@@ -20,4 +21,10 @@ public interface DownloadService {
 
     /** 清理过期打包产物（定时任务） */
     void cleanupExpiredPackages();
+
+    /** 分享下载：已由调用方完成分享状态/归属校验，直接生成 presigned URL */
+    String getDownloadUrlForShare(File file);
+
+    /** 分享批量打包：files 已由调用方收集（快照展开），直接复用打包流水线 */
+    BatchDownloadResponse createBatchTaskForGuest(List<File> files);
 }
