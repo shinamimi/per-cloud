@@ -29,6 +29,10 @@ public class AdminFileResponse {
     private FileType type;
     private Integer category;
     private FileStatus status;
+    /** 内容 hash（禁用来源判断用） */
+    private String fileHash;
+    /** 禁用来源：GLOBAL=全站禁（红色展示）/ USER=仅该用户禁用；非禁用为 null（docs/admin-file-management.md 5.1） */
+    private String disabledScope;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,6 +51,7 @@ public class AdminFileResponse {
         response.setType(file.getType());
         response.setCategory(file.getCategory());
         response.setStatus(file.getStatus());
+        response.setFileHash(file.getFileHash());
         response.setCreatedAt(file.getCreatedAt());
         response.setUpdatedAt(file.getUpdatedAt());
         return response;

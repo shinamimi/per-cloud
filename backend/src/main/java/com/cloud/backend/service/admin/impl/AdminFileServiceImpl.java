@@ -98,6 +98,7 @@ public class AdminFileServiceImpl implements AdminFileService {
                 .map(AdminFileResponse::from)
                 .toList();
         fillOwners(records);
+        fillDisabledScope(records);
         return new Page<>(records, total, safePage, query.getSize());
     }
 
@@ -109,7 +110,26 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
         AdminFileResponse response = AdminFileResponse.from(file);
         fillOwners(List.of(response));
+        fillDisabledScope(List.of(response));
         return response;
+    }
+
+    /** 填充禁用来源（status=DISABLED 时查对象级禁用记录：GLOBAL=全站禁，否则该用户 USER 禁） */
+    private void fillDisabledScope(List<AdminFileResponse> records) {
+        for (AdminFileResponse record : records) {
+            if (record.getStatus() != FileStatus.DISABLED || record.getFileHash() == null || record.getFileHash().isEmpty()) {
+                continue;
+            }
+            List<DisabledObject> disables = disabledObjectMapper.findByHash(record.getFileHash());
+            boolean global = disables.stream()
+                    .anyMatch(d -> d.getScope() == DisableScope.GLOBAL.getValue());
+            if (global) {
+                record.setDisabledScope(DisableScope.GLOBAL.name());
+            } else if (disables.stream().anyMatch(d -> d.getScope() == DisableScope.USER.getValue()
+                    && d.getUserId() != null && d.getUserId().equals(record.getUserId()))) {
+                record.setDisabledScope(DisableScope.USER.name());
+            }
+        }
     }
 
     @Override
@@ -152,7 +172,8 @@ public class AdminFileServiceImpl implements AdminFileService {
             }
         } else {
             if (hasHash) {
-                enableObject(file, scope == null ? DisableScope.USER : scope);
+                // 启用不依赖前端 scope：同时解除全站禁与"该用户仅用户禁"，再重放剩余禁用记录
+                enableObject(file);
             } else {
                 fileMapper.updateStatus(id, FileStatus.NORMAL.getValue());
             }
@@ -187,12 +208,13 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
-    /** 对象级启用：删除禁用记录后重算（先全部恢复，再重放剩余禁用记录） */
-    private void enableObject(File file, DisableScope scope) {
-        long userId = scope == DisableScope.USER ? file.getUserId() : 0L;
-        disabledObjectMapper.deleteByHashAndScopeAndUser(file.getFileHash(), scope.getValue(), userId);
-        fileMapper.restoreByHash(file.getFileHash());
-        for (DisabledObject record : disabledObjectMapper.findByHash(file.getFileHash())) {
+    /** 对象级启用：解除全站禁 + 该用户仅用户禁，删除记录后重算（先全部恢复，再重放剩余禁用记录） */
+    private void enableObject(File file) {
+        String hash = file.getFileHash();
+        disabledObjectMapper.deleteByHashAndScopeAndUser(hash, DisableScope.GLOBAL.getValue(), 0L);
+        disabledObjectMapper.deleteByHashAndScopeAndUser(hash, DisableScope.USER.getValue(), file.getUserId());
+        fileMapper.restoreByHash(hash);
+        for (DisabledObject record : disabledObjectMapper.findByHash(hash)) {
             if (record.getScope() == DisableScope.GLOBAL.getValue()) {
                 fileMapper.disableByHash(record.getFileHash());
             } else {

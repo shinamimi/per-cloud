@@ -136,7 +136,24 @@ requestBlob.interceptors.request.use(
 )
 
 requestBlob.interceptors.response.use(
-  (response) => {
+  async (response) => {
+    /*
+     * 业务错误（如 10216 文件被禁用）以 HTTP 200 + JSON 返回，responseType=blob 时会被误当文件内容。
+     * 识别 application/json 响应并解析业务码，非 200 弹错误提示，避免把错误 JSON 保存成"下载文件"。
+     */
+    const contentType = String(response.headers['content-type'] ?? '')
+    if (contentType.includes('application/json')) {
+      const body = await (response.data as Blob).text()
+      try {
+        const result = JSON.parse(body) as Result<any>
+        if (result.code !== 200) {
+          ElMessage.error(result.message || '下载失败')
+          return Promise.reject(new Error(result.message || '下载失败'))
+        }
+      } catch {
+        // 非 Result JSON，按正常下载处理
+      }
+    }
     // 返回 Blob（类型层面回填 AxiosResponse 以满足拦截器签名，实际运行时返回 data）
     return response.data as unknown as AxiosResponse
   },

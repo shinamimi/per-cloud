@@ -83,9 +83,9 @@
             @row-dblclick="openDetail"
           >
             <el-table-column type="selection" width="42" />
-            <el-table-column label="名称" min-width="240">
+            <el-table-column label="名称" min-width="240" show-overflow-tooltip>
               <template #default="{ row }">
-                <div class="file-name">
+                <div class="file-name name-click" @click="preview(row)">
                   <el-icon v-if="row.isDirectory"><Folder /></el-icon>
                   <el-icon v-else class="file-icon"><Document /></el-icon>
                   <span>{{ row.name }}</span>
@@ -97,7 +97,7 @@
                 {{ row.isDirectory ? '-' : formatBytesAuto(row.size) }}
               </template>
             </el-table-column>
-            <el-table-column label="所属" min-width="150">
+            <el-table-column label="所属" min-width="150" show-overflow-tooltip>
               <template #default="{ row }">
                 <div class="owner-cell">
                   <span>{{ row.userName || `用户#${row.userId}` }}</span>
@@ -105,10 +105,10 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="90">
+            <el-table-column label="状态" width="110">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'DISABLED' ? 'warning' : 'success'" size="small">
-                  {{ row.status === 'DISABLED' ? '禁用' : '正常' }}
+                <el-tag :type="statusTagType(row)" size="small">
+                  {{ statusLabel(row) }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -207,8 +207,8 @@
           </el-descriptions-item>
           <el-descriptions-item label="路径">{{ detail.path }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="detail.status === 'DISABLED' ? 'warning' : 'success'" size="small">
-              {{ detail.status === 'DISABLED' ? '禁用' : '正常' }}
+            <el-tag :type="statusTagType(detail)" size="small">
+              {{ statusLabel(detail) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ detail.createdAt }}</el-descriptions-item>
@@ -283,6 +283,17 @@ const CATEGORY_LABEL: Record<string, string> = {
   AUDIO: '音频',
   ARCHIVE: '压缩包',
   OTHER: '其他',
+}
+
+/** 状态标签：全站禁用=红色，仅用户禁用=黄色，正常=绿色（docs/admin-file-management.md 5.1） */
+function statusTagType(row: AdminFileItem): string {
+  if (row.status !== 'DISABLED') return 'success'
+  return row.disabledScope === 'GLOBAL' ? 'danger' : 'warning'
+}
+
+function statusLabel(row: AdminFileItem): string {
+  if (row.status !== 'DISABLED') return '正常'
+  return row.disabledScope === 'GLOBAL' ? '全站禁用' : '已禁用'
 }
 
 const activeTab = ref<'files' | 'recycle'>('files')
@@ -585,6 +596,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.name-click {
+  cursor: pointer;
+}
+
+.name-click:hover {
+  color: #409eff;
 }
 
 .file-icon {

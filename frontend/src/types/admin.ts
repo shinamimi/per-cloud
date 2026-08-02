@@ -337,6 +337,8 @@ export interface AdminFileItem {
   type: 'FILE' | 'DIRECTORY'
   category: number
   status: FileStatusKey
+  /** 禁用来源：GLOBAL=全站禁（红色展示）/ USER=仅该用户；非禁用为 null */
+  disabledScope?: 'GLOBAL' | 'USER' | null
   createdAt: string
   updatedAt: string
 }
