@@ -20,38 +20,38 @@
     <!-- 按用户和父目录查找子文件和目录（仅 status=1 正常文件） -->
     <select id="findByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
+        WHERE user_id = #{userId} AND team_id = 0 AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, name ASC
     </select>
 
     <select id="pageByUserIdAndParentId" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
+        WHERE user_id = #{userId} AND team_id = 0 AND parent_id = #{parentId} AND status != 0
         ORDER BY type DESC, created_at DESC
         LIMIT #{offset}, #{size}
     </select>
 
     <select id="countByUserIdAndParentId" resultType="java.lang.Long">
         SELECT COUNT(*) FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND status != 0
+        WHERE user_id = #{userId} AND team_id = 0 AND parent_id = #{parentId} AND status != 0
     </select>
 
     <!-- 同名检查（仅正常记录，回收站中的不算） -->
     <select id="findByUserIdAndParentIdAndName" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND parent_id = #{parentId} AND name = #{name} AND status != 0
+        WHERE user_id = #{userId} AND team_id = 0 AND parent_id = #{parentId} AND name = #{name} AND status != 0
         LIMIT 1
     </select>
 
     <!-- 按用户和路径查找（用于防止同一目录下创建同名文件） -->
     <select id="findByUserIdAndPath" resultType="com.cloud.backend.entity.File">
         SELECT * FROM t_file
-        WHERE user_id = #{userId} AND path = #{path} AND status != 0
+        WHERE user_id = #{userId} AND team_id = 0 AND path = #{path} AND status != 0
     </select>
 
     <!-- 用户全部正常文件（目录树、递归删除收集） -->
     <select id="findByUserId" resultType="com.cloud.backend.entity.File">
-        SELECT * FROM t_file WHERE user_id = #{userId} AND status != 0
+        SELECT * FROM t_file WHERE user_id = #{userId} AND team_id = 0 AND status != 0
     </select>
 
     <update id="update" parameterType="com.cloud.backend.entity.File">
