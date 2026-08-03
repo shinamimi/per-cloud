@@ -1,7 +1,7 @@
 /*
  * 好友模块类型定义 —— 对应后端 FriendController（/api/friends）与 dto/friend/*。
  *
- * 设计依据（docs/friend-system.md + docs/ADR-010）：
+ * 设计依据：
  * - 好友关系双向确认：发送请求 → 对方接受后建立双向好友
  * - relation 字段标注双方关系（NONE/FRIEND/TO_THEM），供搜索列表展示"加好友/聊天/已是好友"
  * - isFriendOrTeamMate 复用：定向分享、团队拉人的候选源

@@ -235,7 +235,7 @@
     <!-- 预览（复用用户端预览弹窗，loader 指向管理端预览接口） -->
     <PreviewDialog v-model:visible="previewVisible" :file="previewFileItem" :loader="previewLoader" />
 
-    <!-- 禁用范围（docs/admin-file-management.md 5.1：全站禁 / 仅用户） -->
+    <!-- 禁用范围（GLOBAL=全站禁 / USER=仅用户） -->
     <el-dialog v-model="disableDialogVisible" title="禁用文件" width="440px">
       <p class="disable-tip">
         禁用后用户仍可见文件，但不可下载/预览/分享；秒传或重新上传相同内容将被拦截。
@@ -285,7 +285,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   OTHER: '其他',
 }
 
-/** 状态标签：全站禁用=红色，仅用户禁用=黄色，正常=绿色（docs/admin-file-management.md 5.1） */
+/** 状态标签：全站禁用=红色，仅用户禁用=黄色，正常=绿色 */
 function statusTagType(row: AdminFileItem): string {
   if (row.status !== 'DISABLED') return 'success'
   return row.disabledScope === 'GLOBAL' ? 'danger' : 'warning'
@@ -364,7 +364,7 @@ function handleSizeChange() {
 
 /* ========== 状态/删除 ========== */
 
-/* 禁用范围弹窗（docs/admin-file-management.md 5.1：GLOBAL=全站禁 / USER=仅用户） */
+/* 禁用范围弹窗（GLOBAL=全站禁 / USER=仅用户） */
 const disableDialogVisible = ref(false)
 const disableRows = ref<AdminFileItem[]>([])
 const disableScope = ref<DisableScopeKey>('USER')

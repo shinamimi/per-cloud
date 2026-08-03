@@ -43,9 +43,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 分享服务实现 —— docs/share-module.md。
+ * 分享服务实现 —— 分享创建/取消、访客访问、下载计数与转存。
  *
- * 关键设计：
+ * 设计思路：
  * - 文件夹分享 = 创建时锁定快照（t_share_file），访客浏览/下载/转存均基于快照树，
  *   原文件新增/改名/删除不影响已分享内容；但下载/预览/转存前会回查原文件状态
  *   （已删除/被禁用则拒绝，安全维度）。
@@ -56,9 +56,9 @@ import java.util.stream.Collectors;
 @Service
 public class ShareServiceImpl implements ShareService {
 
-    /** 提取码错误锁定阈值（docs/share-module.md §5.1） */
+    /** 提取码错误锁定阈值（超限后拒绝验证，计数 TTL 过期后自动解锁） */
     private static final int PASSWORD_FAIL_LIMIT = 5;
-    /** 提取码验证通过标记有效期 */
+    /** 提取码验证通过标记有效期（24 小时） */
     private static final Duration PASSWORD_OK_TTL = Duration.ofHours(24);
 
     private final ShareMapper shareMapper;
@@ -95,42 +95,53 @@ public class ShareServiceImpl implements ShareService {
 
     /* ==================== 基础 CRUD ==================== */
 
+    /** 新增分享记录（基础 CRUD，业务创建走 createShare）。 */
     @Override
     public Share create(Share share) {
         shareMapper.insert(share);
         return share;
     }
 
+    /** 按分享 token 查询记录。 */
     @Override
     public Share findByToken(String shareToken) {
         return shareMapper.findByToken(shareToken);
     }
 
+    /** 按 id 查询分享记录。 */
     @Override
     public Share findById(Long id) {
         return shareMapper.findById(id);
     }
 
+    /** 查询某用户创建的全部分享。 */
     @Override
     public List<Share> listByUserId(Long userId) {
         return shareMapper.findByUserId(userId);
     }
 
+    /** 更新分享记录，返回受影响行数。 */
     @Override
     public int update(Share share) {
         return shareMapper.update(share);
     }
 
+    /** 物理删除分享记录（基础 CRUD，业务删除走 deleteShareRecord）。 */
     @Override
     public int removeById(Long id) {
         return shareMapper.deleteById(id);
     }
 
+    /** 查询全部分享记录（管理端用）。 */
     @Override
     public List<Share> findAll() {
         return shareMapper.findAll();
     }
 
+    /**
+     * 管理员取消分享：状态置 CANCELED、清除快照与访客提取码验证标记。
+     * 权限约束：仅 ADMIN+ 可调。
+     */
     @Override
     @Log(operation = OperationType.CANCEL_SHARE, target = TargetType.SHARE,
          targetId = "#id", detail = "'管理员取消分享'")
@@ -145,6 +156,7 @@ public class ShareServiceImpl implements ShareService {
         clearVerified(share.getShareToken());
     }
 
+    /** 管理员切换分享下载开关（仅改标记位）。权限约束：仅 ADMIN+ 可调。 */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.SHARE,
          targetId = "#id", detail = "'管理员切换分享下载开关'")
@@ -156,6 +168,7 @@ public class ShareServiceImpl implements ShareService {
         shareMapper.updateAllowDownload(id, allowDownload ? 1 : 0);
     }
 
+    /** 管理员删除分享记录（事务）：清除快照与验证标记后物理删除。权限约束：仅 ADMIN+ 可调。 */
     @Override
     @Log(operation = OperationType.DELETE_SHARE, target = TargetType.SHARE,
          targetId = "#id", detail = "'管理员删除分享记录'")
@@ -172,6 +185,10 @@ public class ShareServiceImpl implements ShareService {
 
     /* ==================== 用户侧分享管理 ==================== */
 
+    /**
+     * 创建分享（事务 + 写操作日志）：校验文件归属与禁用状态、每文件分享数上限，
+     * 按请求组装有效期/提取码/下载策略/转存开关；目录分享时锁定当前文件树为快照。
+     */
     @Override
     @Log(operation = OperationType.CREATE_SHARE, target = TargetType.SHARE,
          targetId = "#result.id", detail = "'创建分享'")
@@ -249,6 +266,7 @@ public class ShareServiceImpl implements ShareService {
         return share;
     }
 
+    /** 查询本人分享列表，附当前原文件名（原文件已删除时显示占位文案）。 */
     @Override
     public List<ShareResponse> listShares(Long userId) {
         return shareMapper.findByUserId(userId).stream().map(share -> {
@@ -259,6 +277,7 @@ public class ShareServiceImpl implements ShareService {
         }).toList();
     }
 
+    /** 修改分享有效期（仅生效中的分享可改）：永久或按天数续期，天数上限受管理员配置约束。 */
     @Override
     public void updateExpire(Long userId, Long shareId, ShareUpdateRequest request) {
         Share share = requireOwnedShare(userId, shareId);
@@ -280,6 +299,7 @@ public class ShareServiceImpl implements ShareService {
         shareMapper.update(share);
     }
 
+    /** 用户取消分享（事务 + 写操作日志）：置 CANCELED、清快照与验证标记。 */
     @Override
     @Log(operation = OperationType.CANCEL_SHARE, target = TargetType.SHARE,
          targetId = "#shareId", detail = "'取消分享'")
@@ -292,6 +312,7 @@ public class ShareServiceImpl implements ShareService {
         clearVerified(share.getShareToken());
     }
 
+    /** 用户删除分享记录（事务 + 写操作日志）：清快照与验证标记后物理删除。 */
     @Override
     @Log(operation = OperationType.DELETE_SHARE, target = TargetType.SHARE,
          targetId = "#shareId", detail = "'删除分享记录'")
@@ -305,6 +326,7 @@ public class ShareServiceImpl implements ShareService {
 
     /* ==================== 访客访问 ==================== */
 
+    /** 访客获取分享访问信息：仅公开基础信息（名称/归属/状态/开关），不校验提取码。 */
     @Override
     public GuestShareInfoResponse getAccessInfo(String token) {
         Share share = requireAccessible(token);
@@ -328,6 +350,10 @@ public class ShareServiceImpl implements ShareService {
         return response;
     }
 
+    /**
+     * 提取码校验：无提取码直接放行并打验证标记；错误计数超限锁定（Redis 30 分钟计数），
+     * 正确则清除失败计数并打验证标记（24 小时有效）。
+     */
     @Override
     public void verifyPassword(String token, String password) {
         Share share = requireAccessible(token);
@@ -355,6 +381,7 @@ public class ShareServiceImpl implements ShareService {
         markVerified(token);
     }
 
+    /** 访客获取分享快照文件列表（需已通过提取码验证）。 */
     @Override
     public List<ShareFileNodeResponse> getShareFiles(String token) {
         Share share = requireAccessible(token);
@@ -372,6 +399,10 @@ public class ShareServiceImpl implements ShareService {
         }).toList();
     }
 
+    /**
+     * 访客获取单文件下载 URL：需开启下载 + 通过提取码验证，快照节点须在分享内，
+     * 回查原文件可用后计数（同 IP 60 秒去重）并生成预签名 URL。
+     */
     @Override
     public String getShareDownloadUrl(String token, Long snapshotId) {
         Share share = requireAccessible(token);
@@ -386,6 +417,7 @@ public class ShareServiceImpl implements ShareService {
         return downloadService.getDownloadUrlForShare(file);
     }
 
+    /** 访客预览分享文件（需提取码验证；回查原文件可用性）。 */
     @Override
     public FilePreviewResponse previewShareFile(String token, Long snapshotId) {
         Share share = requireAccessible(token);
@@ -398,6 +430,7 @@ public class ShareServiceImpl implements ShareService {
         return previewService.previewFile(share.getUserId(), file);
     }
 
+    /** 访客批量打包下载（需开启下载 + 提取码验证）：选中目录递归展开为文件清单，计数后创建打包任务。 */
     @Override
     public BatchDownloadResponse batchDownload(String token, List<Long> snapshotIds) {
         Share share = requireAccessible(token);
@@ -411,11 +444,16 @@ public class ShareServiceImpl implements ShareService {
         return downloadService.createBatchTaskForGuest(files);
     }
 
+    /** 查询分享批量打包任务状态（转发到下载服务）。 */
     @Override
     public BatchDownloadResponse getBatchTask(String taskId) {
         return downloadService.getBatchTask(taskId);
     }
 
+    /**
+     * 访客转存分享内容到本人空间（事务）：剔除嵌套选中项后按深度排序，
+     * 先建目录树再逐文件秒传转存；原文件失效或命中对象级禁用则整体中止。
+     */
     @Override
     @Transactional
     public void saveShareFiles(Long userId, String token, List<Long> snapshotIds) {
@@ -481,6 +519,7 @@ public class ShareServiceImpl implements ShareService {
 
     /* ==================== 内部工具 ==================== */
 
+    /** 校验分享可访问：存在、未取消/未达上限、未过期；任一不满足抛对应业务异常。 */
     private Share requireAccessible(String token) {
         Share share = shareMapper.findByToken(token);
         if (share == null) {
@@ -498,6 +537,7 @@ public class ShareServiceImpl implements ShareService {
         return share;
     }
 
+    /** 取本人创建的分享（不存在或非本人所有抛业务异常）。 */
     private Share requireOwnedShare(Long userId, Long shareId) {
         Share share = shareMapper.findById(shareId);
         if (share == null || !share.getUserId().equals(userId)) {
@@ -506,12 +546,14 @@ public class ShareServiceImpl implements ShareService {
         return share;
     }
 
+    /** 分享必须允许下载，否则抛业务异常。 */
     private void requireDownloadAllowed(Share share) {
         if (share.getAllowDownload() == null || share.getAllowDownload() != 1) {
             throw new BusinessException(ErrorCode.SHARE_DOWNLOAD_DISABLED);
         }
     }
 
+    /** 有提取码的分享必须先通过验证（Redis 标记），否则要求输入提取码。 */
     private void requirePasswordVerified(Share share) {
         if (share.getAccessPassword() == null || share.getAccessPassword().isEmpty()) {
             return;
@@ -522,10 +564,12 @@ public class ShareServiceImpl implements ShareService {
         }
     }
 
+    /** 写入提取码验证通过标记（带有效期）。 */
     private void markVerified(String token) {
         redis.opsForValue().set(RedisConstants.SHARE_PWD_OK_PREFIX + token, "1", PASSWORD_OK_TTL);
     }
 
+    /** 清除提取码验证通过/失败计数标记（分享被取消、删除时同步清理）。 */
     private void clearVerified(String token) {
         redis.delete(RedisConstants.SHARE_PWD_OK_PREFIX + token);
         redis.delete(RedisConstants.SHARE_PWD_FAIL_PREFIX + token);
@@ -566,7 +610,7 @@ public class ShareServiceImpl implements ShareService {
         return file;
     }
 
-    /** 原子下载计数：NORMAL + 未过期 + 未达限才 +1；达限置 EXHAUSTED（状态机 docs/share-module.md §六） */
+    /** 原子下载计数：仅生效中且未达上限才 +1；达限置 EXHAUSTED（并发下由 UPDATE 语句原子保证）。 */
     private void countDownload(Share share, String dedupKey) {
         // 短时间（60s）同一访客对同一文件重复下载只计 1 次，防止刷新/误点刷掉下载上限
         if (dedupKey != null) {
@@ -651,6 +695,7 @@ public class ShareServiceImpl implements ShareService {
         return "/" + String.join("/", names);
     }
 
+    /** 快照节点是否存在已选中的祖先（用于剔除嵌套选中项，避免重复处理）。 */
     private boolean hasSelectedAncestor(ShareFile node, Map<Long, ShareFile> byId, Set<Long> selectedIds) {
         ShareFile cursor = node;
         while (cursor.getParentId() != null && cursor.getParentId() != 0 && byId.containsKey(cursor.getParentId())) {
@@ -662,6 +707,7 @@ public class ShareServiceImpl implements ShareService {
         return false;
     }
 
+    /** 快照节点在快照树中的深度（转存时父先于子排序用）。 */
     private int snapshotDepth(ShareFile node, Map<Long, ShareFile> byId) {
         int depth = 0;
         ShareFile cursor = node;
@@ -696,6 +742,7 @@ public class ShareServiceImpl implements ShareService {
         }
     }
 
+    /** 把文件实体转为分享快照节点（拷贝名称/大小/MIME/hash 等展示与转存所需字段）。 */
     private ShareFile toSnapshot(Long shareId, Long parentId, File file) {
         ShareFile node = new ShareFile();
         node.setShareId(shareId);
@@ -710,6 +757,7 @@ public class ShareServiceImpl implements ShareService {
         return node;
     }
 
+    /** 分享的文件内容命中对象级禁用（全站禁或仅该用户禁）→ 拒绝创建分享。 */
     private void requireNotBlocked(File file) {
         if (file.getFileHash() != null && !file.getFileHash().isEmpty()
                 && disabledObjectMapper.countBlocked(file.getFileHash(), file.getUserId()) > 0) {
@@ -717,6 +765,7 @@ public class ShareServiceImpl implements ShareService {
         }
     }
 
+    /** 下载策略默认值：管理员策略非 DENY 即默认允许下载。 */
     private boolean defaultAllowDownload() {
         return !"DENY".equalsIgnoreCase(adminSettingsService.getShareDefaultDownloadPolicy());
     }

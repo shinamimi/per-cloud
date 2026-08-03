@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 后台操作日志控制器 —— 按用户、操作类型、目标类型、时间范围查询操作日志，供审计排查。
+ */
 @RestController
 @RequestMapping("/api/admin/logs")
 public class AdminLogController {
@@ -20,6 +23,9 @@ public class AdminLogController {
         this.operationLogService = operationLogService;
     }
 
+    /**
+     * 按筛选条件查询操作日志列表，条件均可选（不传则查询全部）。
+     */
     @GetMapping
     public Result<List<AdminLogResponse>> listLogs(LogFilterRequest filter) {
         List<AdminLogResponse> logs = operationLogService.listByFilter(filter).stream()

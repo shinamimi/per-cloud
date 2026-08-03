@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 管理端全局文件管控（docs/adr/012-admin-file-control.md，仅 ADMIN+）。
+ * 管理端全局文件管控（仅 ADMIN+）。
  * 覆盖个人文件 + 团队文件：列表筛选/详情/禁用启用/删除（进全局回收站）/全局回收站管理。
  */
 @RestController

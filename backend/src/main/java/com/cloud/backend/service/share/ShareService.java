@@ -8,7 +8,7 @@ import com.cloud.backend.entity.Share;
 import java.util.List;
 
 /**
- * 分享服务 —— 用户侧分享管理 + 访客访问（docs/share-module.md M4）。
+ * 分享服务 —— 用户侧分享管理 + 访客访问。
  * 访客接口不要求登录（SecurityConfig permitAll），转存除外（需登录）。
  */
 public interface ShareService {

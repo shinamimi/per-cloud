@@ -1,7 +1,7 @@
 <!--
   TeamsView —— 我的团队页面（/teams）。
   团队卡片列表 + 创建团队 + 成员管理 + 团队设置。
-  设计依据 docs/team-module.md：OWNER 可解散；OWNER/ADMIN 可成员管理与改团队资料。
+  权限划分：OWNER 可解散；OWNER/ADMIN 可成员管理与改团队资料。
 -->
 <template>
   <div class="teams-view">

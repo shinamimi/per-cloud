@@ -7,7 +7,7 @@ package com.cloud.backend.constant;
  * - upload:chunks:{uploadId}        Set：已上传分片序号（断点续传）
  * - upload:uploading:{userId}       Set：用户进行中的上传任务（并发任务数限制）
  * - lock:merge:{uploadId}           合并分布式锁
- * - share:pwd-fail:{token}          String：提取码错误计数（>=5 锁定，docs/share-module.md §5）
+ * - share:pwd-fail:{token}          String：提取码错误计数（满 5 次锁定）
  * - share:pwd-ok:{token}            String：提取码验证通过标记（访问文件树/下载/转存前校验）
  */
 public interface RedisConstants {

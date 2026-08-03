@@ -1,7 +1,7 @@
 <!--
   FileView —— 文件管理主页面（/files）。
   布局：左侧目录树 + 右侧列表；顶部工具栏（上传/新建文件夹/批量下载/传输队列）+ 搜索。
-  功能对应 docs/file-module.md：目录浏览、创建目录、上传（分片/秒传）、下载/打包下载、
+  功能范围：目录浏览、创建目录、上传（分片/秒传）、下载/打包下载、
   重命名/移动/复制、删除（回收站）、搜索、预览。
 -->
 <template>
@@ -153,7 +153,7 @@ async function handleBatchDownload() {
 const keyword = ref('')
 const category = ref<FileCategory | undefined>(undefined)
 
-/** 搜索类型过滤选项 —— 对应 docs/file-module.md 九（文件名 + 类型过滤） */
+/** 搜索类型过滤选项 —— 文件名 + 类型过滤 */
 const CATEGORY_OPTIONS: Array<{ value: FileCategory; label: string }> = [
   { value: 'IMAGE', label: '图片' },
   { value: 'VIDEO', label: '视频' },

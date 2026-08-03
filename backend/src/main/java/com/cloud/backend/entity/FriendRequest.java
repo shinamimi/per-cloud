@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 好友请求实体 —— t_friend_request 表（ADR-010：双向确认关系层）。
+ * 好友请求实体 —— t_friend_request 表（双向确认关系层）。
  */
 @Data
 public class FriendRequest {

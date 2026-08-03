@@ -10,7 +10,7 @@ import com.cloud.backend.dto.file.RecycleBinResponse;
 import java.util.List;
 
 /**
- * 团队文件服务（docs/team-module.md §四/§六）。
+ * 团队文件服务 —— 团队文件管理 + 团队回收站。
  * 同表 + teamId 复用个人文件全链路；上传/秒传复用 /api/files/upload/*（请求体带 teamId）。
  * 权限矩阵：MEMBER 只能改/删自己上传的文件，ADMIN 可改/删团队所有文件；下载/预览所有成员可。
  * 团队文件删除进团队回收站（t_recycle_bin 带 team_id），保留天数可配置。

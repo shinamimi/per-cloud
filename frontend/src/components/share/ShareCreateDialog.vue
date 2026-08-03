@@ -1,7 +1,7 @@
 <!--
   ShareCreateDialog —— 创建分享对话框。
   选项：有效期（永久/按天）、提取码（默认跟随管理端配置）、下载策略（允许/禁止下载，允许时可选次数上限）、转存开关。
-  对应 docs/share-module.md §四（创建分享）与配置中心 share.* 默认值。
+  选项默认值与配置中心 share.* 配置保持一致。
 -->
 <template>
   <el-dialog

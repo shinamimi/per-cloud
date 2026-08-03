@@ -1,7 +1,7 @@
 /*
  * 下载工具 —— Blob 保存与直链下载。
  *
- * 设计思路（依据 docs/file-module.md 五）：
+ * 设计思路：
  * - 单文件：后端 302 重定向到 MinIO presigned URL，前端经 requestBlob 拿 Blob 后本地保存
  * - 打包文件：WebSocket 通知携带 presigned URL，前端直连 MinIO 下载（无需鉴权头）
  */

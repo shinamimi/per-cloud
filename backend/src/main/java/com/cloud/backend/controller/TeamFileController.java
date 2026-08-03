@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 团队文件控制器（docs/team-module.md §四/§六）。
+ * 团队文件控制器 —— 团队文件管理 + 团队回收站。
  * 上传/秒传复用 /api/files/upload/*（请求体带 teamId），不重复实现。
  * 下载/预览走团队鉴权（成员均可）；改/删按权限矩阵（MEMBER 只能操作自己上传的）。
  */

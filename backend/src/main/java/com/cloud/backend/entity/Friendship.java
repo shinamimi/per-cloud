@@ -4,7 +4,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 好友关系实体 —— t_friendship 表（ADR-010）。
+ * 好友关系实体 —— t_friendship 表。
  * 成对存储（user_a_id < user_b_id），查询便捷、唯一约束防重复。
  */
 @Data

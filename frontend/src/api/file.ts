@@ -1,7 +1,6 @@
 /*
  * 文件模块 API —— 对应后端 FileController（/api/files）。
  *
- * 接口清单与设计依据见 docs/file-module.md 二（接口清单）与 docs/DDD.md M3。
  * 注意：上传相关接口携带文件二进制，需传较长超时；默认 request 超时 30s 仅适用于常规接口。
  */
 import request, { downloadGet } from '@/utils/request'

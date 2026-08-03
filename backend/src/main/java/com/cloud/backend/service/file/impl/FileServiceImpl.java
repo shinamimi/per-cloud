@@ -75,47 +75,56 @@ public class FileServiceImpl implements FileService {
         this.adminSettingsService = adminSettingsService;
     }
 
+    /** 新增文件/目录记录（调用方负责填充全部业务字段）。 */
     @Override
     public File save(File file) {
         fileMapper.insert(file);
         return file;
     }
 
+    /** 按 id 查询文件记录（不做归属校验，调用方需自行确认）。 */
     @Override
     public File findById(Long id) {
         return fileMapper.findById(id);
     }
 
+    /** 查询某用户某目录下的直接子项。 */
     @Override
     public List<File> listByUserAndParent(Long userId, Long parentId) {
         return fileMapper.findByUserIdAndParentId(userId, parentId);
     }
 
+    /** 按用户 + 全路径查询文件记录。 */
     @Override
     public File findByPath(Long userId, String path) {
         return fileMapper.findByUserIdAndPath(userId, path);
     }
 
+    /** 更新文件记录，返回受影响行数。 */
     @Override
     public int update(File file) {
         return fileMapper.update(file);
     }
 
+    /** 物理删除文件记录（注意：业务删除应走"删除到回收站"流程）。 */
     @Override
     public int removeById(Long id) {
         return fileMapper.deleteById(id);
     }
 
+    /** 更新文件状态（取值见 FileStatus 枚举），返回受影响行数。 */
     @Override
     public int updateStatus(Long id, Integer status) {
         return fileMapper.updateStatus(id, status);
     }
 
+    /** 查询全部文件记录（管理端/定时任务用）。 */
     @Override
     public List<File> findAll() {
         return fileMapper.findAll();
     }
 
+    /** 分页查询用户某目录下的直接子项；非根目录时先校验目录归属。 */
     @Override
     public Page<FileNodeResponse> pageByUserAndParent(Long userId, Long parentId, int page, int size) {
         if (parentId != null && parentId != FileConstants.ROOT_PARENT_ID) {
@@ -128,6 +137,7 @@ public class FileServiceImpl implements FileService {
         return new Page<>(records, total, page, size);
     }
 
+    /** 分页查询用户音频类文件（按分类筛选，跨目录）。 */
     @Override
     public Page<FileNodeResponse> listAudio(Long userId, int page, int size) {
         FileQuery query = new FileQuery();
@@ -141,6 +151,7 @@ public class FileServiceImpl implements FileService {
         return new Page<>(records, total, page, size);
     }
 
+    /** 构建用户目录树（仅目录节点，根目录下为顶层目录）。 */
     @Override
     public List<FileTreeResponse> tree(Long userId) {
         Map<Long, List<File>> childrenByParent = fileMapper.findByUserId(userId).stream()
@@ -153,6 +164,7 @@ public class FileServiceImpl implements FileService {
         return roots;
     }
 
+    /** 递归构建单个目录节点及其子目录。 */
     private FileTreeResponse buildTree(File dir, Map<Long, List<File>> childrenByParent) {
         FileTreeResponse node = FileTreeResponse.of(dir.getId(), dir.getName(), true);
         for (File child : childrenByParent.getOrDefault(dir.getId(), List.of())) {
@@ -161,6 +173,10 @@ public class FileServiceImpl implements FileService {
         return node;
     }
 
+    /**
+     * 创建目录（写操作日志）：校验名称长度与父目录归属，同名自动加"（2）"后缀。
+     * 仅本人空间生效，父目录必须属于该用户。
+     */
     @Override
     @Log(operation = OperationType.CREATE_DIRECTORY, target = TargetType.FILE, targetId = "#request.parentId",
          detail = "'创建目录: ' + #request.name")
@@ -189,6 +205,7 @@ public class FileServiceImpl implements FileService {
         return dir;
     }
 
+    /** 重命名文件/目录：校验名称合法性与归属，目标名冲突时自动加序号后缀。 */
     @Override
     public FileNodeResponse rename(Long userId, Long fileId, String name) {
         String newName = name.trim();
@@ -202,6 +219,7 @@ public class FileServiceImpl implements FileService {
         return FileNodeResponse.from(file);
     }
 
+    /** 移动文件/目录：目标目录须属于该用户；不能移动到自身或其子目录下；目标位置同名冲突时自动加序号后缀。 */
     @Override
     public FileNodeResponse move(Long userId, Long fileId, Long targetParentId) {
         File file = getOwnedFile(userId, fileId);
@@ -229,6 +247,10 @@ public class FileServiceImpl implements FileService {
         return FileNodeResponse.from(file);
     }
 
+    /**
+     * 复制文件/目录到目标目录（事务）：目录递归复制，文件复制共享对象存储引用（引用计数 +1）；
+     * 复制产生的新文件按总大小扣减个人配额，配额不足整体回滚。
+     */
     @Override
     @Transactional
     public FileNodeResponse copy(Long userId, Long fileId, Long targetParentId) {
@@ -295,6 +317,10 @@ public class FileServiceImpl implements FileService {
         return copy;
     }
 
+    /**
+     * 删除到回收站（事务）：子树整体置 DELETED，逐节点写回收站记录（顶层用删除前原名），
+     * 释放配额并写操作日志；顶层节点改内部名避免占用唯一索引。
+     */
     @Override
     @Transactional
     public void deleteToRecycle(Long userId, Long fileId) {
@@ -346,19 +372,24 @@ public class FileServiceImpl implements FileService {
         return stem + suffix;
     }
 
+    /**
+     * 取用户自己的可用文件：校验归属（个人空间 teamId=0）；
+     * 已删除文件拒绝，禁用文件仍可见（下载/预览在下载服务中另行拒绝）。
+     */
     @Override
     public File getOwnedFile(Long userId, Long fileId) {
         File file = fileMapper.findById(fileId);
         if (file == null || !file.getUserId().equals(userId) || file.getTeamId() != null && file.getTeamId() != 0) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
-        // 仅已删除文件拒绝；禁用文件（DISABLED）用户仍可见/可管理，仅下载/预览被拒（docs/adr/012）
+        // 仅已删除文件拒绝；禁用文件用户仍可见/可管理，仅下载/预览被拒
         if (file.getStatus() == FileStatus.DELETED) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "文件已在回收站");
         }
         return file;
     }
 
+    /** 取用户自己的目录（非目录抛业务异常）。 */
     private File getOwnedDirectory(Long userId, Long directoryId) {
         File dir = getOwnedFile(userId, directoryId);
         if (!dir.isDir()) {
@@ -367,6 +398,7 @@ public class FileServiceImpl implements FileService {
         return dir;
     }
 
+    /** 解析同目录下的唯一名称（冲突自动加序号后缀，规则见 FileUtil）。 */
     @Override
     public String resolveUniqueName(Long userId, Long parentId, String baseName) {
         return FileUtil.resolveUniqueName(fileMapper, userId, parentId, baseName);

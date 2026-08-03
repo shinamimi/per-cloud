@@ -7,7 +7,7 @@ import com.cloud.backend.dto.friend.FriendUserResponse;
 import java.util.List;
 
 /**
- * 好友服务（docs/friend-system.md + ADR-010：双向确认 + 独立通用关系层）。
+ * 好友服务 —— 双向确认 + 独立通用关系层。
  * 独立于团队，供团队拉人、定向分享复用。
  */
 public interface FriendService {

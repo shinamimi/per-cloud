@@ -2,7 +2,6 @@
   GuestShareView —— 访客分享访问页（/s/:token，无登录要求）。
   流程：加载分享信息 → 需提取码则先验证 → 浏览快照树（平铺节点按 parentId 组织）
   → 预览 / 单文件下载 / 批量打包下载（轮询任务）/ 转存（需登录）。
-  对应 docs/share-module.md §三（访客访问）。
 -->
 <template>
   <div class="guest-share">

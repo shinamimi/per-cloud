@@ -5,7 +5,7 @@ import com.cloud.backend.mapper.ShareMapper;
 import java.security.SecureRandom;
 
 /**
- * 分享链接短码生成器 —— docs/adr/013。
+ * 分享链接短码生成器。
  *
  * 10 位去混淆字符集（排除 O/0/I/l/1，避免手输混淆），空间 58^10 ≈ 4.3×10^17；
  * 生成时查重（shareToken 唯一索引兜底），冲突则重新生成，最多重试 10 次。

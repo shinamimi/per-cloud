@@ -15,6 +15,14 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
+/**
+ * 操作日志切面 —— 拦截所有标注 @Log 的方法，在方法执行成功后记录操作日志。
+ *
+ * 设计思路：
+ * 1. 先执行目标方法再记日志：业务失败（抛异常）时不会留下误导性日志
+ * 2. 当前用户从安全上下文获取；未登录场景（如开放接口）直接跳过记录
+ * 3. 目标 ID 与详情支持 SpEL 表达式，通过方法参数名绑定上下文，可引用返回值（#result）
+ */
 @Aspect
 @Component
 public class LogAspect {
@@ -27,6 +35,10 @@ public class LogAspect {
         this.parser = new SpelExpressionParser();
     }
 
+    /**
+     * 环绕通知：执行目标方法后组装 OperationLog 并落库。
+     * 若当前线程无登录用户则跳过记录（不影响业务结果）。
+     */
     @Around("@annotation(com.cloud.backend.annotation.Log)")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result = joinPoint.proceed();
@@ -36,6 +48,7 @@ public class LogAspect {
         Log logAnnotation = method.getAnnotation(Log.class);
 
         Long userId = AuthorizationPolicy.getCurrentUserId();
+        // 未登录请求（无安全上下文）不记录日志
         if (userId == null) {
             return result;
         }
@@ -61,6 +74,10 @@ public class LogAspect {
         return result;
     }
 
+    /**
+     * 解析 SpEL 表达式：参数名映射为上下文变量，另固定暴露 result（方法返回值）。
+     * 返回类型由调用方指定（Long / String），解析结果按该类型强制转换。
+     */
     @SuppressWarnings("unchecked")
     private <T> T evaluateSpel(String expression, ProceedingJoinPoint joinPoint, Object result, Class<T> type) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -68,6 +85,7 @@ public class LogAspect {
         Object[] args = joinPoint.getArgs();
 
         StandardEvaluationContext context = new StandardEvaluationContext();
+        // 依赖编译期 -parameters 选项提供的参数名（否则为 arg0/arg1）
         if (paramNames != null) {
             for (int i = 0; i < paramNames.length; i++) {
                 context.setVariable(paramNames[i], args[i]);

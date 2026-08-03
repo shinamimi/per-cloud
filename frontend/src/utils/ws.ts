@@ -1,7 +1,7 @@
 /*
  * WebSocket 连接管理（单例）—— 统一进度推送通道 /ws/progress?token=xxx。
  *
- * 设计依据：docs/DDD.md M9 —— 每个用户一条连接，taskId 区分任务；
+ * 设计要点：每个用户一条连接，taskId 区分任务；
  * 消息格式 { type, taskId, current, total, percentage, status }。
  *
  * 为什么做成单例？

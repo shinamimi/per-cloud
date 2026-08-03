@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * 好友服务实现 —— 双向确认流程 + 关系层复用。
- * 规则（docs/friend-system.md §4）：
+ * 规则：
  * - 不能加自己；已是好友/已有待处理请求不能重复发送；REJECTED 后可重发
  * - 接受请求时写入 t_friendship（成对存储 user_a < user_b）
  * - isFriendOrTeamMate：好友 或 同团队成员（团队拉人/定向分享复用）

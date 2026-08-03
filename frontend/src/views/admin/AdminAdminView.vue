@@ -2,7 +2,7 @@
   <!--
     AdminAdminView —— 管理员账户管理页面。
     仅 SUPER_ADMIN 可访问（后端 SecurityConfig 限制 /api/admin/admins/**）。
-    提供两种管理方式（docs/component-transfer.md）：
+    提供两种管理方式：
     - 「添加管理员」入口：弹出穿梭器，批量调整候选人角色
     - 「创建管理员」对话框：单个创建管理员账户（与穿梭器并存）
   -->
@@ -136,7 +136,7 @@
 /*
  * 管理员账户管理页面。
  *
- * 设计思路（docs/component-transfer.md + frontend-standard.md）：
+ * 设计思路：
  * 1. 「添加管理员」穿梭器：
  *    - 打开时父组件拉取候选列表（GET /api/admin/admins/candidates）传入 Transfer
  *    - 角色档位来自字典 role 组过滤（排除 USER 和 SUPER_ADMIN，剩 OPERATOR/ADMIN 两档）

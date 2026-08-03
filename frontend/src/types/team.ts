@@ -2,7 +2,7 @@
  * 团队模块类型定义 —— 对应后端 TeamController（/api/teams）、TeamFileController（/api/teams/{id}/files）
  * 与 dto/team/*。
  *
- * 设计依据（docs/team-module.md + docs/ADR-011）：
+ * 设计依据：
  * - 同表 + teamId：团队文件与个人文件共用 t_file，team_id=0 为个人空间
  * - 独立配额（t_team.quota / used_space），成员上传占团队配额
  * - 权限矩阵：OWNER > ADMIN > MEMBER；MEMBER 只能操作自己上传的文件

@@ -46,7 +46,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 上传服务实现（分片上传 + 秒传 + 断点续传）。
+ * 上传服务实现 —— 分片上传、秒传与断点续传。
+ *
+ * 设计思路：
+ * - 统一上传会话模型：init 登记元数据到 Redis（含归属、分片参数），chunk 逐片写入对象存储，
+ *   merge 组合分片并边传边算 SHA-256 校验，成功后才一次性扣减空间配额
+ * - 断点续传：已传且对象存在的分片直接跳过（幂等），失败保留分片与元数据供续传
+ * - 秒传：内容 hash 命中共享索引时零复制建记录（引用计数 +1），同样做配额与禁用校验
+ * - 并发控制：合并用 Redis 分布式锁防并发；进行中任务数按管理员配置限流（VIP 差异化）
+ * - 配额口径：团队上传占团队配额，个人上传占个人配额
  */
 @Service
 public class UploadServiceImpl implements UploadService {
@@ -87,6 +95,7 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== init ==================== */
 
+    /** 上传策略（单文件大小上限、并发任务数）：按 VIP 身份返回对应管理员配置。 */
     @Override
     public UploadPolicyResponse policy(Long userId) {
         boolean vip = isVip(userId);
@@ -96,6 +105,11 @@ public class UploadServiceImpl implements UploadService {
         return response;
     }
 
+    /**
+     * 初始化上传会话：校验文件名/大小、父目录归属、配额与单文件上限、并发任务数，
+     * 按文件大小自适应分片（小文件单分片），元数据写入 Redis（带过期时间）。
+     * 返回 uploadId 供后续分片上传/合并使用。
+     */
     @Override
     public UploadInitResponse init(Long userId, UploadInitRequest request) {
         String fileName = request.getFileName().trim();
@@ -108,7 +122,7 @@ public class UploadServiceImpl implements UploadService {
         if (fileSize <= 0) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件大小必须大于 0");
         }
-        // 配额校验：团队上传占团队配额（docs/team-module.md §五），个人上传占个人配额
+        // 配额校验：团队上传占团队配额，个人上传占个人配额
         if (teamId > 0) {
             teamService.requireMember(teamId, userId);
             teamService.checkQuota(teamId, fileSize);
@@ -160,6 +174,10 @@ public class UploadServiceImpl implements UploadService {
         return teamId == null || teamId <= 0 ? 0L : teamId;
     }
 
+    /**
+     * 并发任务数控制：向进行中集合登记当前任务并计数，超限时先惰性清理
+     * 元数据已过期（合并完成/超时）的残留任务，仍超限则移除本任务并拒绝。
+     */
     private void checkConcurrentTasks(Long userId, String uploadId) {
         String key = RedisConstants.UPLOADING_PREFIX + userId;
         redis.opsForSet().add(key, uploadId);
@@ -186,6 +204,10 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== chunk ==================== */
 
+    /**
+     * 上传单个分片：校验序号范围与分片大小，分片写入对象存储并登记序号；
+     * 已登记且对象已存在的分片直接跳过（断点续传幂等），完成后经 WebSocket 推送进度。
+     */
     @Override
     public void uploadChunk(Long userId, String uploadId, int seq, MultipartFile file) {
         Map<Object, Object> meta = getMeta(userId, uploadId);
@@ -221,6 +243,7 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== progress ==================== */
 
+    /** 查询上传进度：返回已上传分片序号列表与文件元信息（归属用户不符视为不存在）。 */
     @Override
     public UploadProgressResponse progress(Long userId, String uploadId) {
         Map<Object, Object> meta = getMeta(userId, uploadId);
@@ -242,6 +265,11 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== merge ==================== */
 
+    /**
+     * 合并分片完成上传（事务 + 写操作日志）：组合分片流边传边算 SHA-256 校验，
+     * 校验通过后注册秒传索引（并发已存在则复用共享对象），一次性扣减对应空间配额。
+     * 合并加分布式锁防并发重复合并；失败保留分片与元数据以支持断点续传，成功才清理上传上下文。
+     */
     @Override
     @Log(operation = OperationType.UPLOAD_FILE, target = TargetType.FILE, targetId = "#result.id",
          detail = "'上传文件: ' + #result.name")
@@ -254,7 +282,7 @@ public class UploadServiceImpl implements UploadService {
         int chunkCount = Integer.parseInt((String) meta.get("chunkCount"));
         long teamId = Long.parseLong((String) meta.get("teamId"));
 
-        // 内容 hash 命中对象级禁用（全站禁/仅该用户禁）→ 拦截（docs/admin-file-management.md 5.1）
+        // 内容 hash 命中对象级禁用（全站禁/仅该用户禁）→ 拦截违规上传
         requireNotBlocked(fileHash, userId);
 
         // 合并分布式锁，防并发合并
@@ -350,6 +378,7 @@ public class UploadServiceImpl implements UploadService {
         }
     }
 
+    /** 合并成功后清理上传上下文（元数据、分片、进行中集合与锁），失败静默。 */
     private void cleanupAfterMerge(Long userId, String uploadId) {
         try {
             redis.delete(RedisConstants.UPLOAD_META_PREFIX + uploadId);
@@ -362,6 +391,10 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== sec（秒传） ==================== */
 
+    /**
+     * 秒传：内容 hash 命中共享索引且大小一致时零复制建立文件记录（引用计数 +1），
+     * 并扣减对应空间配额；未命中返回 miss。前置校验：父目录归属、对象级禁用、配额。
+     */
     @Override
     public SecUploadResponse sec(Long userId, UploadSecRequest request) {
         String fileName = request.getFileName().trim();
@@ -407,7 +440,7 @@ public class UploadServiceImpl implements UploadService {
 
     /* ==================== helpers ==================== */
 
-    /** 内容 hash 命中对象级禁用（全站禁或仅该用户禁）→ 拦截"上传违规文件"（docs/admin-file-management.md 5.1） */
+    /** 内容 hash 命中对象级禁用（全站禁或仅该用户禁）→ 拦截违规文件上传 */
     private void requireNotBlocked(String fileHash, Long userId) {
         if (fileHash != null && !fileHash.isEmpty()
                 && disabledObjectMapper.countBlocked(fileHash, userId) > 0) {
@@ -415,6 +448,7 @@ public class UploadServiceImpl implements UploadService {
         }
     }
 
+    /** 读取上传元数据并校验归属用户；元数据不存在或归属不符抛业务异常。 */
     private Map<Object, Object> getMeta(Long userId, String uploadId) {
         Map<Object, Object> meta = redis.opsForHash().entries(RedisConstants.UPLOAD_META_PREFIX + uploadId);
         if (meta.isEmpty()) {
@@ -426,6 +460,7 @@ public class UploadServiceImpl implements UploadService {
         return meta;
     }
 
+    /** 校验父目录：必须存在、为正常目录且空间归属（个人/团队）一致；根目录直接通过。 */
     private void validateParent(Long userId, Long teamId, Long parentId) {
         if (parentId == null || parentId == FileConstants.ROOT_PARENT_ID) {
             return;
@@ -465,11 +500,13 @@ public class UploadServiceImpl implements UploadService {
         return name;
     }
 
+    /** 是否 VIP 用户（决定大小与并发上限取哪档管理员配置）。 */
     private boolean isVip(Long userId) {
         com.cloud.backend.entity.User user = userService.findById(userId);
         return Boolean.TRUE.equals(user.getIsVip());
     }
 
+    /** 组装文件记录（未落库）：按扩展名推导类型/分类/MIME，大小以调用方入参为准。 */
     private File buildFileRecord(Long userId, long teamId, String fileName, long fileSize, String fileHash, Long parentId) {
         String extension = FileUtil.getExtension(fileName);
         File file = new File();
@@ -490,6 +527,7 @@ public class UploadServiceImpl implements UploadService {
         return file;
     }
 
+    /** 构建 path（父目录 path + "/" + name），根目录下为 "/name"。 */
     private String buildPath(Long userId, Long parentId, String name) {
         if (parentId == null || parentId == FileConstants.ROOT_PARENT_ID) {
             return "/" + name;

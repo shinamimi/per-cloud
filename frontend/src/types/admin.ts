@@ -5,7 +5,7 @@
  * - 后端 Spring Boot 默认将 Java 枚举序列化为 JSON 字符串（name），
  *   因此 role / status 在此处声明为字符串字面量联合类型。
  * - 字符串值即字典接口（GET /api/meta/options）中的 value，
- *   label 展示统一从 metaStore 字典组获取（见 docs/frontend-standard.md）。
+ *   label 展示统一从 metaStore 字典组获取。
  */
 
 import type { ShareStatusKey } from '@/types/share'
@@ -104,7 +104,7 @@ export interface AdminRoleChange {
 
 /**
  * 用户状态 → Tag 类型映射 —— 前端维护的 UI 展示样式。
- * 字典接口只返回 value + label，颜色等样式属于前端职责（见 frontend-standard.md）。
+ * 字典接口只返回 value + label，颜色等样式属于前端职责。
  */
 export const USER_STATUS_TAG_TYPE: Record<UserStatusKey, string> = {
   NORMAL: 'success',
@@ -320,7 +320,7 @@ export interface QuotaBatchResponse {
   users: AdminUserResponse[]
 }
 
-/* ==================== 文件管控（ADR-012，仅 ADMIN+） ==================== */
+/* ==================== 文件管控（仅 ADMIN+） ==================== */
 
 /** 文件状态字符串值 —— 对应后端 FileStatus 枚举 name */
 export type FileStatusKey = 'NORMAL' | 'DISABLED' | 'DELETED'
@@ -375,7 +375,7 @@ export interface AdminRecycleItem {
   expireTime: string
 }
 
-/** 禁用范围 —— 对应后端 DisableScope 枚举 name（docs/admin-file-management.md 5.1） */
+/** 禁用范围 —— 对应后端 DisableScope 枚举 name */
 export type DisableScopeKey = 'GLOBAL' | 'USER'
 
 /** 禁用/启用请求 —— PUT /api/admin/files/{id}/status、POST /api/admin/files/batch-status；scope 仅禁用时生效 */

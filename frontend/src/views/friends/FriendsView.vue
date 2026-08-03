@@ -1,7 +1,7 @@
 <!--
   FriendsView —— 好友管理页面（/friends）。
   三块：好友请求（待处理/已发送）、好友列表、发现用户（搜索 + 发送请求）。
-  设计依据 docs/friend-system.md：双向确认 —— 对方接受后才建立好友；删除为单向解除。
+  好友关系双向确认 —— 对方接受后才建立好友；删除为单向解除。
 -->
 <template>
   <div class="friends-view">

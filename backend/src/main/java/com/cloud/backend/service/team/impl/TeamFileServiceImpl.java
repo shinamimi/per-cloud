@@ -41,10 +41,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 团队文件服务实现（docs/team-module.md §四/§六）。
- * 参照 FileServiceImpl 的目录树模型，但所有查询带 teamId 维度；
- * 团队成员共享同一命名空间（同团队同目录 name 唯一，跨 user_id）。
- * 删除进团队回收站（带 team_id），恢复/彻底删除权限同文件管理权限。
+ * 团队文件服务实现 —— 团队目录树、文件管理、下载预览与团队回收站。
+ *
+ * 设计思路：
+ * - 目录与文件复用个人文件的统一表模型，所有查询带 teamId 维度；
+ *   团队成员共享同一命名空间（同团队同目录 name 唯一，跨 user_id）
+ * - 删除进团队回收站（记录带 team_id），恢复/彻底删除的权限与文件管理权限一致
+ * - 写操作（重命名/移动/复制/删除）按角色校验：ADMIN/OWNER 可操作团队所有文件，
+ *   MEMBER 只能操作自己上传的文件
+ * - 禁用/对象级禁用文件对成员不可下载，管理端不受此限
  */
 @Service
 public class TeamFileServiceImpl implements TeamFileService {
@@ -83,6 +88,7 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 列表 / 树 / 目录 ==================== */
 
+    /** 分页查询团队某目录下的文件（调用方须为团队成员），补充上传者显示名。 */
     @Override
     public Page<FileNodeResponse> listFiles(Long teamId, Long userId, Long parentId, int page, int size) {
         teamService.requireMember(teamId, userId);
@@ -98,6 +104,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return new Page<>(records, total, page, size);
     }
 
+    /** 构建团队目录树（仅目录节点）。 */
     @Override
     public List<FileTreeResponse> tree(Long teamId, Long userId) {
         teamService.requireMember(teamId, userId);
@@ -111,6 +118,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return roots;
     }
 
+    /** 递归构建单个目录节点及其子目录。 */
     private FileTreeResponse buildTree(File dir, Map<Long, List<File>> childrenByParent) {
         FileTreeResponse node = FileTreeResponse.of(dir.getId(), dir.getName(), true);
         for (File child : childrenByParent.getOrDefault(dir.getId(), List.of())) {
@@ -119,6 +127,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return node;
     }
 
+    /** 创建团队目录（写操作日志）：调用方须为团队成员；校验名称与父目录，同名自动加后缀。 */
     @Override
     @Log(operation = OperationType.CREATE_DIRECTORY, target = TargetType.FILE, targetId = "#request.parentId",
          detail = "'创建团队目录: ' + #request.name")
@@ -150,6 +159,7 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 重命名 / 移动 / 复制 ==================== */
 
+    /** 重命名团队文件/目录：须为成员且有写权限，目标名冲突自动加序号后缀。 */
     @Override
     public FileNodeResponse rename(Long teamId, Long userId, Long fileId, String name) {
         teamService.requireMember(teamId, userId);
@@ -165,6 +175,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return FileNodeResponse.from(file);
     }
 
+    /** 移动团队文件/目录：须为成员且有写权限，不能移入自身或其子目录，目标位置冲突自动加后缀。 */
     @Override
     public FileNodeResponse move(Long teamId, Long userId, Long fileId, Long targetParentId) {
         teamService.requireMember(teamId, userId);
@@ -194,6 +205,10 @@ public class TeamFileServiceImpl implements TeamFileService {
         return FileNodeResponse.from(file);
     }
 
+    /**
+     * 复制团队文件/目录（事务）：目录递归复制，文件共享对象存储引用（引用计数 +1）；
+     * 复制占用团队配额，配额不足整体回滚。须为成员且有写权限。
+     */
     @Override
     @Transactional
     public FileNodeResponse copy(Long teamId, Long userId, Long fileId, Long targetParentId) {
@@ -234,6 +249,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return FileNodeResponse.from(copied);
     }
 
+    /** 复制单个节点：新增记录；文件共享对象引用（秒传引用计数 +1），父子映射关系记入 idMap。 */
     private File copyNode(Long teamId, Long userId, File source, Long targetParentId, Map<Long, Long> idMap) {
         String uniqueName = resolveTeamUniqueName(teamId, targetParentId, source.getName());
         File copy = new File();
@@ -261,6 +277,10 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 删除（团队回收站） ==================== */
 
+    /**
+     * 删除到团队回收站（事务）：子树整体置 DELETED，逐节点写回收站记录并释放团队配额、
+     * 写操作日志；顶层节点改内部名避免占用唯一索引。须为成员且有写权限。
+     */
     @Override
     @Transactional
     public void deleteToRecycle(Long teamId, Long userId, Long fileId) {
@@ -308,6 +328,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         operationLogService.log(log);
     }
 
+    /** 回收站内部名：{name}#del#{id}，保证不超列长且唯一。 */
     private String tombstoneName(String name, Long id) {
         String suffix = "#del#" + id;
         String stem = name.length() > 255 - suffix.length() ? name.substring(0, 255 - suffix.length()) : name;
@@ -316,6 +337,9 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 下载 / 预览 ==================== */
 
+    /**
+     * 生成团队文件预签名下载 URL：须为成员；目录/空文件与禁用文件拒绝下载。
+     */
     @Override
     public String getDownloadUrl(Long teamId, Long userId, Long fileId) {
         teamService.requireMember(teamId, userId);
@@ -323,7 +347,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "目录或空文件不可下载");
         }
-        // 禁用/对象级禁用文件不可下载（docs/admin-file-management.md：用户端不可下载，管理员后台可下载）
+        // 禁用/对象级禁用文件对成员不可下载（管理端不受此限）
         if (file.getStatus() == FileStatus.DISABLED) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
@@ -338,6 +362,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         }
     }
 
+    /** 团队文件预览（须为成员；内容级校验在预览服务内完成）。 */
     @Override
     public FilePreviewResponse preview(Long teamId, Long userId, Long fileId) {
         teamService.requireMember(teamId, userId);
@@ -347,6 +372,7 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 团队回收站 ==================== */
 
+    /** 查询团队回收站记录（须为成员）。 */
     @Override
     public List<RecycleBinResponse> recycleBin(Long teamId, Long userId) {
         teamService.requireMember(teamId, userId);
@@ -355,6 +381,7 @@ public class TeamFileServiceImpl implements TeamFileService {
                 .toList();
     }
 
+    /** 从团队回收站恢复（事务）：须为成员且有记录权限，递归恢复子树并校验配额。 */
     @Override
     @Transactional
     public void restore(Long teamId, Long userId, Long recycleId) {
@@ -411,6 +438,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         operationLogService.log(log);
     }
 
+    /** 彻底删除团队回收站记录（事务）：须为成员且有记录权限，复用个人回收站物理清理逻辑。 */
     @Override
     @Transactional
     public void purge(Long teamId, Long userId, Long recycleId) {
@@ -426,6 +454,7 @@ public class TeamFileServiceImpl implements TeamFileService {
 
     /* ==================== 管理端 ==================== */
 
+    /** 管理端分页查询团队文件：只校验团队存在，不校验成员身份（权限由管理端拦截器保障）。 */
     @Override
     public Page<FileNodeResponse> adminListFiles(Long teamId, Long parentId, int page, int size) {
         teamService.findById(teamId); // 团队必须存在（管理端不校验成员身份）
@@ -438,6 +467,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         return new Page<>(records, total, page, size);
     }
 
+    /** 管理端查询团队回收站（只校验团队存在）。 */
     @Override
     public List<RecycleBinResponse> adminRecycleBin(Long teamId) {
         teamService.findById(teamId);
@@ -446,6 +476,7 @@ public class TeamFileServiceImpl implements TeamFileService {
                 .toList();
     }
 
+    /** 管理端彻底删除团队回收站记录（只校验团队存在）。 */
     @Override
     @Transactional
     public void adminPurge(Long teamId, Long recycleId) {
@@ -487,7 +518,7 @@ public class TeamFileServiceImpl implements TeamFileService {
         if (file == null || file.getTeamId() == null || file.getTeamId() != teamId) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
         }
-        // 仅已删除文件拒绝；禁用文件（DISABLED）成员仍可见/可管理，仅下载/预览被拒（docs/adr/012）
+        // 仅已删除文件拒绝；禁用文件成员仍可见/可管理，仅下载/预览被拒
         if (file.getStatus() == FileStatus.DELETED) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "文件已在回收站");
         }
@@ -503,8 +534,7 @@ public class TeamFileServiceImpl implements TeamFileService {
     }
 
     /**
-     * 写权限校验（docs/team-module.md §三 权限矩阵）：
-     * ADMIN/OWNER 可操作团队所有文件；MEMBER 只能操作自己上传的文件。
+     * 写权限校验：ADMIN/OWNER 可操作团队所有文件；MEMBER 只能操作自己上传的文件。
      */
     private void requireFileWritePermission(Long teamId, Long userId, File file) {
         TeamMemberRole role = teamService.getMyRole(teamId, userId);

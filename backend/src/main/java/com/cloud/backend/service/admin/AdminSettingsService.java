@@ -8,7 +8,7 @@ import com.cloud.backend.dto.admin.AdminUserResponse;
  * 系统设置服务 —— 集中管理所有系统级配置项（t_setting 表）。
  * t_setting 表有记录时优先，否则使用配置文件默认值。
  *
- * 分组（docs/system-config-center.md）：
+ * 分组：
  * - 上传限制（upload.*）/ 存储限制（storage.*）/ 会话安全（session.*）
  * - 缓存策略（cache.*）/ 系统功能（system.*）/ 文件管理（file.*、share.*）
  * - 邮件服务（mail.*）/ 日志（log.*）
@@ -118,7 +118,7 @@ public interface AdminSettingsService {
     /** 分享默认是否要求提取码，默认 false */
     boolean isShareDefaultRequirePassword();
 
-    /** 分享默认下载策略：ALLOW=允许下载（默认）/ DENY=禁止下载（docs/share-module.md §4.1） */
+    /** 分享默认下载策略：ALLOW=允许下载（默认）/ DENY=禁止下载 */
     String getShareDefaultDownloadPolicy();
 
     /** 更新文件管理配置（null 字段恢复配置默认值） */
@@ -171,7 +171,7 @@ public interface AdminSettingsService {
     /** 按日期范围 + 角色/状态过滤查询用户（quota-batch 预览与执行共用） */
     QuotaBatchResponse quotaBatch(QuotaBatchRequest request);
 
-    /* ==================== 团队默认值（docs/team-module.md §八） ==================== */
+    /* ==================== 团队默认值 ==================== */
 
     /** 每人团队数上限，默认 10 */
     int getTeamMaxPerUser();

@@ -3,13 +3,13 @@ package com.cloud.backend.dto.share;
 import lombok.Data;
 
 /**
- * 创建分享请求 —— POST /api/shares（docs/share-module.md §四）。
+ * 创建分享请求 —— POST /api/shares。
  * validType: PERMANENT=永久 / DAYS=按天数（validDays 生效）
  */
 @Data
 public class ShareCreateRequest {
 
-    /** 被分享文件/文件夹 id（仅个人空间，docs 限制） */
+    /** 被分享文件/文件夹 id（仅个人空间） */
     private Long fileId;
 
     /** PERMANENT=永久 / DAYS=按天数 */

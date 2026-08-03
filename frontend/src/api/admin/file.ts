@@ -1,5 +1,5 @@
 /*
- * 管理后台 - 全局文件管控 API（docs/adr/012-admin-file-control.md，仅 ADMIN+）。
+ * 管理后台 - 全局文件管控 API（仅 ADMIN+）。
  * 覆盖个人+团队文件：列表筛选/详情/禁用启用/删除（进全局回收站）/全局回收站管理。
  */
 import request from '@/utils/request'

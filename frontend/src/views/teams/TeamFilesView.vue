@@ -1,7 +1,7 @@
 <!--
   TeamFilesView —— 团队文件页面（/teams/:id/files）。
   团队命名空间（同团队同目录 name 唯一）；上传/秒传复用个人上传链路（请求体带 teamId）。
-  权限矩阵（docs/team-module.md §三）：MEMBER 只能操作自己上传的文件，ADMIN/OWNER 可操作全部；
+  权限矩阵：MEMBER 只能操作自己上传的文件，ADMIN/OWNER 可操作全部；
   下载/预览所有成员可。
 -->
 <template>

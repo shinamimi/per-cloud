@@ -1,7 +1,7 @@
 /*
  * 角色等级定义 —— 前端权限推导的唯一依据。
  *
- * 设计思路（详见 docs/frontend-standard.md）：
+ * 设计思路：
  * 不直接比较角色字符串，统一换算为数值等级（ROLE_LEVEL），
  * 规则表（admin-operations.ts）中的 minRole 声明的是等级下限。
  *

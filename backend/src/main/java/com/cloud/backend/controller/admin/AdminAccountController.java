@@ -15,6 +15,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 管理员账号管理控制器（后台）—— 管理员列表、创建、删除、角色调整、候选用户穿梭器。
+ *
+ * 设计思路：
+ * 1. 列表按当前操作者权限分级展示：OPERATOR 可见运营人员，超级管理员额外可见 ADMIN
+ * 2. 创建/删除/改角色等高危操作集中在服务层做权限与自我保护校验（不能操作自己/超管）
+ * 3. 响应统一组装为 AdminUserResponse，配额字段含总配额（基础 + 赠送 + 奖励）
+ */
 @RestController
 @RequestMapping("/api/admin/admins")
 public class AdminAccountController {
@@ -25,6 +33,9 @@ public class AdminAccountController {
         this.userService = userService;
     }
 
+    /**
+     * 管理员列表：运营人员可见 OPERATOR，超级管理员额外可见 ADMIN；按权限过滤展示。
+     */
     @GetMapping
     public Result<List<AdminUserResponse>> listAdmins(@AuthenticationPrincipal LoginUser loginUser) {
         boolean isSuperAdmin = AuthorizationPolicy.isSuperAdmin(loginUser);
@@ -38,6 +49,9 @@ public class AdminAccountController {
         return Result.success(admins);
     }
 
+    /**
+     * 创建管理员（OPERATOR / ADMIN），服务层校验角色可授予范围（超管角色不可创建）。
+     */
     @PostMapping
     public Result<AdminUserResponse> createAdmin(@RequestBody CreateAdminRequest request) {
         var user = userService.createAdmin(
@@ -49,19 +63,27 @@ public class AdminAccountController {
                 user.getUsedSpace(), user.getIsVip(), user.getStatus(), user.getCreatedAt()));
     }
 
+    /**
+     * 删除管理员（逻辑禁用），服务层拦截删除自己与超级管理员。
+     */
     @DeleteMapping("/{id}")
     public Result<Void> deleteAdmin(@PathVariable Long id, @AuthenticationPrincipal LoginUser loginUser) {
         userService.deleteAdmin(id, loginUser.getUserId());
         return Result.success();
     }
 
+    /**
+     * 修改管理员角色，服务层拦截授予超管角色与修改自己。
+     */
     @PutMapping("/{id}/role")
     public Result<Void> updateRole(@PathVariable Long id, @RequestBody UpdateRoleRequest request) {
         userService.updateAdminRole(id, request.getRole());
         return Result.success();
     }
 
-    /** 候选用户列表（排除已管理员）—— 供穿梭器左列使用 */
+    /**
+     * 候选用户列表（排除已管理员）—— 供穿梭器左列使用
+     */
     @GetMapping("/candidates")
     public Result<List<AdminUserResponse>> listCandidates() {
         List<AdminUserResponse> candidates = userService.listCandidates().stream()
@@ -73,7 +95,9 @@ public class AdminAccountController {
         return Result.success(candidates);
     }
 
-    /** 批量变更角色 —— 请求体为变更项数组，降级也传目标角色（USER） */
+    /**
+     * 批量变更角色 —— 请求体为变更项数组，降级也传目标角色（USER）
+     */
     @PutMapping("/batch")
     public Result<Void> batchUpdateRole(@Valid @RequestBody List<RoleChangeRequest> changes) {
         userService.batchUpdateAdminRole(changes);

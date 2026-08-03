@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 系统配置中心（管理端，docs/system-config-center.md）。
+ * 系统配置中心（管理端）。
  * 权限：/api/admin/settings/** 默认 OPERATOR+；/system 与 /mail 两个敏感分组仅 ADMIN+（SecurityConfig 细化）。
  * 所有分组独立保存；null 字段表示恢复配置文件默认值（删除 t_setting 配置行）。
  */

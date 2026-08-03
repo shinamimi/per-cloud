@@ -1,6 +1,6 @@
 <!--
   PreviewDialog —— 文件预览对话框。
-  按 docs/file-module.md 六：图片/视频/音频/PDF 浏览器原生渲染，文本直接展示后端 content；
+  预览规则：图片/视频/音频/PDF 浏览器原生渲染，文本直接展示后端 content；
   图片优先使用 thumbnailUrl（缩略图），视频/音频/PDF 使用 presigned URL（10 分钟有效）。
 -->
 <template>

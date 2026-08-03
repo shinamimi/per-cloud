@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 对象级禁用 Mapper —— t_disabled_object 表。
- * 禁用落在内容 hash 维度（docs/admin-file-management.md 5.1）：
+ * 禁用落在内容 hash 维度：
  * 全站禁（scope=1）与仅用户（scope=2），秒传/下载/预览/上传统一校验。
  */
 @Mapper

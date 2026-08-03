@@ -1,7 +1,7 @@
 /*
  * 分享模块（M4）类型定义 —— 对应后端 dto/share/*。
  *
- * 设计思路（依据 docs/share-module.md + docs/adr/013-share-token.md）：
+ * 设计思路：
  * - 分享分为"我的分享"（登录态管理）与"访客访问"（无登录态）两个视角。
  * - 访客下载/转存均针对分享快照节点（t_share_file），id 为快照 id。
  * - 枚举序列化为 JSON 字符串（后端枚举 name）。

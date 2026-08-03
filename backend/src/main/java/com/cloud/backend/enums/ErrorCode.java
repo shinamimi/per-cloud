@@ -3,10 +3,10 @@ package com.cloud.backend.enums;
 import lombok.Getter;
 
 /**
- * 全局错误码枚举 —— 与 DDD.md 2.2 节保持一致。
+ * 全局错误码枚举。
  *
  * 设计思路：
- * 按 DDD.md 的区域划分：
+ * 按业务模块区域划分：
  * - 200: SUCCESS
  * - 10000-10003, 10500: 通用错误
  * - 10100-10199: 认证授权

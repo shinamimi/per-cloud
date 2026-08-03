@@ -1,7 +1,7 @@
 /*
  * 团队模块 API —— 对应后端 TeamController（/api/teams）与 TeamFileController（/api/teams/{id}/files）。
  *
- * 设计依据（docs/team-module.md 二）：
+ * 接口划分：
  * - 团队 CRUD 与成员管理走 /api/teams
  * - 团队文件走 /api/teams/{id}/files（上传/秒传复用 /api/files/upload/* 带 teamId）
  * - 团队回收站独立于个人回收站，文件删除进团队回收站（30 天）

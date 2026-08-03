@@ -1,8 +1,6 @@
 /*
  * 文件状态管理（Pinia Store）—— 文件列表、目录树、面包屑、选中项、搜索。
  *
- * 设计依据：docs/DDD.md 10.2（useFileStore: fileList, currentDir, breadcrumb, selectedFiles）。
- *
  * 浏览模式与搜索模式：
  * - 浏览模式：按 currentDirId 加载列表，面包屑由树路径推导
  * - 搜索模式：keyword 非空时加载搜索结果（忽略当前目录），面包屑显示搜索条件

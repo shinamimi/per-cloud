@@ -1,12 +1,12 @@
 /*
  * 文件模块（M3）类型定义 —— 对应后端 FileController 的 DTO 与 WebSocket 消息。
  *
- * 设计思路（依据 docs/file-module.md + docs/DDD.md M3/M9）：
+ * 设计思路：
  * - 目录与文件统一为 t_file 模型，type 字段区分 FILE / DIRECTORY，parentId 组织树形结构。
  * - 枚举序列化为 JSON 字符串（后端 enums/FileType 的 name）。
  * - 文件分类（category）为后端整数编码：IMAGE=0 DOCUMENT=1 VIDEO=2 AUDIO=3 ARCHIVE=4 OTHER=5
  *   （constant/FileConstants），搜索过滤时直接传编码；前端仅用字符串分类做图标/样式映射。
- * - 操作显隐由 can() 规则表推导（frontend-standard.md 5.x）。
+ * - 操作显隐由 can() 规则表推导。
  */
 
 /** 文件类型字符串值 —— 对应后端 FileType 枚举 name */
@@ -257,7 +257,7 @@ export interface TransferTask {
 }
 
 /*
- * 以下为前端维护的 UI 展示映射（frontend-standard.md：UI 样式归前端）。
+ * 以下为前端维护的 UI 展示映射（UI 样式归前端维护）。
  */
 
 /** 扩展名 → 文件分类（用于搜索类型过滤与图标展示） */
@@ -275,7 +275,7 @@ export const FILE_EXT_CATEGORY: Record<string, FileCategory> = {
   zip: 'ARCHIVE', rar: 'ARCHIVE', '7z': 'ARCHIVE', tar: 'ARCHIVE', gz: 'ARCHIVE',
 }
 
-/** 可预览的扩展名 → 预览类型（Office 本期仅下载，见 file-module.md 六） */
+/** 可预览的扩展名 → 预览类型（Office 本期仅下载） */
 export const FILE_PREVIEW_TYPE: Record<string, PreviewType> = {
   jpg: 'IMAGE', jpeg: 'IMAGE', png: 'IMAGE', gif: 'IMAGE', webp: 'IMAGE', bmp: 'IMAGE',
   mp4: 'VIDEO', webm: 'VIDEO',
@@ -300,7 +300,7 @@ export function fileCategory(name: string, type: FileTypeKey): FileCategory | nu
   return FILE_EXT_CATEGORY[ext] ?? 'OTHER'
 }
 
-/** 是否支持预览（Office 等仅下载，见 file-module.md 六） */
+/** 是否支持预览（Office 等仅下载） */
 export function isPreviewable(name: string, type: FileTypeKey): boolean {
   if (type === 'DIRECTORY') return false
   const ext = fileExt(name, type)

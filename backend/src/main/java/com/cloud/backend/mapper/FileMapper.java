@@ -50,7 +50,7 @@ public interface FileMapper {
 
     int updateStatusByIds(@Param("ids") List<Long> ids, @Param("status") Integer status);
 
-    /* ==================== 对象级禁用（docs/admin-file-management.md 5.1，按内容 hash） ==================== */
+    /* ==================== 对象级禁用（按内容 hash） ==================== */
 
     /** 按内容 hash 禁用全部引用（全站禁） */
     int disableByHash(String fileHash);
@@ -65,7 +65,7 @@ public interface FileMapper {
 
     List<File> findAll();
 
-    /* ==================== 团队维度（docs/team-module.md §四：同表 + teamId） ==================== */
+    /* ==================== 团队维度（同表 + teamId） ==================== */
 
     List<File> findByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
 
@@ -81,7 +81,7 @@ public interface FileMapper {
     /** 团队全部正常文件（目录树、递归子树收集） */
     List<File> findByTeamId(Long teamId);
 
-    /* ==================== 管理端全局文件（docs/adr/012，仅 ADMIN） ==================== */
+    /* ==================== 管理端全局文件（仅 ADMIN） ==================== */
 
     List<File> adminPage(com.cloud.backend.dto.AdminFileQuery query);
 

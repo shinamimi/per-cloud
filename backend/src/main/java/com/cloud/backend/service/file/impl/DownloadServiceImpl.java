@@ -36,13 +36,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * 下载服务实现。
+ * 下载服务实现 —— 单文件直链下载与批量打包下载。
  *
- * 设计思路（file-module.md 第五节）：
- * - 单文件：生成 presigned URL（10 分钟）→ 302 重定向，前端直连 MinIO，不占后端带宽
- * - 批量：异步打包任务（本地临时 zip → 上传 packages/{taskId}.zip），
- *   进度通过 /ws/progress 推送，完成时返回 presigned URL
- * - 打包产物 24 小时过期，定时任务清理
+ * 设计思路：
+ * - 单文件：生成带有效期（管理员配置分钟数）的预签名 URL，前端直连对象存储，不占后端带宽
+ * - 批量：异步打包任务（本地临时 zip → 上传对象存储），进度经 WebSocket 推送，完成时返回预签名 URL
+ * - 打包产物小时级过期（配置项），由定时任务清理内存任务与存储对象
+ * - 禁用/对象级禁用文件对用户端不可下载，管理员后台不受此限
  */
 @Service
 public class DownloadServiceImpl implements DownloadService {
@@ -78,6 +78,10 @@ public class DownloadServiceImpl implements DownloadService {
         });
     }
 
+    /**
+     * 生成用户个人文件的预签名下载 URL。
+     * 前置条件：文件归属该用户且未删除；目录/空文件与禁用文件拒绝。
+     */
     @Override
     public String getDownloadUrl(Long userId, Long fileId) {
         File file = fileService.getOwnedFile(userId, fileId);
@@ -92,6 +96,10 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * 创建批量打包任务（异步）：目录递归展开为其下全部正常文件，文件级校验归属与禁用状态；
+     * 任务立即返回，打包进度与结果经 WebSocket 推送。
+     */
     @Override
     public BatchDownloadResponse createBatchTask(Long userId, List<Long> fileIds) {
         List<File> files = new ArrayList<>();
@@ -119,6 +127,7 @@ public class DownloadServiceImpl implements DownloadService {
         return toResponse(task);
     }
 
+    /** 生成分享文件的预签名下载 URL（分享访问的鉴权与下载计数在调用方完成）。 */
     @Override
     public String getDownloadUrlForShare(File file) {
         try {
@@ -129,6 +138,7 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /** 创建访客（分享）批量打包任务：文件清单由调用方传入并完成校验，打包过程与普通批量任务一致。 */
     @Override
     public BatchDownloadResponse createBatchTaskForGuest(List<File> files) {
         if (files.isEmpty()) {
@@ -145,6 +155,7 @@ public class DownloadServiceImpl implements DownloadService {
         return toResponse(task);
     }
 
+    /** 查询打包任务状态（内存任务表）；任务不存在抛业务异常。 */
     @Override
     public BatchDownloadResponse getBatchTask(String taskId) {
         BatchTask task = tasks.get(taskId);
@@ -154,6 +165,7 @@ public class DownloadServiceImpl implements DownloadService {
         return toResponse(task);
     }
 
+    /** 清理过期打包产物：删除对象存储中的 zip 并移除内存任务（供定时任务调用）。 */
     @Override
     public void cleanupExpiredPackages() {
         long expireMillis = fileProperties.getPackageExpireHours() * 3600_000L;
@@ -174,6 +186,7 @@ public class DownloadServiceImpl implements DownloadService {
 
     /* ==================== 打包 ==================== */
 
+    /** 后台执行打包：逐文件写入本地临时 zip → 上传对象存储 → 广播完成/失败状态；失败保留任务状态供前端查询。 */
     private void pack(BatchTask task) {
         task.status = "PACKING";
         progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "PACKING",
@@ -213,6 +226,7 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /** 将单个文件写入 zip：从对象存储流式读取，条目名含目录层级且重名自动加序号。 */
     private void writeZipEntry(ZipOutputStream zip, File file, Set<String> usedNames) throws IOException {
         String entryName = toEntryName(file.getPath(), usedNames);
         try (InputStream input = storageService.download(file.getObjectName())) {
@@ -255,7 +269,7 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
-    /** 禁用/对象级禁用文件不可下载（docs/admin-file-management.md：用户端不可下载，管理员后台可下载） */
+    /** 禁用/对象级禁用文件对用户端不可下载（管理员后台不受此限） */
     private void requireEnabled(Long userId, File file) {
         if (file.getStatus() == com.cloud.backend.enums.FileStatus.DISABLED) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
@@ -266,19 +280,26 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /** 组装任务响应 DTO（状态、总数、已完成数、结果 URL）。 */
     private BatchDownloadResponse toResponse(BatchTask task) {
         return BatchDownloadResponse.of(task.taskId, task.status, task.total, task.done, task.url);
     }
 
+    /**
+     * 内存中的批量打包任务状态（进程内存态：任务注册、进度与结果查询均由此驱动，
+     * 服务重启后任务不恢复）。
+     */
     private static class BatchTask {
         final String taskId = IdUtil.simpleUUID();
         Long userId;
+        /** PENDING / PACKING / DONE / FAILED */
         String status;
         List<File> files;
         int total;
         int done;
         String url;
         String objectName;
+        /** 单位：毫秒 */
         long createdAt;
     }
 }

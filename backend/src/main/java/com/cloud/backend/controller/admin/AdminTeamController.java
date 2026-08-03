@@ -17,6 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 后台团队管理控制器 —— 团队列表/详情、配额调整、文件与回收站只读查看、解散团队。
+ *
+ * 设计思路：
+ * 1. 列表聚合成员数指标（countMembers），避免前端逐队查询
+ * 2. 文件/回收站接口为管理端只读视角，仅供查看与治理，不参与成员权限判定
+ * 3. 解散团队为强制操作，记录执行操作者信息以便审计
+ */
 @RestController
 @RequestMapping("/api/admin/teams")
 public class AdminTeamController {
@@ -29,6 +37,9 @@ public class AdminTeamController {
         this.teamFileService = teamFileService;
     }
 
+    /**
+     * 团队列表（含成员数统计）。
+     */
     @GetMapping
     public Result<List<AdminTeamResponse>> listTeams() {
         List<AdminTeamResponse> teams = teamService.findAll().stream()
@@ -40,7 +51,9 @@ public class AdminTeamController {
         return Result.success(teams);
     }
 
-    /** 团队详情：基本信息 + 成员列表 */
+    /**
+     * 团队详情：基本信息 + 成员列表
+     */
     @GetMapping("/{id}")
     public Result<Map<String, Object>> teamDetail(@PathVariable Long id) {
         Map<String, Object> detail = new HashMap<>();
@@ -49,13 +62,18 @@ public class AdminTeamController {
         return Result.success(detail);
     }
 
+    /**
+     * 调整团队配额（设置管理端赠送额度，最终配额由服务层汇总计算）。
+     */
     @PutMapping("/{id}/quota")
     public Result<Void> updateQuota(@PathVariable Long id, @RequestBody QuotaRequest request) {
         teamService.adminUpdateQuota(id, request.getAdminBonusQuota());
         return Result.success();
     }
 
-    /** 团队文件列表（管理端只读） */
+    /**
+     * 团队文件列表（管理端只读）
+     */
     @GetMapping("/{id}/files")
     public Result<Page<FileNodeResponse>> teamFiles(@PathVariable Long id,
                                                     @RequestParam(required = false) Long parentId,
@@ -64,19 +82,26 @@ public class AdminTeamController {
         return Result.success(teamFileService.adminListFiles(id, parentId == null ? 0L : parentId, page, size));
     }
 
-    /** 团队回收站（管理端只读） */
+    /**
+     * 团队回收站（管理端只读）
+     */
     @GetMapping("/{id}/recycle-bin")
     public Result<List<RecycleBinResponse>> teamRecycleBin(@PathVariable Long id) {
         return Result.success(teamFileService.adminRecycleBin(id));
     }
 
-    /** 管理端物理清除团队回收站记录 */
+    /**
+     * 管理端物理清除团队回收站记录
+     */
     @DeleteMapping("/{id}/recycle-bin/{recycleId}")
     public Result<Void> purgeRecycle(@PathVariable Long id, @PathVariable Long recycleId) {
         teamFileService.adminPurge(id, recycleId);
         return Result.success();
     }
 
+    /**
+     * 解散团队（管理端强制解散，记录当前操作者 ID 供审计）。
+     */
     @DeleteMapping("/{id}")
     public Result<Void> dissolveTeam(@PathVariable Long id,
                                      @AuthenticationPrincipal LoginUser loginUser) {

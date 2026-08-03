@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 管理端全局文件管控实现（docs/adr/012-admin-file-control.md）。
+ * 管理端全局文件管控实现 —— 全局文件列表、禁用/启用、全局回收站与恢复/彻底删除。
  *
  * 设计思路：
  * - 全局列表个人+团队统一（team_id=0 个人，>0 团队），userId/teamId/category/status 动态筛选
@@ -89,6 +89,10 @@ public class AdminFileServiceImpl implements AdminFileService {
         this.storageService = storageService;
     }
 
+    /**
+     * 分页查询全局文件列表（个人与团队统一），并补充归属者显示名与禁用来源。
+     * 权限约束：仅 ADMIN+ 可调；页号非法时按 1 兜底。
+     */
     @Override
     public Page<AdminFileResponse> page(AdminFileQuery query) {
         int safePage = Math.max(query.getPage(), 1);
@@ -102,6 +106,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         return new Page<>(records, total, safePage, query.getSize());
     }
 
+    /** 查询单个文件详情（含归属者与禁用来源）；文件不存在抛业务异常。 */
     @Override
     public AdminFileResponse detail(Long id) {
         File file = fileMapper.findById(id);
@@ -132,6 +137,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /** 取可下载的文件实体：文件必须存在且为含对象名的普通文件，目录/空文件拒绝。 */
     @Override
     public File detailEntity(Long id) {
         File file = fileMapper.findById(id);
@@ -144,6 +150,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         return file;
     }
 
+    /** 生成带有效期（管理员配置分钟数）的预签名下载地址；失败转业务异常。 */
     @Override
     public String generateDownloadUrl(File file) {
         try {
@@ -153,6 +160,11 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /**
+     * 禁用/启用文件（事务 + 写操作日志）：有内容 hash 的走对象级禁用记录，
+     * 无 hash 的直接改文件状态；启用时先解除禁用记录再重放其余记录。
+     * 权限约束：仅 ADMIN+ 可调；状态仅允许 NORMAL/DISABLED。
+     */
     @Override
     @Transactional
     public void changeStatus(Long id, FileStatus status, DisableScope scope) {
@@ -189,7 +201,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         operationLogService.log(log);
     }
 
-    /** 对象级禁用：写 t_disabled_object + 按范围更新文件状态（docs/admin-file-management.md 5.1） */
+    /** 对象级禁用：写禁用记录（重复记录幂等忽略）+ 按范围更新文件状态（全站禁按 hash 全量，仅用户禁按 hash+用户） */
     private void disableObject(File file, DisableScope scope) {
         DisabledObject record = new DisabledObject();
         record.setFileHash(file.getFileHash());
@@ -223,6 +235,11 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /**
+     * 批量删除到全局回收站（事务）：子树整体置 DELETED、逐节点写回收站记录，
+     * 顶层节点改内部名避免占用唯一索引，并释放对应空间配额、写操作日志。
+     * 回收站记录标记为系统管理员删除，保留天数按个人/团队配置区分。
+     */
     @Override
     @Transactional
     public void deleteToGlobalRecycleBin(List<Long> ids) {
@@ -285,6 +302,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /** 查询全局回收站记录（含归属者显示名）。 */
     @Override
     public List<AdminRecycleResponse> globalRecycleBin() {
         List<AdminRecycleResponse> records = recycleBinMapper.findGlobal().stream()
@@ -294,6 +312,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         return records;
     }
 
+    /** 从全局回收站恢复单条记录（事务）：递归恢复子树并校验配额，见 restoreRecord。 */
     @Override
     @Transactional
     public void restore(Long recycleId) {
@@ -304,6 +323,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         restoreRecord(record);
     }
 
+    /** 批量彻底删除回收站记录（事务）：复用个人回收站物理清理（递归 + 引用计数归零 + 存储删除）。 */
     @Override
     @Transactional
     public void purge(List<Long> recycleIds) {
@@ -447,6 +467,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /** 批量填充回收站记录所属用户/团队显示名（避免 N+1：用户批量查，团队循环查） */
     private void fillRecycleOwners(List<AdminRecycleResponse> records) {
         if (records.isEmpty()) {
             return;
@@ -474,6 +495,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
     }
 
+    /** 用户显示名：nickname 非空取 nickname，否则回退 username */
     private String displayName(User user) {
         return (user.getNickname() != null && !user.getNickname().isBlank())
                 ? user.getNickname() : user.getUsername();

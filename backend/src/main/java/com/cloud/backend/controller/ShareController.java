@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * 我的分享 —— /api/shares（需登录）。
- * 创建分享、列表、修改有效期、取消分享（docs/share-module.md §七）。
+ * 创建分享、列表、修改有效期、取消分享。
  * 创建入口在文件列表（单文件/文件夹），访客访问走 GuestShareController。
  */
 @RestController

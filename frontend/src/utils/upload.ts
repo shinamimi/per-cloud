@@ -1,7 +1,7 @@
 /*
  * 上传编排 —— SHA256 计算 + 分片上传（秒传/断点续传）。
  *
- * 流程依据 docs/file-module.md 四（与后端 UploadServiceImpl 对齐）：
+ * 流程说明（与后端 UploadServiceImpl 对齐）：
  * 1. 前端计算 SHA256 → POST /sec（全站 Hash 命中 → 秒传完成，返回 { instant, file }）
  * 2. 未命中 → POST /upload/init（校验配额/单文件上限/并发数，返回 uploadId + chunkSize + totalChunks）
  * 3. GET /upload/progress/{uploadId} 取已传分片（断点续传）

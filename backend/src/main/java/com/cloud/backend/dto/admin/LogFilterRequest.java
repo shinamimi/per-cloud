@@ -4,12 +4,20 @@ import com.cloud.backend.enums.OperationType;
 import com.cloud.backend.enums.TargetType;
 import java.time.LocalDateTime;
 
+/**
+ * 操作日志筛选条件 DTO —— 后台日志查询的可选过滤项，全部字段缺省时查询全部。
+ */
 public class LogFilterRequest {
 
+    /** 操作者用户 ID */
     private Long userId;
+    /** 操作类型（LOGIN / UPLOAD_FILE 等） */
     private OperationType operation;
+    /** 操作目标类型（USER / FILE / SHARE / TEAM） */
     private TargetType targetType;
+    /** 操作时间下限（含） */
     private LocalDateTime startTime;
+    /** 操作时间上限（含） */
     private LocalDateTime endTime;
 
     public Long getUserId() { return userId; }

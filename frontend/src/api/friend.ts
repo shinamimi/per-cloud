@@ -1,7 +1,7 @@
 /*
  * 好友模块 API —— 对应后端 FriendController（/api/friends）。
  *
- * 接口清单见 docs/friend-system.md 三；relationship 语义：
+ * relationship 语义：
  * - 搜索返回 relation（NONE/FRIEND/TO_THEM），TO_THEM 表示对方已向我发过请求
  * - 删除好友为单向删除（双向解除）
  */

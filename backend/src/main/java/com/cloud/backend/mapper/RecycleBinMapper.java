@@ -34,7 +34,7 @@ public interface RecycleBinMapper {
     /** 级联删除：物理清理目录时，同时清理以该目录为父节点的子记录 */
     int deleteByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId);
 
-    /* ==================== 团队回收站（docs/team-module.md §六） ==================== */
+    /* ==================== 团队回收站 ==================== */
 
     /** 团队回收站记录（倒序） */
     List<RecycleBin> findByTeamId(Long teamId);
@@ -48,7 +48,7 @@ public interface RecycleBinMapper {
     /** 团队级联删除：清理以该目录为父节点的子记录 */
     int deleteByTeamIdAndParentId(@Param("teamId") Long teamId, @Param("parentId") Long parentId);
 
-    /* ==================== 全局回收站（管理员删除，仅 ADMIN 可见，docs/adr/012） ==================== */
+    /* ==================== 全局回收站（管理员删除，仅 ADMIN 可见） ==================== */
 
     /** 全局回收站记录（deleted_by=1，倒序） */
     List<RecycleBin> findGlobal();

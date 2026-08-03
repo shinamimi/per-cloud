@@ -1,7 +1,7 @@
 /*
  * 权限推导函数 —— can()。
  *
- * 设计思路（详见 docs/frontend-standard.md）：
+ * 设计思路：
  * 页面只调用 can(operation, currentRole, targetStatus, rules)，
  * 不关心规则表内部实现。推导逻辑两步：
  * 1. 角色等级门槛：当前角色等级 >= 规则要求的 minRole 等级

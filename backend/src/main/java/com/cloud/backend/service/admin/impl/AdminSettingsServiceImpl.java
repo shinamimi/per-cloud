@@ -22,7 +22,7 @@ import java.util.List;
  * 系统设置服务实现 —— 所有系统级配置项集中管理（t_setting 表，key-value）。
  * 读取：t_setting 有值优先，否则回落配置文件默认值；写入：null = 删除配置行恢复默认。
  *
- * key 命名（docs/system-config-center.md §四）：
+ * key 命名：
  * upload.* / storage.* / session.* / cache.* / system.* / file.* / share.* / mail.* / log.*
  */
 @Service

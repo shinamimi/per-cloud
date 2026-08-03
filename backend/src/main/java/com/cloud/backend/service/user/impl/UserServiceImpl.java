@@ -21,6 +21,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 用户服务实现 —— 用户 CRUD、配额计算、密码管理与管理端用户治理。
+ *
+ * 设计思路：
+ * 1. 配额三来源模型：总配额 = 基础配额（VIP 档位 / 普通档位）+ adminBonusQuota + rewardQuota，
+ *    基础档位来自配置项（quota.default-user / quota.default-vip）
+ * 2. 管理端治理操作（状态/配额/解锁/角色/密码重置）统一先做目标校验：
+ *    不能操作管理员账号（AuthorizationPolicy.canManageUser），
+ *    ADMIN 角色的授予/删除/变更仅限超级管理员，且不能操作自己
+ * 3. 治理操作大多通过 @Log 注解记录操作日志，部分手工写日志（含详情文本）
+ * 4. 已用空间通过 Mapper 原子更新（SQL 内自增/自减），避免并发覆盖
+ */
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -30,9 +42,11 @@ public class UserServiceImpl implements UserService {
     private final OperationLogService operationLogService;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
+    /** 普通用户基础配额（字节），配置项 quota.default-user，默认 5GB */
     @Value("${quota.default-user:5368709120}")
     private long defaultUserQuota;
 
+    /** VIP 用户基础配额（字节），配置项 quota.default-vip，默认 100GB */
     @Value("${quota.default-vip:107374182400}")
     private long defaultVipQuota;
 
@@ -47,8 +61,13 @@ public class UserServiceImpl implements UserService {
         this.adminSettingsService = adminSettingsService;
     }
 
+    /**
+     * 注册新用户：补齐默认字段（VIP=false、赠送/奖励配额 0），密码 BCrypt 加密后入库。
+     * 前置条件：调用方需先校验用户名/邮箱唯一性（本方法不校验）。
+     */
     @Override
     public User register(User user) {
+        // 兼容外部直接构造的实体：空值统一补默认，避免库中写入 null
         if (user.getIsVip() == null) user.setIsVip(false);
         if (user.getAdminBonusQuota() == null) user.setAdminBonusQuota(0L);
         if (user.getRewardQuota() == null) user.setRewardQuota(0L);
@@ -57,46 +76,73 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 按 ID 查询用户；不存在返回 null。
+     */
     @Override
     public User findById(Long id) {
         return userMapper.findById(id);
     }
 
+    /**
+     * 按用户名查询用户；不存在返回 null。
+     */
     @Override
     public User findByUsername(String username) {
         return userMapper.findByUsername(username);
     }
 
+    /**
+     * 按账号（用户名或邮箱）查询用户，供登录使用；不存在返回 null。
+     */
     @Override
     public User findByAccount(String account) {
         return userMapper.findByAccount(account);
     }
 
+    /**
+     * 按邮箱查询用户；不存在返回 null。
+     */
     @Override
     public User findByEmail(String email) {
         return userMapper.findByEmail(email);
     }
 
+    /**
+     * 查询全部用户。
+     */
     @Override
     public List<User> findAll() {
         return userMapper.findAll();
     }
 
+    /**
+     * 全字段覆盖更新用户（须先加载完整实体再修改）。
+     */
     @Override
     public int update(User user) {
         return userMapper.update(user);
     }
 
+    /**
+     * 用户名是否已占用。
+     */
     @Override
     public boolean existsByUsername(String username) {
         return userMapper.findByUsername(username) != null;
     }
 
+    /**
+     * 邮箱是否已占用。
+     */
     @Override
     public boolean existsByEmail(String email) {
         return userMapper.findByEmail(email) != null;
     }
 
+    /**
+     * 重置用户密码（BCrypt 加密入库）；用户不存在抛 USER_NOT_FOUND。
+     */
     @Override
     public void updatePassword(Long id, String rawPassword) {
         User user = userMapper.findById(id);
@@ -107,6 +153,11 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
     }
 
+    /**
+     * 创建管理员（OPERATOR / ADMIN）。
+     * 权限约束：不能创建 SUPER_ADMIN；授予 ADMIN 角色仅限超级管理员。
+     * 前置条件：用户名未占用；配额取管理端配置的默认用户配额。
+     */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#result.id", detail = "'创建管理员: ' + #username")
@@ -137,6 +188,10 @@ public class UserServiceImpl implements UserService {
         return register(user);
     }
 
+    /**
+     * 修改用户状态（启用/禁用/锁定）。
+     * 权限约束：目标不能是管理员账号。
+     */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'修改用户状态为: ' + #status.name()")
@@ -150,6 +205,10 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
     }
 
+    /**
+     * 调整用户配额（管理端赠送额度）。
+     * 权限约束：目标不能是管理员账号。
+     */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'设置 adminBonusQuota: ' + #adminBonusQuota")
@@ -163,6 +222,10 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
     }
 
+    /**
+     * 解锁登录锁定账号，并清零登录失败计数。
+     * 权限约束：目标不能是管理员账号。
+     */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'解锁登录锁定'")
@@ -177,6 +240,11 @@ public class UserServiceImpl implements UserService {
         loginAttemptService.loginSucceeded(user.getUsername());
     }
 
+    /**
+     * 删除管理员（逻辑禁用为 DISABLED）。
+     * 权限约束：不能删除自己与超级管理员；删除 ADMIN 仅限超级管理员。
+     * 副作用：手工写入操作日志（含被删账号用户名）。
+     */
     @Override
     public void deleteAdmin(Long id, Long currentUserId) {
         if (id.equals(currentUserId)) {
@@ -205,6 +273,11 @@ public class UserServiceImpl implements UserService {
         operationLogService.log(log);
     }
 
+    /**
+     * 修改管理员角色。
+     * 权限约束：不能授予 SUPER_ADMIN；不能修改自己与超级管理员；
+     * 授予/变更 ADMIN 角色仅限超级管理员。
+     */
     @Override
     @Log(operation = OperationType.UPDATE_USER, target = TargetType.USER,
          targetId = "#id", detail = "'修改角色为: ' + #role.name()")
@@ -231,6 +304,10 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
     }
 
+    /**
+     * 管理员重置用户密码（BCrypt 加密入库）。
+     * 权限约束：目标不能是管理员账号。
+     */
     @Override
     @Log(operation = OperationType.RESET_PASSWORD, target = TargetType.USER,
          targetId = "#userId", detail = "'管理员密码重置'")
@@ -244,6 +321,10 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
     }
 
+    /**
+     * 计算用户总配额 = 基础配额（VIP 用 VIP 档位）+ 管理端赠送 + 奖励。
+     * 空值字段按 0 参与计算，不抛异常。
+     */
     @Override
     public long calculateTotalQuota(User user) {
         long baseQuota = Boolean.TRUE.equals(user.getIsVip()) ? defaultVipQuota : defaultUserQuota;
@@ -252,6 +333,9 @@ public class UserServiceImpl implements UserService {
         return baseQuota + adminBonus + reward;
     }
 
+    /**
+     * 计算用户剩余可用空间 = 总配额 - 已用（用户不存在抛 USER_NOT_FOUND）。
+     */
     @Override
     public long getRemainingQuota(Long userId) {
         User user = userMapper.findById(userId);
@@ -262,11 +346,17 @@ public class UserServiceImpl implements UserService {
         return calculateTotalQuota(user) - used;
     }
 
+    /**
+     * 原子调整已用空间（正数扣减、负数释放），并发安全由 SQL 表达式保证。
+     */
     @Override
     public void changeUsedSpace(Long userId, long delta) {
         userMapper.updateUsedSpace(userId, delta);
     }
 
+    /**
+     * 候选用户列表（角色低于 ADMIN 的普通用户），供管理员穿梭器使用。
+     */
     @Override
     public List<User> listCandidates() {
         return userMapper.findAll().stream()
@@ -274,6 +364,11 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
+    /**
+     * 批量变更角色（穿梭器批量提交）。
+     * 权限约束：不能授予 SUPER_ADMIN；不能修改自己与超级管理员；
+     * 涉及 ADMIN 角色的变更仅限超级管理员；逐项记录操作日志。
+     */
     @Override
     public void batchUpdateAdminRole(List<RoleChangeRequest> changes) {
         boolean isSuperAdmin = AuthorizationPolicy.isSuperAdmin(AuthorizationPolicy.getCurrentUser());
@@ -309,6 +404,10 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 用户搜索（好友/团队拉人）：用户名/邮箱前缀模糊，最多 20 条。
+     * 关键字为空或全空白时返回空列表。
+     */
     @Override
     public List<User> searchUsers(String keyword) {
         String kw = keyword == null ? "" : keyword.trim();

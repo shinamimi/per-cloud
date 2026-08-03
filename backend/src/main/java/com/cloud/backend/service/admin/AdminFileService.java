@@ -11,7 +11,7 @@ import com.cloud.backend.enums.FileStatus;
 import java.util.List;
 
 /**
- * 管理端全局文件管控服务（docs/adr/012-admin-file-control.md，全部仅 ADMIN+）。
+ * 管理端全局文件管控服务（全部仅 ADMIN+）。
  *
  * 核心语义：
  * - 禁用/启用：禁用 = 用户仍可见文件，但不可下载/预览/分享
@@ -33,7 +33,7 @@ public interface AdminFileService {
     /** 管理端下载 URL（不做禁用校验，管理员可下载禁用文件） */
     String generateDownloadUrl(com.cloud.backend.entity.File file);
 
-    /** 禁用/启用（scope 仅禁用时生效：GLOBAL=全站禁，USER=仅用户，docs/admin-file-management.md 5.1） */
+    /** 禁用/启用（scope 仅禁用时生效：GLOBAL=全站禁，USER=仅用户） */
     void changeStatus(Long id, FileStatus status, DisableScope scope);
 
     /** 删除（进全局回收站，支持批量） */

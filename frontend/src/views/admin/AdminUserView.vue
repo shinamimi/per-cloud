@@ -6,7 +6,7 @@
   <div class="admin-users">
     <h2 class="page-title">用户管理</h2>
 
-    <!-- 搜索栏：状态下拉从字典 userStatus 组渲染（frontend-standard.md） -->
+    <!-- 搜索栏：状态下拉从字典 userStatus 组渲染 -->
     <el-card shadow="never" class="search-card">
       <el-form :model="search" inline size="default">
         <el-form-item label="用户名">
@@ -66,7 +66,7 @@
           <template #default="{ row }">{{ row.createdAt?.slice(0, 16).replace('T', ' ') }}</template>
         </el-table-column>
 
-        <!-- 操作列：按钮显隐全部由 can() 规则表推导（frontend-standard.md 5.x） -->
+        <!-- 操作列：按钮显隐全部由 can() 规则表推导 -->
         <el-table-column label="操作" width="340" fixed="right">
           <template #default="{ row }">
             <el-button

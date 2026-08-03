@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * 预览服务实现。
  *
- * 设计思路（file-module.md 第六节）：
+ * 设计思路：
  * - 图片：presigned URL 直链 + Thumbnailator 缩略图（thumbnails/ 前缀，首次生成后复用）
  * - 视频/音频/PDF：presigned URL，浏览器原生播放/阅读（Range 请求由 MinIO 支持）
  * - 文本：大小在限制内直接读内容返回；Office 等仅下载
@@ -68,7 +68,7 @@ public class PreviewServiceImpl implements PreviewService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
         }
-        // 禁用/对象级禁用文件不可预览（docs/admin-file-management.md：用户端不可下载/预览，管理员后台可预览）
+        // 禁用/对象级禁用文件不可预览（用户端不可下载/预览，管理员后台可预览）
         if (file.getStatus() == FileStatus.DISABLED) {
             throw new BusinessException(ErrorCode.FILE_DISABLED);
         }
@@ -84,7 +84,7 @@ public class PreviewServiceImpl implements PreviewService {
         if (file.isDir() || file.getObjectName() == null || file.getObjectName().isEmpty()) {
             throw new BusinessException(ErrorCode.PREVIEW_UNSUPPORTED);
         }
-        // 管理员后台预览不受禁用限制（docs/admin-file-management.md：用于决定解禁）
+        // 管理员后台预览不受禁用限制（用于决定解禁）
         return previewContent(file.getUserId(), file);
     }
 

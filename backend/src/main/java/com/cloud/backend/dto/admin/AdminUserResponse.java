@@ -5,21 +5,42 @@ import com.cloud.backend.enums.UserStatus;
 
 import java.time.LocalDateTime;
 
+/**
+ * 后台用户/管理员响应 DTO —— 用户基本信息、角色、配额构成与使用情况。
+ *
+ * 设计思路：
+ * 配额字段按三来源拆分（quota 基础 + adminBonusQuota 赠送 + rewardQuota 奖励），
+ * 并提供汇总字段 totalQuota，前端展示总配额时无需自行累加。
+ */
 public class AdminUserResponse {
 
+    /** 用户 ID */
     private Long id;
+    /** 用户名（登录账号） */
     private String username;
+    /** 邮箱 */
     private String email;
+    /** 昵称 */
     private String nickname;
+    /** 头像地址 */
     private String avatar;
+    /** 角色（USER / OPERATOR / ADMIN / SUPER_ADMIN） */
     private Role role;
+    /** 基础配额（单位：字节，受 VIP 状态影响） */
     private Long quota;
+    /** 总配额 = 基础 + 赠送 + 奖励（单位：字节） */
     private Long totalQuota;
+    /** 管理端赠送配额（单位：字节） */
     private Long adminBonusQuota;
+    /** 奖励配额（单位：字节） */
     private Long rewardQuota;
+    /** 已使用空间（单位：字节） */
     private Long usedSpace;
+    /** 是否 VIP（影响基础配额计算） */
     private Boolean isVip;
+    /** 用户状态（NORMAL / DISABLED / LOCKED / INACTIVE） */
     private UserStatus status;
+    /** 注册时间 */
     private LocalDateTime createdAt;
 
     public AdminUserResponse(Long id, String username, String email, String nickname, String avatar,

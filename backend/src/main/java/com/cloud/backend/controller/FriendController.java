@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 好友控制器（docs/friend-system.md §三 接口清单）。
+ * 好友控制器 —— 好友管理接口清单。
  * 双向确认流程：发送请求 → 接受/拒绝；好友列表/搜索/删除。
  * 关系层供团队拉人、定向分享复用（isFriendOrTeamMate）。
  */

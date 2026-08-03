@@ -1,7 +1,6 @@
 <!--
   ShareManageView —— 我的分享管理（/shares）。
   列表展示全部分享（含已取消），支持复制链接、修改有效期、取消分享、跳转访客页。
-  对应 docs/share-module.md §五（我的分享管理）。
 -->
 <template>
   <div class="share-manage">

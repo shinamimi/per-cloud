@@ -1,8 +1,6 @@
 /*
  * 传输队列状态管理（Pinia Store）—— 上传/批量下载任务队列 + WebSocket 进度。
  *
- * 设计依据：docs/DDD.md 10.2（useUploadStore: uploadQueue, uploadProgress）+ M9（统一进度通道）。
- *
  * 上传流程编排（见 utils/upload.ts）：
  * 每个文件一个任务：秒传校验 → 分片上传 → 合并；
  * 进度有两个来源：分片本地进度（uploadOneFile 回调）与后端 WS 推送（/ws/progress），

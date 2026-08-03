@@ -30,6 +30,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+/**
+ * 认证服务实现 —— 登录、注册、验证码、找回/重置密码。
+ *
+ * 设计思路：
+ * 1. 登录/注册成功签发 JWT（无状态 Token），并写入操作日志（含客户端 IP）
+ * 2. 登录失败接入登录尝试服务：连续失败达到阈值后锁定账号（LOCKED），
+ *    再次成功登录时自动解锁；锁定期内禁止登录
+ * 3. 验证码场景隔离存储（注册/重置/登录），带发送冷却，防止枚举轰炸
+ * 4. 开放注册、邮箱验证、登录验证码均受管理端开关控制，关闭时跳过对应校验
+ */
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -60,6 +70,11 @@ public class AuthServiceImpl implements AuthService {
         this.settingsService = settingsService;
     }
 
+    /**
+     * 登录：校验账号密码，签发 JWT 并记录登录日志。
+     * 前置条件：账号存在且未禁用；验证码开关开启且前端传了验证码时必须校验通过。
+     * 副作用：失败累计登录尝试次数，达阈值锁定账号；锁定期内直接拒绝。
+     */
     @Override
     public LoginResponse login(LoginRequest request, String ip) {
         User user = userService.findByAccount(request.getUsername());
@@ -67,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
             if (loginAttemptService.isLocked(request.getUsername())) {
                 throw new BusinessException(ErrorCode.LOGIN_LOCKED);
             }
+            // 已过锁定窗口：先解除锁定标记，允许本次正常尝试
             user.setStatus(UserStatus.NORMAL);
             userService.update(user);
         }
@@ -101,6 +117,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
         } catch (BadCredentialsException e) {
             loginAttemptService.loginFailed(request.getUsername());
+            // 失败次数达到阈值后把账号落库为 LOCKED，配合顶部逻辑实现锁定期自动解锁
             if (loginAttemptService.isLocked(request.getUsername())) {
                 User lockedUser = userService.findByAccount(request.getUsername());
                 if (lockedUser != null) {
@@ -112,6 +129,10 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * 注册并自动登录：校验开关与唯一性，创建用户（默认配额），签发 JWT 并记录注册日志。
+     * 前置条件：开放注册开关开启；用户名/邮箱未占用；邮件验证开启时须通过邮箱验证码。
+     */
     @Override
     public LoginResponse register(RegisterRequest request, String ip) {
         // 开放注册开关（system.allow-register，ADMIN 配置）
@@ -160,6 +181,11 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole().getValue());
     }
 
+    /**
+     * 发送注册/登录/重置密码场景的验证码邮件。
+     * 前置条件：不在冷却期内（同一邮箱发信有冷却限制）。
+     * 副作用：生成验证码并写入存储，随后设置冷却时间。
+     */
     @Override
     public void sendCode(SendCodeRequest request) {
         if (captchaService.isOnCooldown(request.getEmail())) {
@@ -175,6 +201,10 @@ public class AuthServiceImpl implements AuthService {
         captchaService.setCooldown(request.getEmail());
     }
 
+    /**
+     * 发送忘记密码验证码邮件。
+     * 前置条件：邮箱已注册（防止向未注册邮箱发信）；不在冷却期内。
+     */
     @Override
     public void sendForgotPasswordCode(String email) {
         if (!userService.existsByEmail(email)) {
@@ -188,6 +218,11 @@ public class AuthServiceImpl implements AuthService {
         captchaService.setCooldown(email);
     }
 
+    /**
+     * 校验邮箱验证码并重置密码。
+     * 前置条件：邮件验证开关开启时验证码必须通过；邮箱必须已注册。
+     * 副作用：直接更新用户密码（BCrypt 加密入库）。
+     */
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         if (settingsService.isMailVerifyEnabled()

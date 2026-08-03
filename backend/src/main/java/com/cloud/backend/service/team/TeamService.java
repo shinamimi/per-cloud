@@ -11,7 +11,7 @@ import com.cloud.backend.enums.TeamMemberRole;
 import java.util.List;
 
 /**
- * 团队服务（docs/team-module.md §二/§三/§五）。
+ * 团队服务 —— 团队 CRUD / 成员管理 / 配额。
  * 权限矩阵：OWNER 最高；ADMIN 可成员管理；MEMBER 只读+退出。
  * 配额：独立配额（t_team.quota + used_space），成员上传占团队配额。
  */

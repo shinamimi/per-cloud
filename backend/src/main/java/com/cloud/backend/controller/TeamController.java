@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 团队控制器（用户端，docs/team-module.md §二 接口清单）。
+ * 团队控制器（用户端接口）。
  * 权限矩阵：创建=登录用户；解散=OWNER；成员管理=ADMIN+；退出=MEMBER+（OWNER 除外）。
  */
 @RestController

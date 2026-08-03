@@ -1,7 +1,7 @@
 /*
  * 字典状态管理（Pinia Store）—— 缓存后端下发的枚举选项。
  *
- * 设计思路（详见 docs/frontend-standard.md）：
+ * 设计思路：
  * - 拉取时机：登录管理后台后拉取一次（loadIfNeeded 幂等）
  * - 不持久化到 localStorage：页面刷新后重新请求
  * - 枚举来自 Java Enum，运行时不变，无需缓存失效机制

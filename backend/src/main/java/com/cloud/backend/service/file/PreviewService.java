@@ -14,6 +14,6 @@ public interface PreviewService {
     /** 按已鉴权文件对象预览（团队文件等已由调用方校验归属） */
     FilePreviewResponse previewFile(Long userId, File file);
 
-    /** 管理员后台预览（docs/admin-file-management.md：管理员后台可预览被禁文件，用于决定解禁） */
+    /** 管理员后台预览（不受禁用限制，可预览被禁文件，用于决定解禁） */
     FilePreviewResponse previewFileForAdmin(File file);
 }

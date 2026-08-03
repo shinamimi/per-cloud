@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * 字典服务实现 —— 组装 GET /api/meta/options 返回的所有枚举组。
  *
- * 设计思路（见 docs/frontend-standard.md）：
+ * 设计思路：
  * - role 组做显示层混淆：OPERATOR→管理员、ADMIN→超级管理员；SUPER_ADMIN 不暴露
  * - 只返回 value + label，颜色/图标/Tag 类型归前端维护
  * - 枚举运行时不变，组装结果可整体缓存（当前直接组装，量小无性能问题）

@@ -1,6 +1,6 @@
 <template>
   <!--
-    Transfer —— 通用穿梭器组件（docs/component-transfer.md）。
+    Transfer —— 通用穿梭器组件。
     用于批量调整"成员/角色"归属：左列候选集合，右列已选集合，移动即变更。
 
     交互规则：

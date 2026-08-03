@@ -3,16 +3,28 @@ package com.cloud.backend.dto.admin;
 import com.cloud.backend.enums.TeamStatus;
 import java.time.LocalDateTime;
 
+/**
+ * 后台团队列表响应 DTO —— 团队基本信息 + 配额使用情况 + 成员数。
+ */
 public class AdminTeamResponse {
 
+    /** 团队 ID */
     private Long id;
+    /** 团队名称 */
     private String name;
+    /** 创建者（队长）用户 ID */
     private Long ownerId;
+    /** 团队描述 */
     private String description;
+    /** 团队状态（NORMAL=正常 / DISSOLVED=已解散） */
     private TeamStatus status;
+    /** 团队配额（单位：字节，含基础与赠送部分） */
     private Long quota;
+    /** 已用空间（单位：字节） */
     private Long usedSpace;
+    /** 成员数量 */
     private long memberCount;
+    /** 创建时间 */
     private LocalDateTime createdAt;
 
     public AdminTeamResponse(Long id, String name, Long ownerId, String description,

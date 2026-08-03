@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * 访客分享访问 —— /api/shares/access/**（公开，无需登录；SecurityConfig permitAll）。
- * 提取码验证 → 文件树/预览/下载/批量下载/转存（docs/share-module.md §五）。
+ * 提取码验证 → 文件树/预览/下载/批量下载/转存。
  * 转存需登录（save 接口内校验）。
  */
 @RestController

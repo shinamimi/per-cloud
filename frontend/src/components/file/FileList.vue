@@ -1,7 +1,6 @@
 <!--
   FileList —— 文件列表（列表/图标双视图）。
-  数据与选中项来自 fileStore；操作按钮显隐由 can() 规则表 + 后端能力字段共同推导
-  （docs/frontend-standard.md 5.x）。
+  数据与选中项来自 fileStore；操作按钮显隐由 can() 规则表 + 后端能力字段共同推导。
   重命名/删除在组件内完成（弹确认框），预览/移动/复制上抛给父组件打开对话框。
 -->
 <template>
@@ -168,7 +167,7 @@ const iconSelected = ref<number | null>(null)
 
 /**
  * 文件操作显隐：can() 规则表（角色 + 文件类型）推导。
- * 个人空间无协作角色差异（文件模块 M3 全员可操作，见 file-module.md），
+ * 个人空间无协作角色差异，全员可操作；
  * 资源级能力由后端按需校验（如回收站/父目录状态），前端不重复维护。
  */
 function fileCan(operation: string, row: FileItem): boolean {

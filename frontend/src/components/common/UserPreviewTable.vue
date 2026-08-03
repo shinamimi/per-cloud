@@ -1,7 +1,7 @@
 <!--
   UserPreviewTable —— 只读用户预览表格（轻量组件，不含任何操作列）。
   用于系统配置中心"老用户配额调整"的明细弹窗。
-  设计依据（docs/system-config-center.md §5.2）：不直接复用 AdminUserView 的完整表格，避免耦合操作逻辑。
+  设计思路：不直接复用 AdminUserView 的完整表格，避免耦合操作逻辑。
 -->
 <template>
   <el-table :data="users" v-loading="loading" stripe style="width: 100%" size="default">

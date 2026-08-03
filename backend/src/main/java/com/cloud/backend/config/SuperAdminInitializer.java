@@ -13,6 +13,14 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 超级管理员初始化 —— 应用启动时确保配置文件中指定的超级管理员账号存在且可用。
+ *
+ * 设计思路：
+ * 1. 幂等初始化：账号已存在且角色正确时，仅当密码与配置不一致才重置密码
+ * 2. 同名但非超管账号跳过初始化并告警，避免误改已注册的业务账号
+ * 3. 新账号按注册流程创建（密码加密入库），配额取默认值（10GB）
+ */
 @Component
 public class SuperAdminInitializer implements ApplicationRunner {
 
@@ -21,12 +29,15 @@ public class SuperAdminInitializer implements ApplicationRunner {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
+    /** 超级管理员用户名（配置项 super-admin.username） */
     @Value("${super-admin.username}")
     private String superAdminUsername;
 
+    /** 超级管理员密码（配置项 super-admin.password，仅在初始化/补齐时使用） */
     @Value("${super-admin.password}")
     private String superAdminPassword;
 
+    /** 超级管理员邮箱（配置项 super-admin.email） */
     @Value("${super-admin.email}")
     private String superAdminEmail;
 
@@ -35,10 +46,15 @@ public class SuperAdminInitializer implements ApplicationRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * 应用启动回调：检查并初始化超级管理员账号。
+     * 副作用：可能创建新用户或重置已有超管账号密码，均记录 INFO/WARN 日志。
+     */
     @Override
     public void run(ApplicationArguments args) {
         User admin = userService.findByUsername(superAdminUsername);
         if (admin != null && admin.getRole() == Role.SUPER_ADMIN) {
+            // 配置中的密码与库中不一致时补齐（BCrypt matches 判断），保证部署配置变更后仍可登录
             if (!passwordEncoder.matches(superAdminPassword, admin.getPassword())) {
                 admin.setPassword(passwordEncoder.encode(superAdminPassword));
                 userService.update(admin);
@@ -47,6 +63,7 @@ public class SuperAdminInitializer implements ApplicationRunner {
             return;
         }
         if (admin != null && admin.getRole() != Role.SUPER_ADMIN) {
+            // 用户名被业务账号占用：跳过自动初始化，避免覆盖用户数据
             log.warn("User {} exists but is not SUPER_ADMIN, skipping auto-init", superAdminUsername);
             return;
         }

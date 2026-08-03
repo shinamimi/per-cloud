@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 团队服务实现（docs/team-module.md）。
+ * 团队服务实现。
  * - 创建团队：OWNER 自动成为成员；配额取配置中心默认值；团队数上限校验
  * - 成员管理：邀请（ADMIN+）/移除（ADMIN+，不能移除 OWNER）/退出（OWNER 不可退出）
  * - 解散：仅 OWNER（用户端），管理端强制解散由 AdminTeamController 直接调用

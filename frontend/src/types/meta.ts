@@ -1,7 +1,7 @@
 /*
  * 字典（Meta）类型定义 —— 对应 GET /api/meta/options 返回结构。
  *
- * 设计思路（详见 docs/frontend-standard.md）：
+ * 设计思路：
  * - 业务枚举（用户状态、角色、分享状态等）统一由后端字典接口下发
  * - 只返回业务语义 { value, label }，颜色/图标/Tag 类型等 UI 样式由前端维护
  * - value 与后端 Java 枚举的 name 一致（如 "NORMAL"、"ADMIN"），JSON 字符串
