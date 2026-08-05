@@ -20,6 +20,15 @@ import java.util.List;
  *    如 Role.ADMIN → "ROLE_ADMIN"，对应 SecurityConfig 中的 .hasRole("ADMIN")
  *    Spring Security 的 hasRole() 会自动拼接 "ROLE_" 前缀，所以配置里写 "ADMIN" 即可
  * 3. isEnabled() 返回 true 仅当用户状态为 NORMAL，被冻结的用户即使 Token 有效也无法操作
+ *
+ * 修改指引：
+ * - 【习惯】修改角色 → 权限字符串映射   → getAuthorities() 中的 switch；改动后影响 SecurityConfig 中 hasRole("ADMIN") 等
+ *                              权限判断与接口放行
+ * - 【习惯】修改字段（新增/删减）      → 字段声明 + 构造器 LoginUser(User) + @Getter 生成 getter；改动后影响各 Controller
+ *                              /Service 取用当前用户信息，权限判断需联动
+ * - 【习惯】修改冻结用户是否可用       → isEnabled()；目前仅 NORMAL 可用，改动后影响被冻结用户能否操作
+ * - 【习惯】修改账号/凭证过期锁定判断   → isAccountNonExpired() / isAccountNonLocked() / isCredentialsNonExpired()；
+ *                              目前恒为 true，改动后影响对应状态用户能否通过认证
  */
 @Getter
 public class LoginUser implements UserDetails {

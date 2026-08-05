@@ -12,6 +12,13 @@ import java.util.List;
 
 /**
  * 后台操作日志控制器 —— 按用户、操作类型、目标类型、时间范围查询操作日志，供审计排查。
+ *
+ * 修改指引：
+ * - 【习惯】日志查询           → GET /api/admin/logs，调 operationLogService.listByFilter；筛选条件均可选
+ *                        （LogFilterRequest 绑定查询参数，不传则查询全部）；权限 OPERATOR+
+ *                        （SecurityConfig /api/admin/**），改动影响审计查询能力
+ * - 【习惯】新增/修改接口       → 在 @RequestMapping("/api/admin/logs") 下新增；注意 SecurityConfig 权限级别，
+ *                        前端管理端 API 层需同步
  */
 @RestController
 @RequestMapping("/api/admin/logs")

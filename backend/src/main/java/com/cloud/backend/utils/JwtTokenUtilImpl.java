@@ -18,6 +18,13 @@ import java.util.Date;
  * 2. 解析时强制校验签发者（issuer），防止跨环境 Token 混用
  * 3. 过期时间不读固定配置而是实时取管理端设置（getAccessTokenTtlMs），
  *    调整配置后新签发的 Token 立即生效
+ *
+ * 修改指引：
+ * - 【习惯】修改签名算法/密钥       → 构造器中 Keys.hmacShaKeyFor(...)；密钥来自 JwtProperties.secret，
+ *                             更换密钥会使存量 Token 全部失效（所有用户需重新登录）
+ * - 【习惯】修改签发 claim          → generateToken 中的 subject / role claim；须与 getUsernameFromToken / getRoleFromToken 解析保持一致
+ * - 【习惯】修改签发者校验          → parseClaims 中 requireIssuer(jwtProperties.getIssuer())；改动影响跨环境 Token 混用防护
+ * - 【习惯】修改有效期来源          → getExpirationMs；当前实时读管理端配置 getAccessTokenTtlMs，改动后新签发 Token 立即生效
  */
 @Component
 public class JwtTokenUtilImpl implements JwtTokenUtil {

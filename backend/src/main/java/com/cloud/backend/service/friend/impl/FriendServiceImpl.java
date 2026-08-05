@@ -27,6 +27,19 @@ import java.util.List;
  * - 不能加自己；已是好友/已有待处理请求不能重复发送；REJECTED 后可重发
  * - 接受请求时写入 t_friendship（成对存储 user_a < user_b）
  * - isFriendOrTeamMate：好友 或 同团队成员（团队拉人/定向分享复用）
+ *
+ * 修改指引：
+ * - 【习惯】想改"好友请求发送限制（不能加自己/已是好友/已有待处理请求/REJECTED 后可重发）" → sendRequest()；
+ *   改动影响好友关系建立入口与重复请求的拦截
+ * - 【习惯】想改"请求状态机（PENDING/ACCEPTED/REJECTED 流转）" → sendRequest()/accept()/reject() 与
+ *   FriendRequestStatus 枚举；改动影响请求处理语义，须保持状态值（TINYINT）与枚举一致
+ * - 【习惯】想改"好友关系存储（成对存储 user_a < user_b）" → accept()/deleteFriend()/listFriends()/search()
+ *   中 Math.min/max 归一化；改动影响成对唯一约束与查询语义
+ * - 【习惯】想改"好友/团队成员判定" → isFriendOrTeamMate()：先查 t_friendship，再遍历本人正常团队（status=1）
+ *   检查对方是否同团队；改动影响团队拉人/定向分享的可见范围
+ * - 【习惯】事务说明：accept() 为 @Transactional（改请求状态 + 写好友关系同事务）；改动须保持原子一致
+ * - 【习惯】与接口联动：本类实现 FriendService，改签名/行为须同步接口契约及 FriendController、
+ *   TeamServiceImpl（团队拉人校验）等调用方
  */
 @Service
 public class FriendServiceImpl implements FriendService {

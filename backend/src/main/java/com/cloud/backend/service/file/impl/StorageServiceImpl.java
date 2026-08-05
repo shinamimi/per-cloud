@@ -15,6 +15,20 @@ import java.util.concurrent.TimeUnit;
  * 设计思路：
  * 基于 MinIO Java SDK，封装了文件的上传、下载、删除、复制、预签名 URL 等操作。
  * 所有操作使用默认桶（properties.getBucket()），简化调用。
+ *
+ * 修改指引：
+ * - 【习惯】想改"默认桶名" → properties.getBucket() 与 MinioProperties 配置（yml minio.bucket）；
+ *   改动影响所有对象读写/预签名 URL 的目标桶，需同步保证桶已创建
+ * - 【习惯】想改"操作失败语义（当前抛 RuntimeException）" → 各方法 catch 块；改动影响上游异常处理
+ *   （如 UploadServiceImpl merge 的兜底补偿、DownloadServiceImpl 转业务异常）
+ * - 【习惯】想改"预签名 URL 有效期单位/方法" → generateDownloadUrl() 的 Method.GET 与 expiry(分钟)；
+ *   改动影响所有直链下载/预览链接的可用时长
+ * - 【习惯】想改"对象存在判定" → objectExists()（statObject 成功为存在，异常为不存在）与
+ *   getObjectInfo() 的 ETag 校验用途；改动影响断点续传幂等判断与 MD5 校验
+ * - 【习惯】副作用说明：本类直接操作 MinIO（网络 I/O），无事务可言；涉及 upload/delete/copy 的调用方
+ *   须自行保证数据库记录与对象存储的最终一致（如秒传引用归零才删）
+ * - 【习惯】与接口联动：本类实现 StorageService，改签名/行为须同步接口契约及 UploadServiceImpl、
+ *   DownloadServiceImpl、PreviewServiceImpl、RecycleBinServiceImpl、AdminFileServiceImpl 等调用方
  */
 @Service
 public class StorageServiceImpl implements StorageService {

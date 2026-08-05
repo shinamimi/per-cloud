@@ -16,6 +16,15 @@ import java.util.Set;
  * ALLOWED_EXTENSIONS 用于上传时的白名单校验。
  * getMimeType 用于文件上传到 MinIO 时设置正确的 Content-Type。
  * categoryOf 用于 t_file.category 分类（图片/文档/视频/音频/压缩包/其他）。
+ *
+ * 修改指引：
+ * - 【习惯】新增/移除允许上传的扩展名 → ALLOWED_EXTENSIONS；影响上传白名单校验（isAllowed）
+ * - 【习惯】新增 MIME 类型映射      → getMimeType 的 switch 分支；影响上传到 MinIO 的对象 Content-Type
+ * - 【习惯】修改文件分类规则        → IMAGE/DOCUMENT/VIDEO/AUDIO/ARCHIVE/TEXT 各 Set 与 categoryOf；
+ *                             影响 t_file.category 分类与搜索类型过滤，需与 FileConstants 分类编号保持一致
+ * - 【习惯】修改同名文件唯一命名    → resolveUniqueName（含 stripSuffix/getExtensionPart）；
+ *                             命名规则须与唯一索引 uk_user_parent_name 一致，改动影响删除/恢复流程重名处理
+ * - 【习惯】修改大小格式化          → formatSize；影响管理端/前端展示的容量文案
  */
 public class FileUtil {
 

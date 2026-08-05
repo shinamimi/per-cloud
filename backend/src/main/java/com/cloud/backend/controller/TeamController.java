@@ -16,6 +16,19 @@ import java.util.List;
 /**
  * 团队控制器（用户端接口）。
  * 权限矩阵：创建=登录用户；解散=OWNER；成员管理=ADMIN+；退出=MEMBER+（OWNER 除外）。
+ *
+ * 修改指引：
+ * - 【习惯】创建团队           → POST /api/teams，调 teamService.create / findResponse；登录用户即可创建
+ * - 【习惯】我的团队列表 / 详情  → GET /api/teams、GET /api/teams/{id}，调 teamService.listMyTeams / findResponse
+ * - 【习惯】更新团队信息       → PUT /api/teams/{id}，调 teamService.update；权限 OWNER/ADMIN（服务内校验）
+ * - 【习惯】解散团队           → DELETE /api/teams/{id}，调 teamService.dissolve；仅 OWNER
+ * - 【习惯】邀请成员           → POST /api/teams/{id}/members，调 teamService.invite；OWNER/ADMIN，可从好友列表选人
+ * - 【习惯】成员列表           → GET /api/teams/{id}/members，调 teamService.listMembers
+ * - 【习惯】移除成员           → DELETE /api/teams/{id}/members/{userId}，调 teamService.removeMember；OWNER/ADMIN，
+ *                        不能移除 OWNER 与自身
+ * - 【习惯】退出团队           → POST /api/teams/{id}/leave，调 teamService.leave；OWNER 不能退出
+ * - 【习惯】新增/修改接口       → 权限矩阵（OWNER/ADMIN/MEMBER+）在 TeamService 内校验，改权限需同步服务层与前端；
+ *                        需登录，若为公开接口须在 SecurityConfig 放行
  */
 @RestController
 @RequestMapping("/api/teams")

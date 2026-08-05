@@ -21,6 +21,13 @@ import org.springframework.context.event.EventListener;
  *
  * 为什么不用 @PostConstruct？
  * 因为 MinioClient Bean 刚创建时网络可能未就绪，ApplicationReadyEvent 更稳妥。
+ *
+ * 修改指引：
+ * - 【习惯】修改 MinioClient 构建参数 → minioClient() @Bean；改动后影响全部对象存储读写（端点/凭证）
+ * - 【习惯】修改自动建桶开关         → initBucket() 的 @ConditionalOnProperty(prefix="minio", name="auto-create-bucket")；
+ *                             生产关闭后启动不再自动建桶，需预先在 MinIO 手动创建
+ * - 【习惯】修改建桶时机            → initBucket() 的 @EventListener(ApplicationReadyEvent.class)；改动后影响桶就绪时间点
+ * - 【习惯】修改默认桶名            → properties.getBucket()；由 MinioProperties.bucket 提供，改动后影响文件落桶位置
  */
 @Configuration
 public class MinioConfig {

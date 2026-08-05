@@ -4,6 +4,12 @@ import lombok.Data;
 
 /**
  * 修改分享有效期请求 —— PUT /api/shares/{id}。
+ *
+ * 修改指引：
+ * - 【习惯】修改 validType       → String validType；PERMANENT=永久 / DAYS=按天数（从当前时刻起算）；
+ *                         改动取值需与前端下拉选项及服务端有效期计算保持一致
+ * - 【习惯】修改 validDays       → Integer validDays；validType=DAYS 时有效期天数，上限 share.max-valid-days
+ *                         （管理员配置），超出服务端 400；该接口仅改有效期，不影响提取码/下载策略等
  */
 @Data
 public class ShareUpdateRequest {

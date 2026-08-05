@@ -8,6 +8,11 @@ import com.cloud.backend.security.LoginUser;
  * 设计思路：
  * 1. Token 无状态签发，身份信息存于 claim（用户名 + 角色值），服务端不维护会话
  * 2. 过期时间动态取自管理端配置（getExpirationMs），用于签发与黑名单清理
+ *
+ * 修改指引：
+ * - 【习惯】新增 Token 能力方法     → 在此接口声明并在 JwtTokenUtilImpl 实现；涉及加解密逻辑的修改需评估安全性
+ * - 【习惯】修改 claim 结构         → generateToken / getUsernameFromToken / getRoleFromToken；改动后新旧 Token 兼容性需评估
+ * - 【习惯】修改校验语义            → validateToken；当前非法/过期返回 false 不抛异常，改动影响过滤器等调用方
  */
 public interface JwtTokenUtil {
 

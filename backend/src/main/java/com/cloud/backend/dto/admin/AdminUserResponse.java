@@ -11,6 +11,17 @@ import java.time.LocalDateTime;
  * 设计思路：
  * 配额字段按三来源拆分（quota 基础 + adminBonusQuota 赠送 + rewardQuota 奖励），
  * 并提供汇总字段 totalQuota，前端展示总配额时无需自行累加。
+ *
+ * 修改指引：
+ * - 【习惯】修改响应字段名/类型    → 字段为前端后台用户列表取值依据，改动需同步用户查询 SQL 与前端
+ * - 【习惯】修改 role             → 自定义枚举 Role（enums/Role.java：USER=0/OPERATOR=10/ADMIN=20/SUPER_ADMIN=100），存储 TINYINT，
+ *                           value 越大权限越高；改动需同步枚举定义与前端角色判断
+ * - 【习惯】修改 status           → 自定义枚举 UserStatus（enums/UserStatus.java：DISABLED=0/NORMAL=1/LOCKED=2/INACTIVE=3），
+ *                           存储 TINYINT，LoginUser.isEnabled() 基于此判断；改动需同步枚举定义与前端状态展示
+ * - 【习惯】修改配额字段单位       → quota/totalQuota/adminBonusQuota/rewardQuota/usedSpace 均为字节，前端需换算展示；
+ *                           totalQuota = 基础+赠送+奖励 汇总，改动需同步配额计算逻辑与前端容量展示
+ * - 【习惯】修改 isVip            → Boolean，影响基础配额（quota）计算；改动需同步 VIP 判定与配额计算逻辑
+ * - 【习惯】新增响应字段          → 新增字段并同步用户查询 SQL 与前端，否则该字段恒为默认值
  */
 public class AdminUserResponse {
 

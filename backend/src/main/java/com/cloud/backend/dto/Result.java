@@ -18,6 +18,13 @@ import lombok.Data;
  * - fail(errorCode) —— 用 ErrorCode 描述失败
  * - fail(errorCode, message) —— 自定义失败描述
  * - fail(message) —— 快速失败（code=500）
+ *
+ * 修改指引：
+ * - 【习惯】修改响应字段名        → code/message/data 为全局统一响应格式，改动会影响所有接口与前端拦截器（code===200 判断成功）
+ * - 【习惯】修改成功判定约定      → 当前前端以 code===200 判断成功；改 code 或新增字段会破坏全部接口契约，需同步前端拦截器
+ * - 【习惯】修改静态工厂方法      → success/fail 系列方法在各 controller 中调用；改动返回结构需同步所有调用处
+ * - 【习惯】新增错误码            → 在 ErrorCode 枚举中新增，并用 fail(ErrorCode) 返回；改动影响错误展示文案与前端处理分支
+ * - 【习惯】修改 data 泛型        → T 为业务数据；需保持各接口返回结构与前端类型定义一致
  */
 @Data
 public class Result<T> {

@@ -10,6 +10,14 @@ import java.time.LocalDateTime;
 /**
  * 管理端全局文件响应 —— GET /api/admin/files（列表）、GET /api/admin/files/{id}（详情）。
  * userName/teamName 由服务层批量填充（所属用户/所属团队显示名）。
+ *
+ * 修改指引：
+ * - 【习惯】修改响应字段名/类型    → 字段为前端管理端文件列表/详情取值依据，改动需同步 AdminFileService 的组装（from()）与前端类型定义
+ * - 【习惯】修改 type/status       → 自定义枚举 FileType（FILE=0/DIRECTORY=1，enums/FileType.java）、FileStatus
+ *                           （DELETED=0/NORMAL=1/DISABLED=2，enums/FileStatus.java），前端按枚举值展示；改动需同步枚举定义
+ * - 【习惯】修改 size 单位         → 当前为 Long 字节，前端需换算展示；改动影响管理端容量列展示
+ * - 【习惯】修改 disabledScope     → GLOBAL=全站禁（红）/ USER=仅用户，非禁用为 null；改动需同步禁用执行逻辑与前端来源展示
+ * - 【习惯】修改 userName/teamName → 由服务层批量填充；改动需同步填充逻辑，否则返回 null
  */
 @Data
 public class AdminFileResponse {

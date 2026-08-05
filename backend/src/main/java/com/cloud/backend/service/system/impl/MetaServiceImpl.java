@@ -21,6 +21,17 @@ import java.util.Map;
  * - role 组做显示层混淆：OPERATOR→管理员、ADMIN→超级管理员；SUPER_ADMIN 不暴露
  * - 只返回 value + label，颜色/图标/Tag 类型归前端维护
  * - 枚举运行时不变，组装结果可整体缓存（当前直接组装，量小无性能问题）
+ *
+ * 修改指引：
+ * - 【习惯】想改"各枚举组标签（value→label 映射）" → ROLE_LABELS/USER_STATUS_LABELS/SHARE_STATUS_LABELS/
+ *   OPERATION_TYPE_LABELS；改动影响前端下拉/筛选的显示文案
+ * - 【习惯】想改"role 组混淆与排除（OPERATOR→管理员、ADMIN→超级管理员、SUPER_ADMIN 不暴露）" → roleOptions() 的
+ *   ROLE_LABELS 与 filter(role != SUPER_ADMIN)；改动影响管理端角色选择范围与显示
+ * - 【习惯】想改"枚举组增删" → getOptions() 中 groups.put(...) 与 toOptions()；新增枚举值时须同步 LABELS，
+ *   否则对应项 label 为 null
+ * - 【习惯】与枚举联动：本类强依赖 Role/UserStatus/ShareStatus/OperationType 枚举的 name() 作为 key，
+ *   改枚举名/新增取值须同步本类 LABELS，否则前端展示缺失
+ * - 【习惯】与接口联动：本类实现 MetaService，改签名/行为须同步接口契约及 MetaController 调用方
  */
 @Service
 public class MetaServiceImpl implements MetaService {

@@ -55,6 +55,31 @@ import java.util.Set;
  * - 秒传：内容 hash 命中共享索引时零复制建记录（引用计数 +1），同样做配额与禁用校验
  * - 并发控制：合并用 Redis 分布式锁防并发；进行中任务数按管理员配置限流（VIP 差异化）
  * - 配额口径：团队上传占团队配额，个人上传占个人配额
+ *
+ * 修改指引：
+ * - 【习惯】想改"上传会话模型（init 登记元数据 → chunk 逐片 → merge 组合）" → init()/uploadChunk()/merge() 及
+ *   RedisConstants.UPLOAD_META/UPLOAD_CHUNKS/UPLOADING 键；改动影响前端上传协议与断点续传能力
+ * - 【习惯】想改"分片策略（小文件单分片自适应）" → init() 中 fileProperties.getSmallFileThreshold()/getChunkSize()；
+ *   改动影响分片数、合并耗时与分片上限
+ * - 【习惯】想改"合并并发控制（Redis 分布式锁）" → merge() 的 MERGE_LOCK_PREFIX setIfAbsent(5 分钟)；
+ *   改动影响并发重复合并的拦截与锁超时后的重复提交
+ * - 【习惯】想改"断点续传幂等" → uploadChunk() 中"已登记且对象存在则跳过"；改动影响续传行为与分片覆盖
+ * - 【习惯】想改"合并后一次性扣配额（团队/个人区分）" → merge()/sec() 中 teamService.changeUsedSpace 或
+ *   userService.changeUsedSpace；改动影响配额口径（三来源模型之外的另一入口）
+ * - 【习惯】想改"秒传流程（命中共享索引零复制 + 引用 +1 + 配额）" → sec() 与 fileHashService.shareRef()；
+ *   改动影响去重范围与对象共享
+ * - 【习惯】想改"并发任务数限流（VIP 差异化 + 惰性清理残留）" → policy()/checkConcurrentTasks() 与
+ *   adminSettingsService.getMaxConcurrent*；改动影响进行中任务集合与超限拒绝
+ * - 【习惯】想改"单文件大小上限（VIP 差异化）" → policy()/init() 中 adminSettingsService.getMaxSize*；
+ *   改动影响 UPLOAD_INVALID/FILE_TOO_LARGE 的触发阈值
+ * - 【习惯】想改"对象级禁用内容拦截（违规 hash 禁传）" → requireNotBlocked()（merge 与 sec 共用）；
+ *   改动影响违规内容上传拦截，须与 AdminFileServiceImpl 禁用逻辑一致
+ * - 【习惯】想改"团队同名唯一化（跨 user_id 共享命名空间）" → resolveTeamUniqueName()；改动影响团队目录内名称冲突策略
+ * - 【习惯】想改"上传元数据 TTL" → init() 中 fileProperties.getUploadExpireHours()；改动影响会话过期与续传窗口
+ * - 【习惯】操作日志：merge() 用 @Log 切面（UPLOAD_FILE）；改动影响 OperationLogService
+ * - 【习惯】事务说明：merge() 有 @Transactional，但 Redis 锁/元数据清理在 finally 中不受事务控制，
+ *   失败保留分片与元数据供续传是刻意设计，改动须保持该补偿语义
+ * - 【习惯】与接口联动：本类实现 UploadService，改签名/行为须同步接口契约及 FileController 调用方
  */
 @Service
 public class UploadServiceImpl implements UploadService {

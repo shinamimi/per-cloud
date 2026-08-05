@@ -27,6 +27,16 @@ import java.io.IOException;
  *
  * 工作流程：
  * 请求 → 取出 Header → 验签 + 黑名单 → 查用户 → 设置 SecurityContext → 放行
+ *
+ * 修改指引：
+ * - 【习惯】修改 Token 提取方式       → doFilterInternal() 中读取 Authorization 头的逻辑；目前仅支持 "Bearer " 前缀请求头，
+ *                              改支持 Cookie 等需同步前端与 SecurityConfig 白名单
+ * - 【习惯】修改 Token 校验规则（签名/过期）→ JwtTokenUtil.validateToken()；改动后影响全部 Token 的验签与有效期判定
+ * - 【习惯】修改黑名单校验            → jwtBlacklistService.isBlacklisted()；改动后影响注销/踢出用户的拦截
+ * - 【习惯】修改校验失败响应          → handleInvalidToken()；改动后影响 Token 失效时的统一响应
+ * - 【习惯】修改用户加载逻辑          → userDetailsService.loadUserByUsername()；改动后影响 SecurityContext 中 LoginUser 的来源
+ * - 【习惯】修改放行（无需认证的请求）  → 本过滤器对放行无感知，改动 SecurityConfig 的 permitAll 白名单即可
+ * - 【习惯】修改过滤器挂载位置        → SecurityConfig 的 addFilterBefore()；改动后影响过滤链顺序
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {

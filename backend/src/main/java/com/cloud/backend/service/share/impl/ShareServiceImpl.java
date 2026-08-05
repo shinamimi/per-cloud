@@ -52,6 +52,35 @@ import java.util.stream.Collectors;
  * - 下载次数全局共享累计（download_count），原子 UPDATE 防并发超限，达限置 EXHAUSTED。
  * - 提取码错误限次 5 次（Redis 计数，超限锁定）；验证通过打 ok 标记（24h）。
  * - 转存 = 复用秒传 sec()（引用计数 +1，零复制）。
+ *
+ * 修改指引：
+ * - 【习惯】想改"分享状态机（NORMAL/CANCELED/EXHAUSTED 流转）" → createShare()/cancelShare()/adminCancelShare()/
+ *   countDownload() 与 ShareStatus 枚举（状态存 TINYINT）；改动影响 requireAccessible() 的放行/拒绝判定
+ * - 【习惯】想改"文件夹分享快照锁定（创建时快照 t_share_file，原文件变动不影响分享内容）" → createShare()/
+ *   snapshotSubtree()/toSnapshot()；改动影响访客浏览/下载/转存基于的树结构与字段
+ * - 【习惯】想改"下载前回查原文件（已删除/被禁用则拒绝）" → requireShareableFile()/collectShareFiles() 的
+ *   FileStatus 与 disabledObjectMapper.countBlocked() 校验；改动影响分享内容时效性与安全边界
+ * - 【习惯】想改"下载计数与上限（原子 UPDATE 防并发超限 + 同 IP 60 秒去重）" → countDownload() 的
+ *   incrementDownloadCountIfAllowed 与 dedupKey()（Redis 60s）；改动影响 download_count 口径与
+ *   达限置 EXHAUSTED 的时机
+ * - 【习惯】想改"提取码锁定（错误 5 次锁定、Redis 30 分钟计数）" → verifyPassword() 与 PASSWORD_FAIL_LIMIT/
+ *   SHARE_PWD_FAIL_PREFIX；改动影响验证放行策略
+ * - 【习惯】想改"提取码验证通过标记（24 小时有效）" → markVerified()/requirePasswordVerified() 与 PASSWORD_OK_TTL；
+ *   改动影响访客重复输入的频率
+ * - 【习惯】想改"转存流程（剔除嵌套选中项 + 按深度排序先建目录树再秒传）" → saveShareFiles() 的
+ *   hasSelectedAncestor()/snapshotDepth()/dirMap；改动影响转存结构与配额扣减（复用 uploadService.sec）
+ * - 【习惯】想改"分享默认/上限配置" → createShare()/updateExpire() 中 adminSettingsService.getShareDefaultValidDays()/
+ *   getShareMaxValidDays()/getShareMaxCountPerFile()/isShareDefaultRequirePassword()/
+ *   getShareDefaultDownloadPolicy()；改动影响新建分享的默认行为
+ * - 【习惯】想改"分享访问判定（存在/未取消/未达限/未过期）" → requireAccessible()；改动影响所有访客入口的放行逻辑
+ * - 【习惯】Redis 副作用：提取码计数/验证标记/下载去重均存 Redis，分享被取消/删除时 clearVerified() 同步清理；
+ *   改动分享生命周期须保持清理联动
+ * - 【习惯】操作日志：createShare()/cancelShare()/deleteShareRecord()/adminCancelShare()/adminDeleteShare()/
+ *   adminSetAllowDownload() 用 @Log 切面；改动影响 OperationLogService
+ * - 【习惯】事务说明：createShare()/cancelShare()/deleteShareRecord()/adminDeleteShare()/saveShareFiles() 为
+ *   @Transactional，但 Redis 标记/去重在事务外；改动须保持 Redis 与 DB 的最终一致
+ * - 【习惯】与接口联动：本类实现 ShareService，改签名/行为须同步接口契约及 ShareController、AdminShareController、
+ *   DownloadService/UploadService/PreviewService 调用方
  */
 @Service
 public class ShareServiceImpl implements ShareService {

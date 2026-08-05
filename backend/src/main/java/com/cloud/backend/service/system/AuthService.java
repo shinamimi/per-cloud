@@ -13,6 +13,18 @@ import com.cloud.backend.dto.SendCodeRequest;
  * 1. 登录/注册成功签发 JWT 并记录操作日志；登录失败累计次数，超限锁定账号
  * 2. 验证码按场景隔离（注册/重置/登录），并带发送冷却
  * 3. 邮件验证、开放注册等行为受管理端开关控制
+ *
+ * 修改指引：
+ * - 【习惯】想改"登录流程（锁定/验证码/JWT）" → login() 对应 AuthServiceImpl.login()（失败累计 LoginAttemptService、
+ *   达阈值落库 LOCKED、过锁定期自动解锁；登录验证码开关；成功签发 JWT + 写 LOGIN 日志含 IP）；
+ *   改动影响账号安全策略与登录态
+ * - 【习惯】想改"注册流程（开关/唯一性/默认配额/自动登录）" → register()（开放注册开关、邮箱验证、取
+ *   default-quota-user、签发 JWT + 写 REGISTER 日志）；改动影响新用户准入与初始配额
+ * - 【习惯】想改"验证码发送（冷却/场景隔离）" → sendCode()/sendForgotPasswordCode() → CaptchaService.generateAndStore/
+ *   setCooldown 与 EmailService.sendCaptchaMail；改动影响发信频率与验证码场景
+ * - 【习惯】想改"重置密码" → resetPassword()（邮件验证开关开启时校验验证码，BCrypt 加密入库）；改动影响密码重置安全边界
+ * - 【习惯】操作日志：登录/注册内联写 OperationLog（LOGIN/REGISTER）；改动影响 OperationLogService 与登录日志
+ * - 【习惯】新增方法 → 需同步实现类 AuthServiceImpl 与 AuthController
  */
 public interface AuthService {
 

@@ -12,6 +12,14 @@ import java.sql.SQLException;
 /**
  * TeamMemberRole 自定义 TypeHandler —— DB 存枚举 value（0-成员 10-管理员 20-所有者），
  * 非 ordinal，不能使用 EnumOrdinalTypeHandler。
+ *
+ * 修改指引：
+ * - 【习惯】修改写入 DB 的值          → setNonNullParameter() 中 parameter.getValue()；改动后影响落库的角色值
+ * - 【习惯】修改读回枚举的方式        → getNullableResult() 中 TeamMemberRole.fromValue()；改动后影响角色反查
+ * - 【习惯】新增中间档位角色          → 在 TeamMemberRole 枚举追加常量（value 取未占用档位，如 5/15）；
+ *                             本处理器按 value 存取、fromValue 兜底 MEMBER，新增档位无需数据迁移，
+ *                             但需在团队权限判断处补充新档位逻辑
+ * - 【习惯】修改脏数据兜底            → TeamMemberRole.fromValue() 返回的兜底枚举；改动后影响未知 value 的默认角色
  */
 public class TeamMemberRoleTypeHandler extends BaseTypeHandler<TeamMemberRole> {
 

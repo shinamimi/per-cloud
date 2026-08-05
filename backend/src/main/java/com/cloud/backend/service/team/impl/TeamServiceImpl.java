@@ -31,6 +31,28 @@ import java.util.List;
  * - 创建团队：OWNER 自动成为成员；配额取配置中心默认值；团队数上限校验
  * - 成员管理：邀请（ADMIN+）/移除（ADMIN+，不能移除 OWNER）/退出（OWNER 不可退出）
  * - 解散：仅 OWNER（用户端），管理端强制解散由 AdminTeamController 直接调用
+ *
+ * 修改指引：
+ * - 【习惯】想改"创建团队流程（OWNER 自动成为成员、配额取配置中心默认值、每人团队数上限）" → create() 中
+ *   adminSettingsService.getTeamMaxPerUser()/getTeamDefaultQuota() 与 TeamMemberRole.OWNER 初始写入；
+ *   改动影响团队创建入口与配额初始值
+ * - 【习惯】想改"团队成员管理（邀请 ADMIN+/移除 ADMIN+ 不能移除 OWNER、ADMIN 不能移除 ADMIN/退出 OWNER 不可退）" →
+ *   invite()/removeMember()/leave() 与 TeamMemberRole 比较；改动影响成员生命周期与权限边界
+ * - 【习惯】想改"团队人数上限" → invite() 中 adminSettingsService.getTeamMaxMembers()（按当前 + 本次新增计算）；
+ *   改动影响批量邀请的拦截阈值
+ * - 【习惯】想改"解散/强制解散（团队状态 + 成员 status 置 0 清残留）" → dissolve()/adminDissolve()；
+ *   改动影响解散后成员查询与文件归属
+ * - 【习惯】想改"团队配额（检查/增减/管理端调整）" → getRemainingQuota()/checkQuota()/changeUsedSpace()/
+ *   adminUpdateQuota()（updateUsedSpace 原子 SQL，adminUpdateQuota 不允许小于已用空间）；
+ *   改动影响团队配额口径与上传/恢复的配额校验
+ * - 【习惯】想改"角色校验链（MEMBER < ADMIN < OWNER）" → requireMember()/requireAdmin()/requireOwner()/getMyRole()
+ *   与 TeamMemberRole.getValue() 比较；改动影响全部成员操作权限
+ * - 【习惯】事务边界：create()/dissolve()/invite()/removeMember()/leave()/adminDissolve() 为 @Transactional，
+ *   成员写入与操作日志同事务；改动须保持原子一致
+ * - 【习惯】操作日志：create()/dissolve()/invite()/removeMember()/leave()/adminDissolve() 内联写操作日志；
+ *   改动影响 OperationLogService
+ * - 【习惯】与接口联动：本类实现 TeamService，改签名/行为须同步接口契约及 TeamController、
+ *   AdminTeamController、TeamFileServiceImpl/UploadServiceImpl/AdminFileServiceImpl 等调用方
  */
 @Service
 public class TeamServiceImpl implements TeamService {

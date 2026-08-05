@@ -9,6 +9,17 @@ import java.time.LocalDateTime;
 /**
  * 文件列表节点响应。
  * userId/uploaderName 为上传者信息：个人文件列表用不到，团队文件列表由服务层填充。
+ *
+ * 修改指引：
+ * - 【习惯】修改 id / parentId / name → Long id / Long parentId / String name；对应 t_file 主键/父目录/文件名，前端列表定位用
+ * - 【习惯】修改 size            → Long size；文件大小，单位：字节，前端展示需自行换算 KB/MB/GB
+ * - 【习惯】修改 mimeType / extension → String mimeType / String extension；仅展示与预览判断用
+ * - 【习惯】修改 isDirectory / type → Boolean isDirectory / FileType type（t_file.type TINYINT，FILE=0/DIRECTORY=1，
+ *                         定义于 enums/FileType.java）；两者必须保持一致，改 type 需同步改 isDirectory，否则前端目录判断错乱
+ * - 【习惯】修改 category        → Integer category；文件分类（FileConstants：IMAGE=0/DOCUMENT=1/VIDEO=2/AUDIO=3/OTHER=5），
+ *                         前端用于分类筛选与文件图标
+ * - 【习惯】修改 userId / uploaderName → 上传者信息；个人文件列表为 null 勿依赖，团队文件列表由服务层填充 uploaderName
+ * - 【习惯】修改 createdAt / updatedAt → LocalDateTime 创建/更新时间，前端直接展示或做排序
  */
 @Data
 public class FileNodeResponse {

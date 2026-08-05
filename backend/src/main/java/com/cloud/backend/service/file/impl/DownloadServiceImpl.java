@@ -43,6 +43,24 @@ import java.util.zip.ZipOutputStream;
  * - 批量：异步打包任务（本地临时 zip → 上传对象存储），进度经 WebSocket 推送，完成时返回预签名 URL
  * - 打包产物小时级过期（配置项），由定时任务清理内存任务与存储对象
  * - 禁用/对象级禁用文件对用户端不可下载，管理员后台不受此限
+ *
+ * 修改指引：
+ * - 【习惯】想改"预签名下载链接有效期" → getDownloadUrl()/getDownloadUrlForShare()/pack() 中取
+ *   adminSettingsService.getDownloadLinkTtlMinutes()；改动影响前端直连对象存储的可用时长
+ * - 【习惯】想改"单文件下载校验规则" → getDownloadUrl() 的 fileService.getOwnedFile() + requireEnabled()（目录/空文件拒绝、
+ *   DISABLED 或对象级禁用拒绝）；改动影响用户端可下载范围，管理员后台 detailEntity 路径不受此限
+ * - 【习惯】想改"批量打包流程（本地临时 zip → 上传对象存储 → 预签名 URL）" → createBatchTask()/createBatchTaskForGuest()/pack()；
+ *   改动影响打包产物、下载地址与 WebSocket 进度推送
+ * - 【习惯】想改"zip 条目命名（重名自动加序号）" → toEntryName()/writeZipEntry()；改动影响下载后解压的目录结构
+ * - 【习惯】想改"打包任务状态机（PENDING/PACKING/DONE/FAILED）与失败处理" → pack() 与 BatchTask.status；改动影响
+ *   前端轮询/WebSocket 收包行为
+ * - 【习惯】想改"打包并发度/线程池" → 构造器 packExecutor（Executors.newFixedThreadPool(2)）；改动影响并发打包能力与资源占用
+ * - 【习惯】想改"打包产物过期清理" → cleanupExpiredPackages() 与 fileProperties.getPackageExpireHours()；
+ *   由定时任务调用，删 MinIO zip + 清内存任务，改动影响存储与内存占用
+ * - 【习惯】内存态说明：BatchTask 仅存于进程内存（ConcurrentHashMap），服务重启任务丢失；如需持久化需引入任务表/Redis
+ * - 【习惯】并发说明：任务表使用 ConcurrentHashMap，pack() 在独立线程写 task 状态、经 ProgressWebSocketHandler 广播；
+ *   改动共享状态访问须保持线程安全
+ * - 【习惯】与接口联动：本类实现 DownloadService，改签名/行为须同步接口契约与 FileController/ShareController 调用方
  */
 @Service
 public class DownloadServiceImpl implements DownloadService {

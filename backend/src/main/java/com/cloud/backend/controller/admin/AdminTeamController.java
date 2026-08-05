@@ -24,6 +24,17 @@ import java.util.Map;
  * 1. 列表聚合成员数指标（countMembers），避免前端逐队查询
  * 2. 文件/回收站接口为管理端只读视角，仅供查看与治理，不参与成员权限判定
  * 3. 解散团队为强制操作，记录执行操作者信息以便审计
+ *
+ * 修改指引：
+ * - 【习惯】团队列表 / 详情      → GET /api/admin/teams、/{id}，调 teamService.findAll / findById / adminListMembers；
+ *                          权限 OPERATOR+（SecurityConfig /api/admin/**），列表聚合成员数指标
+ * - 【习惯】调整配额           → PUT /api/admin/teams/{id}/quota，调 teamService.adminUpdateQuota(adminBonusQuota)；
+ *                        最终配额由服务层汇总计算
+ * - 【习惯】团队文件 / 回收站只读 → GET /api/admin/teams/{id}/files（分页）、/{id}/recycle-bin，
+ *                          调 teamFileService.adminListFiles / adminRecycleBin；管理端只读视角，不参与成员权限判定
+ * - 【习惯】清除回收站记录      → DELETE /api/admin/teams/{id}/recycle-bin/{recycleId}，调 adminPurge；物理清除
+ * - 【习惯】解散团队           → DELETE /api/admin/teams/{id}，调 teamService.adminDissolve；强制解散，记录当前操作者 ID 供审计
+ * - 【习惯】新增/修改接口       → 注意 SecurityConfig 权限级别并同步前端管理端 API 层；分页参数 page/size 改动需同步前端
  */
 @RestController
 @RequestMapping("/api/admin/teams")

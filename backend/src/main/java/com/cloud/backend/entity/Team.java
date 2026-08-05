@@ -10,6 +10,18 @@ import java.time.LocalDateTime;
  * 设计思路：
  * - status 用 TeamStatus 枚举（NORMAL=1 / DISSOLVED=0），存储 TINYINT（EnumOrdinalTypeHandler）
  * - quota / usedSpace 均为字节单位，quota 为团队总配额（基础 + 管理端赠送）
+ *
+ * 修改指引：
+ * - 【习惯】修改 id / name / avatar / description → Long id（t_team.id 主键）/ String name（name 团队名）/ String avatar
+ *                            （avatar 头像）/ String description（description 描述）；仅团队展示与创建，无业务联动
+ * - 【习惯】修改 ownerId          → Long ownerId；对应 t_team.owner_id，创建者（队长），改它需同步成员角色
+ *                            （t_team_member 中 role=OWNER）
+ * - 【习惯】修改 status           → TeamStatus status；对应 t_team.status（TINYINT），NORMAL=1/DISSOLVED=0（见 enums/TeamStatus.java，
+ *                            按 ordinal 存库）；解散时成员记录 status 一并置 0，改枚举见 TeamStatus 修改指引
+ * - 【习惯】修改 quota            → Long quota；对应 t_team.quota（BIGINT，单位字节），团队总配额（基础 + 管理端赠送），
+ *                            影响 TeamServiceImpl 的剩余配额计算与上传拦截
+ * - 【习惯】修改 usedSpace        → Long usedSpace；对应 t_team.used_space（BIGINT，单位字节），团队已用空间，上传/删除时更新
+ * - 【习惯】修改 createdAt / updatedAt → LocalDateTime；自动维护，无业务联动
  */
 @Data
 public class Team {

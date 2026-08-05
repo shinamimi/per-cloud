@@ -16,6 +16,16 @@ import java.util.List;
  * 操作日志服务实现。
  * 写入口 log() 统一受配置中心 system.enable-operation-log 开关控制
  * （手动埋点与 @Log 切面均经此处，关闭时直接跳过，读不受影响）。
+ *
+ * 修改指引：
+ * - 【习惯】想改"操作日志总开关（system.enable-operation-log）" → log() 中 settingsService.isOperationLogEnabled()；
+ *   改动影响全站操作日志写入（手动埋点与 @Log 切面共用此入口）
+ * - 【习惯】想改"日志查询维度/过滤条件" → listByFilter()/listByFilterPaged() 与 OperationLogMapper.findByFilter/
+ *   countByFilter/findPaged 的 SQL；改动影响管理端日志筛选与分页
+ * - 【习惯】想改"日志字段写入" → log() 内 operationLog 实体字段与 OperationLogMapper.insert；
+ *   改动影响日志完整性（需与 @Log 切面/手动埋点取值对齐）
+ * - 【习惯】与接口联动：本类实现 OperationLogService，改签名/行为须同步接口契约及 OperationLogAspect、
+ *   AuthServiceImpl/FileServiceImpl/ShareServiceImpl 等埋点调用方
  */
 @Service
 public class OperationLogServiceImpl implements OperationLogService {

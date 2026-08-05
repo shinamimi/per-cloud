@@ -207,6 +207,67 @@ backend/src/main/java/com/cloud/backend/
 | 注释写实现细节而非意图 | 改代码就要改注释 |
 | 注释引用文档编号 | 编号变化要改代码 |
 
+#### 1.6.8 自定义注解注释规范
+
+所有自定义注解类（`annotation/` 包）必须遵守本规范。注释分三层：
+
+**① 类级 Javadoc：职责 + 设计思路 + 修改指引表**
+
+```java
+/**
+ * <一句话职责> —— <该注解用于什么、标注在哪里、由谁消费>。
+ *
+ * 设计思路：
+ * 1. <为什么这么设计，如：由 XX 切面统一拦截，业务代码无需注入>
+ *
+ * 修改指引：
+ * - 【固定】修改注解名称            → public @interface Xxx；改名需同步全部使用处
+ * - 【固定】修改可标注元素（如方法）  → @Target(ElementType.METHOD)；可选元素见下方 @Target 速查表
+ * - 【固定】修改生命周期（运行时读取）→ @Retention(RetentionPolicy.RUNTIME)；可选值见下方 @Retention 速查表
+ * - 【固定】修改 XX 字段名          → <类型> xx()；<字段类型来源 + 取值范围/默认行为说明>
+ */
+```
+
+- **修改指引表必写**：把"想改什么 → 改哪一行"列全，字段名这一行必须补充字段的类型来源与取值说明（如"自定义枚举 OperationType，取值 LOGIN/UPLOAD_FILE，定义于 enums/OperationType.java"），避免只有字段名无法定位
+- 每一行说明"修改后影响什么"（如改为 CLASS 即无法用切面方法拦截）
+- **每条指引必须以 `【固定】` 或 `【习惯】` 开头标注约束性质**：
+  - `【固定】`：**仅指 Java/Spring 框架固定的名称**，由编译期或框架契约强制，无法改名——改名即编译失败或框架找不到。典型：
+    - Java 关键字与标准 API 名：`main`、`run()`、`equals/hashCode/toString`、JavaBeans 访问器 `getXxx()/isXxx()`、`@interface`、标准注解名（`@Override`、`@Target`、`@Retention`）与常量（`ElementType.METHOD`、`RetentionPolicy.RUNTIME`）
+    - Spring 框架名：注解名（`@Service`、`@RestController`、`@Transactional`、`@Bean`、`@Value`、`@Scheduled`、`@Async`、`@ExceptionHandler` 等）、框架要求覆写的方法名（`doFilterInternal()`、`loadUserByUsername()`、`configure()`、`addCorsMappings()` 等）、`spring.*`/`server.*` 配置键、`application.yml`/`application-{profile}.yml` 文件名
+  - `【习惯】`：**其余全部**，包括项目自身定义的名称与一切项目机制——自定义类/字段/方法名、自定义注解名（如 `@Log`）、枚举与取值、DTO 字段、数据库表/列/索引、Redis Key、自有 yml 键（`file.*`/`jwt.*`/`minio.*` 等）、业务规则、事务边界、单位约定、接口契约等。项目自己导致的"必须同步"，哪怕违反会出 Bug，也**不标【固定】**
+
+**② @Target 可选值速查表（通用模板，按需引用）**
+
+| 目标 | 常量 | 用于标注 |
+|------|------|---------|
+| 方法 | `ElementType.METHOD` | 切面拦截的方法（如 `@Log`） |
+| 类/接口/枚举 | `ElementType.TYPE` | 类级注解（如 `@Service`） |
+| 字段 | `ElementType.FIELD` | 字段级注解（如 `@Autowired`） |
+| 方法参数 | `ElementType.PARAMETER` | 参数级注解（如 `@PathVariable`） |
+| 构造器 | `ElementType.CONSTRUCTOR` | 构造器级 |
+| 局部变量 | `ElementType.LOCAL_VARIABLE` | 局部变量级 |
+| 包 | `ElementType.PACKAGE` | package-info.java |
+| 类型使用处 | `ElementType.TYPE_USE` | 泛型/类型转换处 |
+| 类型参数 | `ElementType.TYPE_PARAMETER` | 泛型声明处 |
+
+**③ @Retention 可选值速查表**
+
+| 生命周期 | 常量 | 适用场景 |
+|---------|------|---------|
+| 源码级 | `RetentionPolicy.SOURCE` | 编译期工具（如 Lombok），编译后丢弃 |
+| 类文件 | `RetentionPolicy.CLASS` | 编译进字节码，运行时不读取（默认值） |
+| 运行时 | `RetentionPolicy.RUNTIME` | 反射可读，**切面/框架必须用这个**（如 `@Log`） |
+
+**④ 字段级注释（沿用 1.6.5）**
+
+- 每个字段注释必须说明：字段类型来源 + 取值范围 + 默认行为
+- 自定义枚举字段注明枚举类位置与全部取值（如 `// 自定义枚举 OperationType（enums/OperationType.java）：LOGIN/UPLOAD_FILE/DELETE_FILE`）
+- 默认值注明默认行为（如 `// 默认空表示不记录目标 ID`）
+
+> **适用性说明**：本规范的"修改指引表"模式不仅用于 `annotation/` 包，也适用于所有后端类（枚举、常量、实体、DTO、配置类、Controller、Service、Mapper 等），每条指引同样需以 `【固定】`/`【习惯】` 开头标注约束性质。
+
+示例见 `annotation/Log.java`（含完整修改指引表 + 字段注释）。
+
 ---
 
 ## 2. 前端规范 (Vue 3 + TypeScript)

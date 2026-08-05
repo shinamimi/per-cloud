@@ -21,6 +21,19 @@ import java.util.List;
  * - 每日 03:00：回收站过期记录物理清理（保留天数可配置）+ 打包产物清理（24 小时）
  * - 每日 03:30：操作/登录日志按保留天数清理（log.operation-days / log.login-days）
  * - 每日 04:00：上传临时分片清理（Redis 元数据已过期的孤儿对象）
+ *
+ * 修改指引：
+ * - 【习惯】修改回收站清理时间/周期     → cleanupExpiredData() 的 @Scheduled(cron="0 0 3 * * ?")；改动后影响物理清理执行频率
+ * - 【习惯】修改回收站保留天数         → RecycleBinService.purgeExpired() 内部读取 FileProperties.recycleDays；
+ *                              改动后影响到期文件被物理删除的快慢
+ * - 【习惯】修改打包产物清理           → cleanupExpiredData() 中 downloadService.cleanupExpiredPackages()；产物保留时长在
+ *                              FileProperties.packageExpireHours
+ * - 【习惯】修改日志清理时间/周期       → cleanupExpiredLogs() 的 @Scheduled(cron="0 30 3 * * ?")
+ * - 【习惯】修改日志保留天数           → settingsService.getOperationLogDays() / getLoginLogDays()；
+ *                              改动后影响操作/登录日志删除的截止时间
+ * - 【习惯】修改分片清理时间/周期       → cleanupStaleUploads() 的 @Scheduled(cron="0 0 4 * * ?")
+ * - 【习惯】修改孤儿分片判定           → cleanupStaleUploads() 中 Redis 元数据是否存在（RedisConstants.UPLOAD_META_PREFIX）；
+ *                              改动后影响临时分片的清理范围
  */
 @Component
 public class FileCleanupTask {

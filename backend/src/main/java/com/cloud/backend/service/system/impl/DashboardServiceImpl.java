@@ -17,6 +17,15 @@ import java.util.List;
  * 1. 直接聚合用户表与文件表：用户数、文件数、文件总大小、用户基础配额总和
  * 2. 使用率在统计对象构造时统一计算（总配额为 0 时按 0 处理）
  * 3. 当前为全表内存聚合，数据量增大后应替换为数据库聚合查询（TODO）
+ *
+ * 修改指引：
+ * - 【习惯】想改"统计口径（用户数/文件数/总大小/总配额）" → getStats() 对 UserMapper/FileMapper.findAll() 的聚合；
+ *   改动影响后台仪表盘展示
+ * - 【习惯】想改"统计实现（全表内存聚合 → 数据库聚合 SQL）" → getStats() 与 AdminDashboardStatsBO 构造；
+ *   TODO 注明，改动影响大数据量下的性能（当前全表加载有性能风险）
+ * - 【习惯】想改"配额口径" → totalQuota 按 User::getQuota（基础配额）求和；若改为三来源口径（quota+adminBonus+reward）
+ *   须同步 AdminDashboardStatsBO 与前端展示
+ * - 【习惯】与接口联动：本类实现 DashboardService，改签名/行为须同步接口契约及 AdminDashboardController 调用方
  */
 @Service
 public class DashboardServiceImpl implements DashboardService {

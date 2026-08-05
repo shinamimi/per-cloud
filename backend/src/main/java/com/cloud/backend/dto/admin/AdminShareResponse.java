@@ -8,6 +8,14 @@ import java.time.LocalDateTime;
 
 /**
  * 管理端分享响应 —— GET /api/admin/shares。
+ *
+ * 修改指引：
+ * - 【习惯】修改响应字段名/类型    → 字段为前端管理端分享列表取值依据，改动需同步 AdminShareService 的组装（from()）与前端
+ * - 【习惯】修改 status           → 自定义枚举 ShareStatus（enums/ShareStatus.java：NORMAL=0 生效/EXPIRED=1 过期/CANCELED=2 取消/
+ *                           EXHAUSTED=3 达下载上限），存储 TINYINT；改动需同步枚举定义与前端状态展示
+ * - 【习惯】修改 allowDownload/allowSave → from() 中 DB 为 null/1 时按 true 处理；改动影响分享行为展示
+ * - 【习惯】修改 maxDownload/downloadCount → Integer 下载上限/已下载次数，前端用于剩余次数展示；改动需同步分享逻辑
+ * - 【习惯】修改 ownerName/fileName → 由服务层填充；改动需同步填充逻辑，否则返回 null
  */
 @Data
 public class AdminShareResponse {

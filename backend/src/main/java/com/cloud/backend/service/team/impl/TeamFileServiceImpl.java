@@ -50,6 +50,31 @@ import java.util.stream.Collectors;
  * - 写操作（重命名/移动/复制/删除）按角色校验：ADMIN/OWNER 可操作团队所有文件，
  *   MEMBER 只能操作自己上传的文件
  * - 禁用/对象级禁用文件对成员不可下载，管理端不受此限
+ *
+ * 修改指引：
+ * - 【习惯】想改"团队写权限矩阵（ADMIN/OWNER 可操作所有文件，MEMBER 只能操作自己上传的文件）" →
+ *   requireFileWritePermission()/requireRecordPermission() 与 TeamMemberRole 取值比较；
+ *   改动影响团队文件/回收站所有写操作的权限边界
+ * - 【习惯】想改"团队同名唯一化（跨 user_id 共享命名空间）" → resolveTeamUniqueName()（createDirectory/rename/move/copy/
+ *   restoreRecord 共用）；改动影响团队目录内名称冲突策略
+ * - 【习惯】想改"删除到团队回收站（tombstone 顶层名 + 子树置 DELETED + 写带 team_id 的回收站记录 + 释放团队配额）" →
+ *   deleteToRecycle()/tombstoneName()；改动影响团队回收站记录与配额释放
+ * - 【习惯】想改"团队回收站保留天数" → deleteToRecycle() 中 adminSettingsService.getTeamRecycleBinDays()；
+ *   改动影响 expireTime 与过期清理点
+ * - 【习惯】想改"团队回收站恢复（递归恢复子树 + 配额校验 + 同名唯一化 + 父目录可用校验）" → restore()/restoreRecord()；
+ *   改动影响恢复后目录结构完整性与团队配额是否超限
+ * - 【习惯】想改"彻底删除（复用个人回收站物理清理）" → purge()/adminPurge() 委托 recycleBinService.purgeRecord()；
+ *   改动影响秒传引用归零与 MinIO 删除
+ * - 【习惯】想改"团队文件下载/预览拦截（DISABLED/对象级禁用）" → getDownloadUrl() 与预览转发 previewService.previewFile()；
+ *   改动影响成员侧可下载/可预览范围
+ * - 【习惯】想改"复制语义（目录递归复制、文件共享引用 +1、按总大小扣团队配额）" → copy()/copyNode()；
+ *   改动影响团队配额占用与对象引用计数
+ * - 【习惯】事务边界：copy()/deleteToRecycle()/restore()/purge()/adminPurge() 为 @Transactional，
+ *   配额增减与 t_file/t_recycle_bin 写入同事务；改动须保持原子一致
+ * - 【习惯】操作日志：createDirectory() 用 @Log 切面，deleteToRecycle()/restoreRecord() 内联写 OperationLog；
+ *   改动影响 OperationLogService
+ * - 【习惯】与接口联动：本类实现 TeamFileService，改签名/行为须同步接口契约及 TeamFileController、
+ *   TeamController、AdminTeamController 等调用方
  */
 @Service
 public class TeamFileServiceImpl implements TeamFileService {

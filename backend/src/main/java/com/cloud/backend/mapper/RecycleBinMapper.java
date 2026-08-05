@@ -11,6 +11,21 @@ import java.util.List;
  * 回收站 Mapper —— t_recycle_bin 表。
  * 删除时插入记录（保留原文件信息与过期时间），恢复时删除记录，
  * 定时任务按 expire_time 扫描物理清理。
+ *
+ * 修改指引：
+ * - 【习惯】写入删除记录          → insert（XML：src/main/resources/mapper/RecycleBinMapper.xml）；删除时由 Service 同步写入、
+ *                          恢复时反向操作，改字段（如 file_hash/type/team_id）需同步 XML 与实体
+ * - 【习惯】个人回收站            → findByIdAndUserId / findByUserId / findByUserIdAndParentId（XML 同上）；
+ *                          条件含 team_id=0 且 deleted_by=0，改归属判定需与 Service 的删除来源（deleted_by）联动
+ * - 【习惯】团队回收站            → findByTeamId / findByIdAndTeamId / findByTeamIdAndParentId（XML 同上）；
+ *                          按 team_id 过滤且 deleted_by=0，团队解散清理需同步 Service 层
+ * - 【习惯】全局回收站（管理员删除）→ findGlobal / findGlobalById / findGlobalChildrenByUserId / findGlobalChildrenByTeamId（XML 同上）；
+ *                          deleted_by=1 且仅 ADMIN 可见，改可见性需同步 AdminFileService 权限与
+ *                          DDL 索引 idx_deleted_by(deleted_by, team_id)
+ * - 【习惯】定时物理清理          → findByExpireTimeBefore（XML 同上）；按 expire_time 扫描过期记录，
+ *                          配合 deleteById 清理，改保留天数需同步定时任务配置
+ * - 【习惯】级联清理子记录         → deleteByUserIdAndParentId / deleteByTeamIdAndParentId（XML 同上）；按原父目录（parent_id）
+ *                          递归清理，恢复/清理目录时由 Service 调用，改递归规则需同步 XML
  */
 @Mapper
 public interface RecycleBinMapper {

@@ -5,6 +5,11 @@ package com.cloud.backend.event;
  *
  * 设计思路：
  * 字段不可变（final），事件只承载已发生事实，避免监听器侧修改语义。
+ *
+ * 修改指引：
+ * - 【习惯】新增事件字段            → 添加 final 字段 + 构造器参数 + getter；所有发布点（注册流程）需同步传入，监听器可读取新字段
+ * - 【习惯】修改事件携带的数据      → 调整构造器参数；发布方与监听方需同步修改，避免漏传或取不到值
+ * - 【习惯】拆分/新增领域事件       → 在 event 包新增事件类，发布处调用 applicationEventPublisher.publishEvent(...)，监听器按需订阅
  */
 public class UserRegisteredEvent {
 

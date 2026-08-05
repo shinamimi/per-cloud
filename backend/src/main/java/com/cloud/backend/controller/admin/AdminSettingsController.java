@@ -17,6 +17,18 @@ import java.util.Map;
  * 系统配置中心（管理端）。
  * 权限：/api/admin/settings/** 默认 OPERATOR+；/system 与 /mail 两个敏感分组仅 ADMIN+（SecurityConfig 细化）。
  * 所有分组独立保存；null 字段表示恢复配置文件默认值（删除 t_setting 配置行）。
+ *
+ * 修改指引：
+ * - 【习惯】查询全部配置       → GET /api/admin/settings，调 adminSettingsService 各 getXxx；SMTP 密码脱敏为 "********"；
+ *                        权限 OPERATOR+（SecurityConfig /api/admin/**），改动影响前端设置回显
+ * - 【习惯】修改普通分组       → PUT /api/admin/settings/{upload|storage|session|cache|file|log|team}，
+ *                        调 adminSettingsService.updateXxx；null 字段表示恢复默认值（删除配置行）
+ * - 【习惯】敏感分组          → PUT /api/admin/settings/system、/mail；SecurityConfig 限定仅 ADMIN/SUPER_ADMIN，
+ *                        改动影响 SMTP 连接与系统功能开关，误改可能导致注册/邮件功能异常
+ * - 【习惯】老用户配额批量调整  → POST /api/admin/settings/users/quota-batch，调 quotaBatch；preview=true 仅返回受影响明细不执行修改
+ * - 【习惯】日志分页查询       → GET /api/admin/settings/logs?operation=&page=&size=，调 operationLogService.listByFilterPaged
+ * - 【习惯】新增配置分组       → 需同步本控制器（getSettings + 对应 PUT 方法）、AdminSettingsService、配置表与前端；
+ *                        新增敏感项需在 SecurityConfig 增加 ADMIN+ 路径限制
  */
 @RestController
 @RequestMapping("/api/admin/settings")

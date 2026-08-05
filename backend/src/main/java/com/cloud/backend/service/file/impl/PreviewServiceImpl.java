@@ -29,6 +29,19 @@ import java.nio.charset.StandardCharsets;
  * - 图片：presigned URL 直链 + Thumbnailator 缩略图（thumbnails/ 前缀，首次生成后复用）
  * - 视频/音频/PDF：presigned URL，浏览器原生播放/阅读（Range 请求由 MinIO 支持）
  * - 文本：大小在限制内直接读内容返回；Office 等仅下载
+ *
+ * 修改指引：
+ * - 【习惯】想改"预览类型判定（按扩展名映射 IMAGE/VIDEO/AUDIO/PDF/TEXT/UNSUPPORTED）" → previewContent() 的
+ *   分支判断与 FileUtil.isImage()/isText() 白名单；改动影响各类文件能否预览及返回类型
+ * - 【习惯】想改"文本预览大小上限" → previewContent() 中 fileProperties.getPreviewTextMaxSize()；改动影响 TEXT 直读
+ *   的超限回落行为
+ * - 【习惯】想改"禁用/对象级禁用文件的预览拦截" → previewFile() 中 FileStatus.DISABLED 与
+ *   disabledObjectMapper.countBlocked() 校验；改动影响用户端可预览范围（previewFileForAdmin 不受限）
+ * - 【习惯】想改"缩略图生成（尺寸/格式/是否复用）" → thumbnailUrl() 中 Thumbnailator size(500,500) 与
+ *   objectExists 复用逻辑（gif/svg 直接回原图）；改动影响 MinIO 缩略图占用与首次生成耗时
+ * - 【习惯】想改"预览/缩略图链接有效期" → previewContent()/thumbnailUrl() 中
+ *   adminSettingsService.getDownloadLinkTtlMinutes()；改动影响前端直连有效期
+ * - 【习惯】与接口联动：本类实现 PreviewService，改签名/行为须同步接口契约及 FileController/AdminFileController 调用方
  */
 @Service
 public class PreviewServiceImpl implements PreviewService {

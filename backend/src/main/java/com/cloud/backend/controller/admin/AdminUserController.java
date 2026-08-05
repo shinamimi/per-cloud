@@ -19,6 +19,17 @@ import java.util.List;
  * 1. 列表始终排除超级管理员账号，防止普通管理员看到/操作超管
  * 2. 状态/配额/密码等敏感操作全部下沉到服务层，统一做目标校验（不能操作管理员账号）
  * 3. 配额调整走管理端赠送额度（adminBonusQuota），基础配额与奖励配额不可被后台直接修改
+ *
+ * 修改指引：
+ * - 【习惯】用户列表           → GET /api/admin/users，调 userService.findAll（排除超级管理员）；权限 OPERATOR+
+ *                        （SecurityConfig /api/admin/**），改动影响管理端可见用户范围
+ * - 【习惯】启用 / 禁用 / 锁定   → PUT /api/admin/users/{id}/status，调 userService.updateUserStatus；服务层拦截对管理员账号的操作
+ * - 【习惯】调整配额           → PUT /api/admin/users/{id}/quota，调 userService.updateUserQuota(adminBonusQuota)；
+ *                        基础配额与奖励配额不可直接修改
+ * - 【习惯】解锁用户           → PUT /api/admin/users/{id}/unlock，调 userService.unlockUser；并清零登录失败计数
+ * - 【习惯】重置密码           → PUT /api/admin/users/{id}/reset-password，调 userService.resetUserPassword；新密码需满足长度与复杂度校验
+ * - 【习惯】新增/修改接口       → 管理端权限由 SecurityConfig 控制（/api/admin/** OPERATOR+），敏感操作统一在
+ *                        userService 内做目标校验（不能操作管理员账号），改动需同步服务层与前端管理端 API 层
  */
 @RestController
 @RequestMapping("/api/admin/users")

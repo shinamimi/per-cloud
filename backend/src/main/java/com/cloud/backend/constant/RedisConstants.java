@@ -9,6 +9,14 @@ package com.cloud.backend.constant;
  * - lock:merge:{uploadId}           合并分布式锁
  * - share:pwd-fail:{token}          String：提取码错误计数（满 5 次锁定）
  * - share:pwd-ok:{token}            String：提取码验证通过标记（访问文件树/下载/转存前校验）
+ *
+ * 修改指引：
+ * - 【习惯】修改上传/合并状态前缀    → UPLOAD_META_PREFIX / UPLOAD_CHUNKS_PREFIX / UPLOADING_PREFIX / MERGE_LOCK_PREFIX；
+ *                             改前缀会使存量进行中的上传任务 Key 失效（断点续传与合并锁丢失），需评估存量数据
+ * - 【习惯】修改分享提取码校验前缀   → SHARE_PWD_FAIL_PREFIX / SHARE_PWD_OK_PREFIX；改前缀后存量校验标记失效，用户需重新验证提取码
+ * - 【习惯】修改下载去重前缀        → SHARE_DOWNLOAD_DEDUP_PREFIX；去重逻辑在 DownloadService 拼接使用，改前缀会重置当前去重窗口
+ * - 【习惯】调整锁定次数/ TTL      → 本类只定义前缀；"满 5 次锁定"写死在 ShareServiceImpl，TTL（24h/60s）写在常量注释，
+ *                             调整时需同步修改业务代码与该注释
  */
 public interface RedisConstants {
 

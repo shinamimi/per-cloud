@@ -16,6 +16,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * 2. 角色比较基于枚举 value 大小（USER=0 < OPERATOR=10 < ADMIN=20 < SUPER_ADMIN=100），
  *    而非 ordinal（声明顺序），保证新增角色时大小关系语义稳定
  * 3. 管理操作前统一调用 canManageUser 拦截对管理员账号的操作
+ *
+ * 修改指引：
+ * - 【习惯】新增权限判断方法        → 在类中新增静态方法；集中管理 SecurityContextHolder 读取与角色判断
+ * - 【习惯】修改角色大小关系        → isAdmin 中 value &gt;= ADMIN 判断；角色值定义于 enums/Role.java（USER=0/OPERATOR=10/ADMIN=20/SUPER_ADMIN=100）
+ * - 【习惯】修改管理操作拦截规则    → canManageUser；当前禁止操作 ADMIN / SUPER_ADMIN 账号，改动影响管理端操作安全
+ * - 【习惯】修改当前用户获取逻辑    → getCurrentUser / getCurrentUserId；principal 类型为 LoginUser，改动需同步认证流程
  */
 public class AuthorizationPolicy {
 
