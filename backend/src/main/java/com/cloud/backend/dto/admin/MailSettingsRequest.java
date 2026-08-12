@@ -7,11 +7,11 @@ import lombok.Data;
  * password 为空或等于脱敏占位符时表示不修改 SMTP 密码。
  *
  * 修改指引：
- * - 【习惯】修改单位             → frequencyLimit 单位为秒（邮件频率限制）；改动需同步邮件发送限流逻辑与前端
- * - 【习惯】修改 encryption       → String：STARTTLS / SSL / NONE；改动需同步邮件客户端初始化逻辑与前端下拉
- * - 【习惯】修改 password 语义    → 空/脱敏占位符 = 不更新 SMTP 密码；改动需同步 service 的脱敏判断，否则会误清密码
- * - 【习惯】修改 port             → Integer SMTP 端口；改动需同步邮件客户端连接配置
- * - 【习惯】修改 null 语义         → null 字段恢复配置默认值；改动需同步 service 的空值判断，否则会影响未传字段
+ * - 【统一】修改单位             → frequencyLimit 单位为秒（邮件频率限制）；改动需同步邮件发送限流逻辑与前端
+ * - 【统一】修改 encryption       → String：STARTTLS / SSL / NONE；改动需同步邮件客户端初始化逻辑与前端下拉
+ * - 【统一】修改 password 语义    → 空/脱敏占位符 = 不更新 SMTP 密码；改动需同步 service 的脱敏判断，否则会误清密码
+ * - 【统一】修改 port             → Integer SMTP 端口；改动需同步邮件客户端连接配置
+ * - 【统一】修改 null 语义         → null 字段恢复配置默认值；改动需同步 service 的空值判断，否则会影响未传字段
  */
 @Data
 public class MailSettingsRequest {

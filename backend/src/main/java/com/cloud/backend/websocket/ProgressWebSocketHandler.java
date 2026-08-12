@@ -21,11 +21,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * 见 file-module.md 11 节扩展预留）。消息格式：{type: "upload"|"download", ...业务字段}。
  *
  * 修改指引：
- * - 【习惯】修改消息格式            → broadcast 中的 {type, ...payload}；改动需同步前端解析与 file-module.md 消息格式约定
+ * - 【统一】修改消息格式            → broadcast 中的 {type, ...payload}；改动需同步前端解析与 file-module.md 消息格式约定；
+ *                             改后需同步前端解析与 file-module.md 消息格式约定
  * - 【习惯】修改广播范围/定向推送   → sessions 集合与 broadcast 循环；当前为单实例全量广播，多实例需改 Redis Pub/Sub
  * - 【习惯】修改连接生命周期处理    → afterConnectionEstablished / afterConnectionClosed / handleTransportError；
  *                             当前会话存于内存 CopyOnWriteArraySet，服务重启即失效
- * - 【习惯】新增业务推送类型        → 调用方以 type 区分（upload/download）；新增类型需在前端注册对应处理
+ * - 【统一】新增业务推送类型        → 调用方以 type 区分（upload/download）；新增类型需在前端注册对应处理；
+ *                             改后需同步调用方 type 取值与前端注册对应处理
  */
 @Component
 public class ProgressWebSocketHandler extends TextWebSocketHandler {

@@ -3,6 +3,11 @@
 # 所有配置必须通过环境变量注入，无默认值，auto-create-bucket 关闭
 # =============================================================================
 spring:
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 520MB
+
   datasource:
     url: ${MYSQL_URL}
     username: ${MYSQL_USER}

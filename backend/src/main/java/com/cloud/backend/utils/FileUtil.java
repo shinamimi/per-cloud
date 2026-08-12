@@ -18,12 +18,15 @@ import java.util.Set;
  * categoryOf 用于 t_file.category 分类（图片/文档/视频/音频/压缩包/其他）。
  *
  * 修改指引：
- * - 【习惯】新增/移除允许上传的扩展名 → ALLOWED_EXTENSIONS；影响上传白名单校验（isAllowed）
+ * - 【统一】新增/移除允许上传的扩展名 → ALLOWED_EXTENSIONS；影响上传白名单校验（isAllowed）；
+ *                             改后需同步前端上传扩展名校验、getMimeType 映射与分类 Set（IMAGE/DOCUMENT 等）
  * - 【习惯】新增 MIME 类型映射      → getMimeType 的 switch 分支；影响上传到 MinIO 的对象 Content-Type
- * - 【习惯】修改文件分类规则        → IMAGE/DOCUMENT/VIDEO/AUDIO/ARCHIVE/TEXT 各 Set 与 categoryOf；
- *                             影响 t_file.category 分类与搜索类型过滤，需与 FileConstants 分类编号保持一致
- * - 【习惯】修改同名文件唯一命名    → resolveUniqueName（含 stripSuffix/getExtensionPart）；
- *                             命名规则须与唯一索引 uk_user_parent_name 一致，改动影响删除/恢复流程重名处理
+ * - 【统一】修改文件分类规则        → IMAGE/DOCUMENT/VIDEO/AUDIO/ARCHIVE/TEXT 各 Set 与 categoryOf；
+ *                             影响 t_file.category 分类与搜索类型过滤，需与 FileConstants 分类编号保持一致；
+ *                             改后需同步 FileConstants 分类编号、t_file.category 存量数据与前端搜索类型过滤
+ * - 【统一】修改同名文件唯一命名    → resolveUniqueName（含 stripSuffix/getExtensionPart）；
+ *                             命名规则须与唯一索引 uk_user_parent_name 一致，改动影响删除/恢复流程重名处理；
+ *                             改后需同步唯一索引 uk_user_parent_name 与删除/恢复流程重名处理
  * - 【习惯】修改大小格式化          → formatSize；影响管理端/前端展示的容量文案
  */
 public class FileUtil {

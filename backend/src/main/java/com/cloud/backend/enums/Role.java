@@ -15,11 +15,14 @@ import lombok.Getter;
  * 但由于枚举声明顺序与 value 递增一致，代码中用 getValue() 而非 ordinal() 判断大小）。
  *
  * 修改指引：
- * - 【习惯】新增枚举值        → 在枚举末尾追加常量（value 取未占用的递增档位）；只能追加在末尾（EnumOrdinalTypeHandler
- *                       按 ordinal 存库），且 value 决定权限高低，需确认权限判断（getValue() 比较）符合预期
- * - 【习惯】重命名枚举值      → 修改常量名；DB 按 ordinal 映射不受影响，同步修改引用处即可
- * - 【习惯】修改 value       → 常量括号内数值；直接影响权限比较（getValue() 大小判断），必须保持声明顺序与 value 递增一致
- * - 【习惯】调整声明顺序      → 禁止；存量 t_user.role 按 ordinal 存库，调序会导致用户角色错乱
+ * - 【统一】新增枚举值        → 在枚举末尾追加常量（value 取未占用的递增档位）；只能追加在末尾（EnumOrdinalTypeHandler
+ *                       按 ordinal 存库），且 value 决定权限高低，需确认权限判断（getValue() 比较）符合预期；
+ *                       改后需同步 DB 存量数据、EnumOrdinalTypeHandler 与权限判断（getValue() 比较）
+ * - 【统一】重命名枚举值      → 修改常量名；DB 按 ordinal 映射不受影响，同步修改引用处即可；改后需同步引用处
+ * - 【统一】修改 value       → 常量括号内数值；直接影响权限比较（getValue() 大小判断），必须保持声明顺序与 value 递增一致；
+ *                       改后需同步权限判断（getValue() 比较）与声明顺序（ordinal）
+ * - 【统一】调整声明顺序      → 禁止；存量 t_user.role 按 ordinal 存库，调序会导致用户角色错乱；
+ *                       改后需同步 t_user.role DB 存量数据与 EnumOrdinalTypeHandler
  */
 @Getter
 public enum Role {
@@ -29,6 +32,7 @@ public enum Role {
     ADMIN(20),
     SUPER_ADMIN(100);
 
+    /** 【统一】改后需同步 DB 存量数据、EnumOrdinalTypeHandler 与权限判断（getValue() 比较） */
     private final int value;
 
     Role(int value) {

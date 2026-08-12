@@ -9,10 +9,10 @@ import jakarta.validation.constraints.Size;
  * 创建团队 —— 入参
  *
  * 修改指引：
- * - 【习惯】修改 name            → String name；团队名称，必填，@Size 上限 64 字符；请求体字段名对应 POST /api/teams 入参
- * - 【习惯】修改 description     → String description；团队描述，可空，@Size 上限 512 字符
- * - 【习惯】修改 avatar          → String avatar；团队头像
- * - 【习惯】修改校验注解 @NotBlank/@Size → 改上限会影响前端表单 maxlength 与接口契约；空名校验改动影响必填契约
+ * - 【统一】修改 name            → String name；团队名称，必填，@Size 上限 64 字符；请求体字段名对应 POST /api/teams 入参；改名需同步前端 API 层与 Service 组装
+ * - 【统一】修改 description     → String description；团队描述，可空，@Size 上限 512 字符；改名需同步前端 API 层与 Service 组装
+ * - 【统一】修改 avatar          → String avatar；团队头像；改名需同步前端 API 层与 Service 组装
+ * - 【统一】修改校验注解 @NotBlank/@Size → 改上限会影响前端表单 maxlength 与接口契约；空名校验改动影响必填契约；改后需同步前端表单 maxlength 与必填契约
  */
 @Data
 public class TeamCreateRequest {

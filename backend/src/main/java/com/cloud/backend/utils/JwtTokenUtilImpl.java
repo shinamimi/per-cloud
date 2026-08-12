@@ -20,10 +20,13 @@ import java.util.Date;
  *    调整配置后新签发的 Token 立即生效
  *
  * 修改指引：
- * - 【习惯】修改签名算法/密钥       → 构造器中 Keys.hmacShaKeyFor(...)；密钥来自 JwtProperties.secret，
- *                             更换密钥会使存量 Token 全部失效（所有用户需重新登录）
- * - 【习惯】修改签发 claim          → generateToken 中的 subject / role claim；须与 getUsernameFromToken / getRoleFromToken 解析保持一致
- * - 【习惯】修改签发者校验          → parseClaims 中 requireIssuer(jwtProperties.getIssuer())；改动影响跨环境 Token 混用防护
+ * - 【统一】修改签名算法/密钥       → 构造器中 Keys.hmacShaKeyFor(...)；密钥来自 JwtProperties.secret，
+ *                             更换密钥会使存量 Token 全部失效（所有用户需重新登录）；
+ *                             改后需同步 JwtProperties.secret 配置（密钥格式/长度与算法匹配）与存量 Token 失效评估
+ * - 【统一】修改签发 claim          → generateToken 中的 subject / role claim；须与 getUsernameFromToken / getRoleFromToken 解析保持一致；
+ *                             改后需同步解析逻辑（getUsernameFromToken / getRoleFromToken）
+ * - 【统一】修改签发者校验          → parseClaims 中 requireIssuer(jwtProperties.getIssuer())；改动影响跨环境 Token 混用防护；
+ *                             改后需同步 generateToken 签发的 issuer 与 JwtProperties.issuer 配置
  * - 【习惯】修改有效期来源          → getExpirationMs；当前实时读管理端配置 getAccessTokenTtlMs，改动后新签发 Token 立即生效
  */
 @Component

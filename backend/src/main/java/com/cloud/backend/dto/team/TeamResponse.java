@@ -10,14 +10,14 @@ import lombok.Data;
  * myRole：当前用户在该团队中的角色（MEMBER/ADMIN/OWNER），便于前端权限控制。
  *
  * 修改指引：
- * - 【习惯】修改 id              → Long id；团队 id
+ * - 【统一】修改 id              → Long id；团队 id；改名需同步前端团队操作与 TeamService
  * - 【习惯】修改 name / avatar / description → 团队基本资料，仅展示用
  * - 【习惯】修改 ownerId / ownerName → 团队所有者 id 与昵称；前端据此展示所有者标识
  * - 【习惯】修改 quota / usedSpace → Long quota / Long usedSpace；团队配额与已用空间，单位：字节（非 KB/MB），
  *                         前端展示需换算并计算剩余空间；usedSpace 超 quota 时前端需展示超量状态
  * - 【习惯】修改 memberCount     → Long memberCount；成员数，前端列表/详情展示
- * - 【习惯】修改 myRole          → TeamMemberRole myRole；当前用户在该团队的角色（enums/TeamMemberRole.java：
- *                         MEMBER=0 / ADMIN=10 / OWNER=20），前端据此控制成员管理/解散/退出按钮显隐
+ * - 【统一】修改 myRole          → TeamMemberRole myRole；当前用户在该团队的角色（enums/TeamMemberRole.java：
+ *                         MEMBER=0 / ADMIN=10 / OWNER=20），前端据此控制成员管理/解散/退出按钮显隐；改后需同步 enums/TeamMemberRole.java 与前端权限按钮显隐
  * - 【习惯】修改 createdAt       → String createdAt；创建时间（字符串类型，非时间对象）
  */
 @Data

@@ -27,11 +27,13 @@ import java.util.stream.Collectors;
  * 修改指引：
  * - 【习惯】新增异常类型捕获        → 新增 @ExceptionHandler(XxxException.class) 方法；
  *                             注意与现有处理器的匹配粒度（子类异常会被更具体的处理器拦截），避免重复兜底
- * - 【习惯】修改业务异常返回格式    → handleBusinessException；改动影响所有业务异常返回给前端的 code/message
+ * - 【统一】修改业务异常返回格式    → handleBusinessException；改动影响所有业务异常返回给前端的 code/message；
+ *                             改后需同步前端契约（code/message 语义）与 Result 结构
  * - 【习惯】修改参数校验消息拼接    → handleMethodArgumentNotValidException / handleConstraintViolationException；
  *                             改动影响 @Valid 与参数约束校验失败时返回的文案格式
  * - 【习惯】修改兜底 500 行为       → handleException；当前暴露 e.getMessage()，生产环境建议改为固定文案并仅服务端记录完整堆栈
- * - 【习惯】新增通用响应字段        → 需同步修改 Result<T> 结构与各 handler 的组装逻辑
+ * - 【统一】新增通用响应字段        → 需同步修改 Result<T> 结构与各 handler 的组装逻辑；
+ *                             改后需同步 Result<T> 结构、各 handler 组装逻辑与前端解析
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

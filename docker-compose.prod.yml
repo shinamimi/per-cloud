@@ -1,0 +1,128 @@
+# =============================================================================
+# Cloud 云盘 — 生产环境 Docker Compose（腾讯云轻量 2C2G 适配）
+# 服务：MySQL + Redis + MinIO + Backend + Frontend(Nginx)
+#
+# 与 dev 的差异：
+# 1. 所有服务加内存限制（mem_limit），适配 2C2G 轻量机
+# 2. MySQL 初始化只挂 init-full.sql（全量建表），不再执行散装 migration
+# 3. minio 暴露公网 9000（浏览器直连 presigned URL），控制台 9001 走公网或内网
+# 4. backend/frontend 使用 Dockerfile 构建镜像，prod profile 全部环境变量注入
+# 5. MySQL/Redis 端口只映射到 127.0.0.1，不对外暴露（减少攻击面）
+#
+# 启动：docker compose -f docker-compose.prod.yml up -d --build
+# 升级：重新构建后再 up -d（MySQL 数据在 volume 中持久化，不丢失）
+# =============================================================================
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: cloud-mysql
+    restart: unless-stopped
+    env_file:
+      - ./docker/prod.env
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+      - --innodb-log-buffer-size=16M
+      - --max-connections=100
+      - --performance-schema=0
+    ports:
+      - "127.0.0.1:3306:3306"          # 仅本机可连，便于运维调试
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql/init-full.sql:/docker-entrypoint-initdb.d/00-init-full.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    mem_limit: 800m
+    cpus: 1.0
+    networks:
+      - cloud-network
+
+  redis:
+    image: redis:7.2
+    container_name: cloud-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "127.0.0.1:6379:6379"          # 仅本机可连
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 200m
+    cpus: 0.2
+    networks:
+      - cloud-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: cloud-minio
+    restart: unless-stopped
+    env_file:
+      - ./docker/prod.env
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"                    # API：公网开放（浏览器直连 presigned URL，腾讯云安全组需放行）
+      - "127.0.0.1:9001:9001"          # Console：仅本机访问，走 SSH 隧道
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 640m
+    cpus: 0.8
+    networks:
+      - cloud-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cloud-backend
+    restart: unless-stopped
+    env_file:
+      - ./docker/prod-backend.env
+    ports:
+      - "127.0.0.1:8081:8081"          # 暂时保留本机映射，Nginx 反代走后不用可移除
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    mem_limit: 700m
+    cpus: 1.0
+    networks:
+      - cloud-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: cloud-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"                        # 对外唯一入口（微信/小程序等后续可加 443）
+    depends_on:
+      - backend
+    mem_limit: 128m
+    cpus: 0.2
+    networks:
+      - cloud-network
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:
+
+networks:
+  cloud-network:
+    driver: bridge

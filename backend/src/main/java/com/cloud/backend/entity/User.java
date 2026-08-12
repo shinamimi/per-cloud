@@ -22,19 +22,26 @@ import java.time.LocalDateTime;
  * 修改指引：
  * - 【习惯】修改 id / nickname / avatar → Long id（t_user.id 主键）/ String nickname（nickname）/ String avatar（avatar）；
  *                            仅展示，无业务联动
- * - 【习惯】修改 username / email → String username（t_user.username）/ String email（email）；两者均有唯一约束，
- *                            改字段名/长度需同步 DDL，并联动登录与找回密码逻辑
- * - 【习惯】修改 password         → String password；对应 t_user.password，BCrypt 加密存储，改加密策略需联动认证逻辑
- * - 【习惯】修改 role             → Role role；对应 t_user.role（TINYINT），USER=0/OPERATOR=10/ADMIN=20/SUPER_ADMIN=100
- *                            （见 enums/Role.java，按 ordinal 存库、按 value 判断权限大小），改枚举见 Role 修改指引
- * - 【习惯】修改 quota / usedSpace → Long quota（t_user.quota 基础配额）/ Long usedSpace（used_space 已用空间）；单位字节，
+ * - 【统一】修改 username / email → String username（t_user.username）/ String email（email）；两者均有唯一约束，
+ *                            改字段名/长度需同步 DDL，并联动登录与找回密码逻辑；
+ *                            改后需同步 DDL 唯一约束、登录校验与找回密码逻辑
+ * - 【统一】修改 password         → String password；对应 t_user.password，BCrypt 加密存储，改加密策略需联动认证逻辑；
+ *                            改后需同步认证/登录逻辑与存量密码校验方式
+ * - 【统一】修改 role             → Role role；对应 t_user.role（TINYINT），USER=0/OPERATOR=10/ADMIN=20/SUPER_ADMIN=100
+ *                            （见 enums/Role.java，按 ordinal 存库、按 value 判断权限大小），改枚举见 Role 修改指引；
+ *                            改后需同步 DB 存量数据、TypeHandler 存储与权限判断逻辑
+ * - 【统一】修改 quota / usedSpace → Long quota（t_user.quota 基础配额）/ Long usedSpace（used_space 已用空间）；单位字节，
  *                            配额三来源模型（base + adminBonusQuota + rewardQuota）在 UserServiceImpl 计算，
- *                            上传/删除时更新 usedSpace
- * - 【习惯】修改 status           → UserStatus status；对应 t_user.status（TINYINT），NORMAL=1/DISABLED=0/LOCKED=2/INACTIVE=3
- *                            （见 enums/UserStatus.java，按 ordinal 存库），LoginUser.isEnabled() 依据它，改枚举见 UserStatus 修改指引
- * - 【习惯】修改 isVip            → Boolean isVip；对应 t_user.is_vip（TINYINT），影响 baseQuota 档位（普通/VIP）计算
- * - 【习惯】修改 adminBonusQuota / rewardQuota → Long adminBonusQuota（admin_bonus_quota 管理员赠送，默认 0）/
- *                            Long rewardQuota（reward_quota 奖励，默认 0）；均为字节单位，累加到总配额
+ *                            上传/删除时更新 usedSpace；
+ *                            改后需同步 UserServiceImpl 配额计算与上传/删除更新 usedSpace 的逻辑（单位字节口径一致）
+ * - 【统一】修改 status           → UserStatus status；对应 t_user.status（TINYINT），NORMAL=1/DISABLED=0/LOCKED=2/INACTIVE=3
+ *                            （见 enums/UserStatus.java，按 ordinal 存库），LoginUser.isEnabled() 依据它，改枚举见 UserStatus 修改指引；
+ *                            改后需同步 DB 存量数据、TypeHandler 存储与 LoginUser.isEnabled() 判断
+ * - 【统一】修改 isVip            → Boolean isVip；对应 t_user.is_vip（TINYINT），影响 baseQuota 档位（普通/VIP）计算；
+ *                            改后需同步 baseQuota 档位计算逻辑
+ * - 【统一】修改 adminBonusQuota / rewardQuota → Long adminBonusQuota（admin_bonus_quota 管理员赠送，默认 0）/
+ *                            Long rewardQuota（reward_quota 奖励，默认 0）；均为字节单位，累加到总配额；
+ *                            改后需同步 UserServiceImpl 总配额累加逻辑（单位字节口径一致）
  * - 【习惯】修改 createdAt / updatedAt → LocalDateTime；自动维护，无业务联动
  */
 @Data

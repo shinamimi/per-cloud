@@ -13,10 +13,11 @@ package com.cloud.backend.utils;
  * - packages/{taskId}.zip                        打包
  *
  * 修改指引：
- * - 【习惯】新增对象路径结构        → 新增方法并遵循 user/{userId}/{uuid}/{文件名} 等既有前缀约定；
- *                             改动需同步 MinIO 存储、下载/预览/清理逻辑与 file-module.md 文档
- * - 【习惯】修改路径层级/前缀       → objectName / uploadChunkObject / fileObject / thumbnailObject / packageObject；
- *                             改前缀会使存量对象路径失效，需评估迁移与兼容
+ * - 【统一】新增对象路径结构        → 新增方法并遵循 user/{userId}/{uuid}/{文件名} 等既有前缀约定；
+ *                             改动需同步 MinIO 存储、下载/预览/清理逻辑与 file-module.md 文档；
+ *                             改后需同步 MinIO 存储、下载/预览/清理逻辑与 file-module.md 文档
+ * - 【统一】修改路径层级/前缀       → objectName / uploadChunkObject / fileObject / thumbnailObject / packageObject；
+ *                             改前缀会使存量对象路径失效，需评估迁移与兼容；改后需同步存量 MinIO 对象迁移与下载/预览/清理逻辑
  * - 【习惯】修改 ID 生成方式        → uuid / simpleUUID；当前使用 UUID，改动影响所有新建记录的主键取值
  */
 public class IdUtil {

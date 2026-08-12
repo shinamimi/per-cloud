@@ -37,15 +37,15 @@ public class SuperAdminInitializer implements ApplicationRunner {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
-    /** 超级管理员用户名（配置项 super-admin.username） */
+    /** 【统一】改后需同步 yml super-admin.username+读取方(SuperAdminInitializer run())（无单位，用户名字符串） */
     @Value("${super-admin.username}")
     private String superAdminUsername;
 
-    /** 超级管理员密码（配置项 super-admin.password，仅在初始化/补齐时使用） */
+    /** 【统一】改后需同步 yml super-admin.password+读取方(SuperAdminInitializer run())（无单位，明文密码） */
     @Value("${super-admin.password}")
     private String superAdminPassword;
 
-    /** 超级管理员邮箱（配置项 super-admin.email） */
+    /** 【统一】改后需同步 yml super-admin.email+读取方(SuperAdminInitializer run())（无单位，邮箱地址） */
     @Value("${super-admin.email}")
     private String superAdminEmail;
 

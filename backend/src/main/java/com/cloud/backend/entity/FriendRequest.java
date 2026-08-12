@@ -13,11 +13,13 @@ import java.time.LocalDateTime;
  *
  * 修改指引：
  * - 【习惯】修改 id                 → Long id；对应 t_friend_request.id 主键，无业务联动
- * - 【习惯】修改 fromUserId / toUserId → Long fromUserId（t_friend_request.from_user_id 发起方）/ Long toUserId（to_user_id 接收方）；
- *                            唯一索引 uk_from_to(from_user_id, to_user_id) 约束同一对请求唯一，改字段名需同步 DDL
- * - 【习惯】修改 status             → FriendRequestStatus status；对应 t_friend_request.status（VARCHAR 存枚举名称），
+ * - 【统一】修改 fromUserId / toUserId → Long fromUserId（t_friend_request.from_user_id 发起方）/ Long toUserId（to_user_id 接收方）；
+ *                            唯一索引 uk_from_to(from_user_id, to_user_id) 约束同一对请求唯一，改字段名需同步 DDL；
+ *                            改后需同步 DB 列与 uk_from_to 唯一索引 DDL、查重逻辑
+ * - 【统一】修改 status             → FriendRequestStatus status；对应 t_friend_request.status（VARCHAR 存枚举名称），
  *                            PENDING=待接受 / ACCEPTED=已接受 / REJECTED=已拒绝（见 enums/FriendRequestStatus.java）；
- *                            状态机流转（接受写 t_friendship、拒绝可重发）在好友 Service 层，改枚举见 FriendRequestStatus 修改指引
+ *                            状态机流转（接受写 t_friendship、拒绝可重发）在好友 Service 层，改枚举见 FriendRequestStatus 修改指引；
+ *                            改后需同步 DB 存量数据、好友 Service 状态机与枚举名称映射
  * - 【习惯】修改 createdAt          → LocalDateTime createdAt；自动维护，无业务联动
  */
 @Data

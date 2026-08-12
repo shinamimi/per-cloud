@@ -16,6 +16,7 @@ cloud/
 ├── docs/                 # 全部设计/规范文档 + 决策记录(ADR) + 学习笔记
 ├── docker/               # Docker Compose 环境变量
 ├── docker-compose.yml    # 基础设施编排（MySQL + Redis + MinIO）
+├── docker-compose.prod.yml # 生产编排（MySQL/Redis/MinIO/Backend/Frontend，2C2G 适配）
 ├── start-dev.sh          # 一键启动脚本
 ├── .env                  # SMTP 等敏感环境变量（已 gitignore）
 ├── .gitignore
@@ -29,7 +30,10 @@ cloud/
 | 文件/目录 | 作用 |
 | --- | --- |
 | `docker-compose.yml` | 编排开发环境：MySQL 8.4 + Redis 7.2 + MinIO（各带 healthcheck、Volume 持久化、共享 `cloud-network` 网络；`sql/` 映射进 MySQL 首次启动自动导入建表脚本） |
+| `docker-compose.prod.yml` | 编排生产环境：MySQL + Redis + MinIO + Backend + Frontend(Nginx)；全服务内存限制、MySQL 只挂 `sql/init-full.sql`、MinIO 9000 公网暴露、`prod.env`/`prod-backend.env` 注入，适配 2C2G |
 | `docker/.env` | Compose 用环境变量（MySQL/Redis/MinIO 账号密码、端口），仅本地开发用，可提交 |
+| `docker/prod.env` | 生产基础设施变量（MySQL/MinIO 强密码、容器主机名），**已 gitignore**，上传服务器前替换 |
+| `docker/prod-backend.env` | 生产后端变量（对应 `application-prod.yml` 全部 `${VAR}`，含 JWT 密钥、SMTP、MinIO 公网地址），**已 gitignore** |
 | `.env` | 根目录敏感配置（SMTP 账号/密码/发件人、时区），**已被 gitignore**，仅供后端启动加载 |
 | `start-dev.sh` | 一键启动：1) docker compose 起基础设施 → 2) `./mvnw spring-boot:run` 起后端并轮询等待就绪 → 3) `npm run dev` 起前端；Ctrl+C 全部停止 |
 | `sql/` | 数据库脚本（见 §7） |
@@ -544,14 +548,16 @@ HTTP 请求
 | Spring Boot | config/ + CloudBackendApplication + resources/application*.yml |
 | Spring Security | config/SecurityConfig + security/ |
 | MyBatis | mapper/ + resources/mapper/*.xml + config/MyBatisTypeHandlerConfig |
-| MySQL | sql/ + docker-compose.yml |
+| MySQL | sql/ + docker-compose.yml + sql/init-full.sql（生产全量建表） |
 | Redis | constant/RedisConstants + 各 Service 的 StringRedisTemplate 使用 |
 | MinIO | config/MinioConfig + service/file/StorageService(Impl) + utils/IdUtil 对象路径 |
 | Vue 3 | frontend/src（main.ts、views/、components/） |
 | TypeScript | frontend 全部 .ts + .vue `<script setup lang="ts">` |
 | Element Plus | main.ts 全局挂载 + 各页面 `<el-*>` 组件 |
 | WebSocket | config/WebSocketConfig + websocket/ProgressWebSocketHandler + frontend/src/utils/ws.ts |
-| Docker Compose | docker-compose.yml + docker/.env |
+| Docker Compose | docker-compose.yml（dev）+ docker-compose.prod.yml（生产，适配 2C2G） |
+| 部署 | backend/Dockerfile + frontend/Dockerfile + frontend/nginx.conf + docker/prod.env + docker/prod-backend.env |
+| 部署文档 | docs/DEPLOYMENT.md |
 
 ---
 

@@ -8,22 +8,24 @@ package com.cloud.backend.bo;
  * 2. 总配额为 0 时使用率按 0 处理（除零保护），避免前端展示异常
  *
  * 修改指引：
- * - 【习惯】新增统计指标            → 新增字段 + 构造器参数；聚合来源需在 DashboardService（管理后台查询）同步补充
+ * - 【统一】新增统计指标            → 新增字段 + 构造器参数；聚合来源需在 DashboardService（管理后台查询）同步补充；
+ *                             改后需同步 DashboardService 聚合来源（管理后台查询）
  * - 【习惯】修改使用率计算方式      → usagePercent 计算公式在构造器中；当前为 totalSize/totalQuota*100，改动影响管理端仪表盘展示
  * - 【习惯】修改除零保护行为        → 构造器中 totalQuota > 0 判断；当前配额为 0 时使用率按 0 处理
- * - 【习惯】修改字段类型/单位       → 各字段当前均为 long（字节）；改动需同步统计查询 SQL 与前端展示单位
+ * - 【统一】修改字段类型/单位       → 各字段当前均为 long（字节）；改动需同步统计查询 SQL 与前端展示单位；
+ *                             改后需同步统计查询 SQL 与前端展示单位
  */
 public class AdminDashboardStatsBO {
 
-    /** 用户总数 */
+    /** 用户总数；【统一】改后需同步 DashboardService 聚合来源（管理后台查询） */
     private long userCount;
-    /** 文件总数（含目录） */
+    /** 文件总数（含目录）；【统一】改后需同步 DashboardService 聚合来源（管理后台查询） */
     private long fileCount;
-    /** 全部文件占用空间总和（单位：字节） */
+    /** 全部文件占用空间总和（单位：字节）；【统一】改后需同步 DashboardService 聚合来源（管理后台查询）与统计查询 SQL/前端展示单位 */
     private long totalSize;
-    /** 全部用户配额总和（单位：字节） */
+    /** 全部用户配额总和（单位：字节）；【统一】改后需同步 DashboardService 聚合来源（管理后台查询）与统计查询 SQL/前端展示单位 */
     private long totalQuota;
-    /** 整体配额使用率（百分比，0~100） */
+    /** 整体配额使用率（百分比，0~100）；【统一】改后需同步 DashboardService 聚合来源（管理后台查询） */
     private double usagePercent;
 
     /**

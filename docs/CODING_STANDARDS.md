@@ -230,11 +230,17 @@ backend/src/main/java/com/cloud/backend/
 
 - **修改指引表必写**：把"想改什么 → 改哪一行"列全，字段名这一行必须补充字段的类型来源与取值说明（如"自定义枚举 OperationType，取值 LOGIN/UPLOAD_FILE，定义于 enums/OperationType.java"），避免只有字段名无法定位
 - 每一行说明"修改后影响什么"（如改为 CLASS 即无法用切面方法拦截）
-- **每条指引必须以 `【固定】` 或 `【习惯】` 开头标注约束性质**：
+- **每条指引必须以 `【固定】`、`【统一】` 或 `【习惯】` 开头标注约束性质**：
   - `【固定】`：**仅指 Java/Spring 框架固定的名称**，由编译期或框架契约强制，无法改名——改名即编译失败或框架找不到。典型：
     - Java 关键字与标准 API 名：`main`、`run()`、`equals/hashCode/toString`、JavaBeans 访问器 `getXxx()/isXxx()`、`@interface`、标准注解名（`@Override`、`@Target`、`@Retention`）与常量（`ElementType.METHOD`、`RetentionPolicy.RUNTIME`）
     - Spring 框架名：注解名（`@Service`、`@RestController`、`@Transactional`、`@Bean`、`@Value`、`@Scheduled`、`@Async`、`@ExceptionHandler` 等）、框架要求覆写的方法名（`doFilterInternal()`、`loadUserByUsername()`、`configure()`、`addCorsMappings()` 等）、`spring.*`/`server.*` 配置键、`application.yml`/`application-{profile}.yml` 文件名
-  - `【习惯】`：**其余全部**，包括项目自身定义的名称与一切项目机制——自定义类/字段/方法名、自定义注解名（如 `@Log`）、枚举与取值、DTO 字段、数据库表/列/索引、Redis Key、自有 yml 键（`file.*`/`jwt.*`/`minio.*` 等）、业务规则、事务边界、单位约定、接口契约等。项目自己导致的"必须同步"，哪怕违反会出 Bug，也**不标【固定】**
+  - `【统一】`：**项目自定义的名称/取值，违反一致性会导致 Bug**（改一处不同步他处 → 运行时出错、数据错乱、契约断裂）。**必须说明"如何统一"**——即在指引中指出需要同步维护的关联位置（常量 ↔ 使用处、枚举 ↔ 存储/TypeHandler、DTO ↔ 前端契约、Redis Key ↔ Service、自有 yml 键 ↔ Properties 类等）。典型：
+    - 常量与使用处：改 `FileConstants.DEFAULT_QUOTA` 需同步所有读取方
+    - 枚举与存储/处理器：改枚举声明顺序/名称需同步 DB 存量数据、`MyBatisTypeHandlerConfig` 注册、`fromValue` 兜底
+    - 自有 yml 键：改 `jwt.expiration` 需同步 `JwtProperties` 字段与读取方
+    - Redis Key 前缀：改 `RedisConstants.SHARE_PWD_FAIL_PREFIX` 需同步 Service 读写处
+    - DTO/接口契约：改字段名需同步前端 API 层与 Service 组装
+  - `【习惯】`：**其余全部**——团队约定或推荐做法，不遵守不影响正确性（命名风格、代码放置位置、日志文案、调优数值如大小上限/有效期/保留天数等）。即使"建议同步"，也**不标【统一】**
 
 **② @Target 可选值速查表（通用模板，按需引用）**
 

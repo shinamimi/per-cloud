@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
  * userName/teamName 由服务层填充（展示归属）。
  *
  * 修改指引：
- * - 【习惯】修改响应字段名/类型    → 字段为前端回收站列表取值依据，改动需同步 AdminRecycleService 的组装（from()）与前端
- * - 【习惯】修改 type             → Integer 回收站记录类型；改动需同步删除/恢复逻辑与前端类型展示
- * - 【习惯】修改 size 单位         → 当前为 Long 字节，前端需换算展示；改动影响回收站容量列展示
+ * - 【统一】修改响应字段名/类型    → 字段为前端回收站列表取值依据；改后需同步 AdminRecycleService 的 from() 与前端
+ * - 【统一】修改 type             → Integer 回收站记录类型；改后需同步删除/恢复逻辑与前端类型展示
+ * - 【统一】修改 size 单位         → 当前为 Long 字节，前端需换算展示；改后需同步前端单位换算与回收站容量列展示
  * - 【习惯】修改 userName/teamName → 由服务层填充；改动需同步填充逻辑，否则返回 null
- * - 【习惯】修改 deletedTime/expireTime → LocalDateTime 删除/过期时间，前端用于恢复窗口展示；改动需同步查询 SQL
+ * - 【统一】修改 deletedTime/expireTime → LocalDateTime 删除/过期时间，前端用于恢复窗口展示；改后需同步查询 SQL 与前端
  */
 @Data
 public class AdminRecycleResponse {

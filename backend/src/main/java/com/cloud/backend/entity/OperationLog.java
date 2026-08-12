@@ -18,12 +18,14 @@ import java.time.LocalDateTime;
  *
  * 修改指引：
  * - 【习惯】修改 id / userId        → Long id（t_operation_log.id 主键）/ Long userId（user_id，0=系统/匿名）；仅审计查询
- * - 【习惯】修改 operation          → OperationType operation；对应 t_operation_log.operation（VARCHAR 存枚举名称），
+ * - 【统一】修改 operation          → OperationType operation；对应 t_operation_log.operation（VARCHAR 存枚举名称），
  *                            取值 LOGIN/UPLOAD_FILE/DELETE_FILE 等（见 enums/OperationType.java），
- *                            由 @Log 注解 + OperationLogAspect 切面写入，改枚举见 OperationType 修改指引
- * - 【习惯】修改 targetType / targetId → TargetType targetType（t_operation_log.target_type，VARCHAR 存枚举名称，
+ *                            由 @Log 注解 + OperationLogAspect 切面写入，改枚举见 OperationType 修改指引；
+ *                            改后需同步 DB 存量数据与 @Log 注解/OperationLogAspect 切面写入处
+ * - 【统一】修改 targetType / targetId → TargetType targetType（t_operation_log.target_type，VARCHAR 存枚举名称，
  *                            USER/FILE/SHARE/TEAM，见 enums/TargetType.java）/ Long targetId（target_id）；关联操作对象，
- *                            改枚举见 TargetType 修改指引
+ *                            改枚举见 TargetType 修改指引；
+ *                            改后需同步 DB 存量数据与 @Log 注解/切面写入处
  * - 【习惯】修改 detail             → String detail；对应 t_operation_log.detail（VARCHAR(500)），操作详情描述，仅展示
  * - 【习惯】修改 ip / userAgent     → String ip（t_operation_log.ip）/ String userAgent（user_agent）；安全审计来源信息，仅展示
  * - 【习惯】修改 createdAt          → LocalDateTime createdAt；自动维护，无业务联动

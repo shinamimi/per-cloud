@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
  * 操作日志筛选条件 DTO —— 后台日志查询的可选过滤项，全部字段缺省时查询全部。
  *
  * 修改指引：
- * - 【习惯】修改筛选字段名/类型    → userId（操作者）、operation、targetType、startTime/endTime（时间区间，含上下限）；
+ * - 【统一】修改筛选字段名/类型    → userId（操作者）、operation、targetType、startTime/endTime（时间区间，含上下限）；
  *                           字段为后台日志查询接口入参，改动需同步日志查询 SQL 与前端筛选条件
- * - 【习惯】修改 operation         → 自定义枚举 OperationType（enums/OperationType.java，取值 LOGIN/UPLOAD_FILE 等）；
+ * - 【统一】修改 operation         → 自定义枚举 OperationType（enums/OperationType.java，取值 LOGIN/UPLOAD_FILE 等）；
  *                           改动需同步枚举定义与前端类型筛选下拉
- * - 【习惯】修改 targetType        → 自定义枚举 TargetType（enums/TargetType.java：USER/FILE/SHARE/TEAM）；
+ * - 【统一】修改 targetType        → 自定义枚举 TargetType（enums/TargetType.java：USER/FILE/SHARE/TEAM）；
  *                           改动需同步枚举定义与前端类型筛选下拉
- * - 【习惯】修改时间区间语义       → startTime/endTime 为含边界过滤（>= / <=）；改动影响区间查询结果，需同步 SQL 与前端
- * - 【习惯】新增筛选项            → 新增字段并同步日志查询 SQL 与前端，否则该条件不生效
+ * - 【统一】修改时间区间语义       → startTime/endTime 为含边界过滤（>= / <=）；改动影响区间查询结果，需同步 SQL 与前端
+ * - 【统一】新增筛选项            → 新增字段并同步日志查询 SQL 与前端，否则该条件不生效
  */
 public class LogFilterRequest {
 
