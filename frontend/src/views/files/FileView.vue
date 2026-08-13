@@ -108,6 +108,7 @@ import PreviewDialog from '@/components/file/PreviewDialog.vue'
 import MoveCopyDialog from '@/components/file/MoveCopyDialog.vue'
 import TransferQueue from '@/components/file/TransferQueue.vue'
 import ShareCreateDialog from '@/components/share/ShareCreateDialog.vue'
+import { copyText } from '@/utils/clipboard'
 import type { FileCategory, FileItem } from '@/types/file'
 import type { ShareItem } from '@/types/share'
 
@@ -211,12 +212,13 @@ function handleShare(file: FileItem) {
 
 function handleShareCreated(share: ShareItem) {
   const link = `${location.origin}${location.pathname}#/s/${share.shareToken}`
-  navigator.clipboard?.writeText(link).catch(() => {})
-  ElMessageBox.alert(
-    `分享链接（已复制到剪贴板）：\n${link}\n\n提取码：${share.requirePassword ? '已设置（创建时填写的密码）' : '无'}`,
-    '分享成功',
-    { confirmButtonText: '知道了' },
-  ).catch(() => {})
+  copyText(link).then(() =>
+    ElMessageBox.alert(
+      `分享链接（已复制到剪贴板）：\n${link}\n\n提取码：${share.requirePassword ? '已设置（创建时填写的密码）' : '无'}`,
+      '分享成功',
+      { confirmButtonText: '知道了' },
+    ).catch(() => {}),
+  )
 }
 
 /* ========== 初始化 ========== */

@@ -34,10 +34,12 @@ import java.util.concurrent.TimeUnit;
 public class StorageServiceImpl implements StorageService {
 
     private final MinioClient minioClient;
+    private final MinioClient presignMinioClient;
     private final MinioProperties properties;
 
-    public StorageServiceImpl(MinioClient minioClient, MinioProperties properties) {
+    public StorageServiceImpl(MinioClient minioClient, MinioClient presignMinioClient, MinioProperties properties) {
         this.minioClient = minioClient;
+        this.presignMinioClient = presignMinioClient;
         this.properties = properties;
     }
 
@@ -92,7 +94,8 @@ public class StorageServiceImpl implements StorageService {
                 .expiry(expiryInMinutes, TimeUnit.MINUTES)
                 .build();
         try {
-            return minioClient.getPresignedObjectUrl(args);
+            // presign 专用 client（endpoint=public-url），保证签名 host 与浏览器访问地址一致
+            return presignMinioClient.getPresignedObjectUrl(args);
         } catch (Exception e) {
             throw new RuntimeException("MinIO generate presigned URL failed: " + objectName, e);
         }

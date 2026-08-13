@@ -233,3 +233,42 @@ for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code} " -X POST http://
 # 3. 安全头存在
 curl -sI http://101.35.233.30/ | grep -iE "x-frame|content-security|x-content"
 ```
+
+---
+
+## 10. 本地 vs 云环境差异与编码防坑（本轮部署沉淀）
+
+**核心规律：** 本地开发"全 localhost / 单机单服务"会掩盖三组环境差异——**配置没带全、HTTP 安全上下文限制、容器内网名与签名 host 耦合**。这类"本地正常、线上异常"的 bug，排查时永远先比对两个环境差在哪。
+
+### 10.1 配置类：写死与缺省是万恶之源
+
+- 业务配置参数（如 `file.upload-expire-hours`）**缺省值不该是业务默认**——`uploadExpireHours=0` 会直接导致 Redis TTL=0、上传全挂。宁可显式报错也不静默用 0/空（加校验：0 即 throw）。
+- **本地一套配置 + 云端一套配置必须同步**：改 `application-prod.yml` / env 后，用 `diff` 对比本地与服务器副本，别只改一边。
+- **容器间互访永远用服务名**（`minio:9000` / `mysql` / `redis`）；公网 IP / 域名只出现在**对外 URL** 里。写代码/配置时自问一句：这个地址是给浏览器用的，还是给容器用的？
+- env 文件每个 key 独立成行、**末尾换行收尾**（曾因 `TZ` 末尾无换行导致追加变量粘连成一行被吞）。
+
+### 10.2 安全上下文类：HTTP 明文下默认浏览器"是残废的"
+
+浏览器只在**安全上下文（HTTPS / localhost）**开放这些 API：`crypto.subtle`、`navigator.clipboard`、Service Worker、`navigator.geolocation` 等。公网明文 HTTP 下它们为 `undefined`。
+
+- 用到这些 API 前**默认按不可用写**：先探测 `typeof` / `?.`，再提供降级路径（哈希降级见 BUG 7，剪贴板降级见 BUG 8）。
+- **不要依赖 `?.` 静默跳过**——它会无声失败；且 UI 层不能无条件弹"成功"（复制 bug 就假报成功误导用户）。
+- 降级分支**返回真实状态**（如 `Promise<boolean>`），UI 据此提示成功或失败。
+- 心里存一张"HTTPS 才解锁的 API"清单，写代码时扫一遍自己用了哪些。
+- 根治仍是上 HTTPS（域名已就绪，见 §8 / `docs/migrate-1panel-https.md`）。
+
+### 10.3 签名/网络类：presigned URL 不是纯字符串
+
+- **S3 v4 签名把 host 签死在签名里**（`X-Amz-SignedHeaders=host`）：改 presigned URL 的 host 必 403。要换对外地址，必须让**签名时用的 endpoint = 浏览器访问的地址**，从源头签，而不是事后替换字符串（初版 `rewriteHost` 已被证伪）。
+- 正确做法：为 presign 建**专用 client**（endpoint=`minio.public-url`），数据面（上传/下载/复制/删除）仍走内网 client——见 BUG 8 问题②。
+- 对外可达性三步验证：内网通吗 → 公网通吗（防火墙）→ 签名对得上吗（同 URL 内网 200 / 公网 403 = 签名 host 问题）。
+- 依赖 SDK 生成签名时，想清楚"签名 client 的 endpoint 是谁能看见它"。
+
+### 10.4 共性方法论
+
+- **"本地正常、线上异常"先列环境差异清单**（配置、网络拓扑、浏览器上下文），逐项打勾定位。
+- **修复要让根因失效**（如 presign 双 client），而不是打补丁（替换字符串）。
+- **修完用公网真实链路验证**，别只在容器内测——同 URL 内网 200 公网 403 正是签名 host 问题的最短证据链。
+- 一句话：**写配置防缺省、写前端防安全上下文、写签名防 host 错位**。
+
+相关 bug 明细见 `docs/bugs/BUG_FIXES_6.md`、`BUG_FIXES_7.md`、`BUG_FIXES_8.md`。

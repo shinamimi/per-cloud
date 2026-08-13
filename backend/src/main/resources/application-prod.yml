@@ -34,6 +34,11 @@ jwt:
   prefix: Bearer
   issuer: cloud
 
+# 配额默认值（t_setting 配置缺失时兜底，与 local 保持一致）
+quota:
+  default-user: 5368709120        # 5GB，普通用户基础配额
+  default-vip: 107374182400       # 100GB，VIP 用户基础配额
+
 redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
@@ -45,9 +50,19 @@ file:
   storage-path: ${FILE_STORAGE_PATH}
   chunk-size: 10485760
   max-size: 536870912
+  max-size-user: 536870912            # 512MB，普通用户单文件大小上限
+  max-size-vip: 2147483648            # 2GB，VIP 用户单文件大小上限
+  max-concurrent-user: 3              # 普通用户并发上传任务数上限
+  max-concurrent-vip: 5               # VIP 用户并发上传任务数上限
+  small-file-threshold: 5242880       # 5MB，小于此阈值不分片直接上传
+  upload-expire-hours: 24             # 上传临时分片/元数据保留时长
+  package-expire-hours: 24            # 打包下载产物保留时长
+  recycle-days: 30                    # 回收站保留天数，到期物理清理
+  preview-text-max-size: 1048576      # 文本预览最大字节数（1MB）
 
 mail:
   host: ${MAIL_HOST}
   port: ${MAIL_PORT}
   username: ${MAIL_USERNAME}
   password: ${MAIL_PASSWORD}
+  from: ${MAIL_FROM}

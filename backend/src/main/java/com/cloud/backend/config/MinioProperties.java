@@ -31,6 +31,6 @@ public class MinioProperties {
     private String bucket;          // 默认存储桶名称
     /** 【统一】改后需同步 yml minio.auto-create-bucket+读取方(MinioConfig @ConditionalOnProperty)（无单位，布尔开关） */
     private boolean autoCreateBucket; // 启动时是否自动创建桶
-    /** 【统一】改后需同步 yml minio.public-url+读取方(暂无直接读取，MinioConfig 注入)（无单位，HTTP URL） */
-    private String publicUrl;       // 公开访问 URL（用于生成文件访问链接）
+    /** 【统一】改后需同步 yml minio.public-url+读取方(MinioConfig 构造 presignMinioClient)（无单位，HTTP URL） */
+    private String publicUrl;       // 公开访问 URL（用于生成文件访问链接，须为浏览器可达地址）
 }

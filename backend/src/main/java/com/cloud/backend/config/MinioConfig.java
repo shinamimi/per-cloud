@@ -49,6 +49,23 @@ public class MinioConfig {
     }
 
     /**
+     * 生成 presigned URL 专用的 client（用 public-url 做 endpoint）。
+     * S3 v4 签名把 host 值签进签名（SignedHeaders=host），若用内网 endpoint 签名，
+     * 浏览器访问公网地址时签名校验必失败（403）。故 presigned 必须用「浏览器可达」的公网地址签名。
+     */
+    @Bean
+    public MinioClient presignMinioClient() {
+        String endpoint = properties.getPublicUrl();
+        if (endpoint == null || endpoint.isBlank()) {
+            endpoint = properties.getEndpoint();
+        }
+        return MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials(properties.getAccessKey(), properties.getSecretKey())
+                .build();
+    }
+
+    /**
      * 启动后自动初始化存储桶。
      * 实现原理：先检查桶是否存在，不存在则创建。
      * 避免在业务层每次上传时都判断桶是否存在，减少重复代码。

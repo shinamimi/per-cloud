@@ -12,6 +12,7 @@
  * - 分片阶段按「已传片数 / 总片数」计算本地进度
  * - 后端 WebSocket 同步推送（/ws/progress）作为补充，store 层合并展示
  */
+import { sha256 as jsSha256 } from 'js-sha256'
 import { secUpload, uploadChunk, uploadInit, uploadMerge, uploadProgress } from '@/api/file'
 
 /** 上传过程回调 —— 供 store 同步队列状态与进度 */
@@ -29,13 +30,20 @@ export interface UploadResult {
   uploadId: string
 }
 
-/** 计算文件 SHA256 —— 用于秒传全站索引（Web Crypto API，无需额外依赖） */
+/**
+ * 计算文件 SHA256 —— 用于秒传全站索引。
+ * 优先用 Web Crypto API（HTTPS/localhost 安全上下文可用，性能好）；
+ * 公网明文 HTTP 下 crypto.subtle 不可用，降级为纯 JS 实现（js-sha256，结果一致）。
+ */
 export async function sha256(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
-  const digest = await crypto.subtle.digest('SHA-256', buffer)
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
+  if (globalThis.crypto?.subtle) {
+    const digest = await crypto.subtle.digest('SHA-256', buffer)
+    return Array.from(new Uint8Array(digest))
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+  }
+  return jsSha256(new Uint8Array(buffer))
 }
 
 /**

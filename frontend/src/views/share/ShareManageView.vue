@@ -94,6 +94,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Folder, Document } from '@element-plus/icons-vue'
 import { cancelShare, deleteShareRecord, listShares, updateShareExpire } from '@/api/share'
+import { copyText } from '@/utils/clipboard'
 import type { ShareItem, ShareStatusKey, ShareValidType } from '@/types/share'
 
 const router = useRouter()
@@ -122,8 +123,10 @@ function shareLink(row: ShareItem): string {
 
 function handleCopy(row: ShareItem) {
   const link = shareLink(row)
-  navigator.clipboard?.writeText(link).catch(() => {})
-  ElMessage.success('链接已复制')
+  copyText(link).then((ok) => {
+    if (ok) ElMessage.success('链接已复制')
+    else ElMessage.error('复制失败，请长按/手动复制链接：' + link)
+  })
 }
 
 function handleEditExpire(row: ShareItem) {

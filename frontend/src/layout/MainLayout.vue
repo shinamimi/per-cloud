@@ -73,6 +73,7 @@
       </el-aside>
       <el-main class="main-content">
         <router-view />
+        <SiteFooter />
       </el-main>
     </el-container>
   </el-container>
@@ -82,6 +83,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import SiteFooter from '@/components/common/SiteFooter.vue'
 import { Folder, Delete, DataAnalysis, User, OfficeBuilding, Share } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -146,5 +148,11 @@ function handleCommand(command: string) {
 .main-content {
   background: #f5f7fa;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content > :first-child {
+  flex: 1;
 }
 </style>

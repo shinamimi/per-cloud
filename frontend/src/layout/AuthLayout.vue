@@ -4,19 +4,28 @@
     居中卡片式设计，适用于登录、注册、找回密码等页面。
   -->
   <div class="auth-layout">
-    <div class="auth-container">
-      <div class="auth-header">
-        <h1 class="auth-title">Cloud 云盘</h1>
-        <p class="auth-subtitle">企业级私有云存储服务</p>
+    <div class="auth-frame">
+      <div class="auth-container">
+        <div class="auth-header">
+          <h1 class="auth-title">Cloud 云盘</h1>
+          <p class="auth-subtitle">企业级私有云存储服务</p>
+        </div>
+        <div class="auth-card">
+          <router-view />
+        </div>
       </div>
-      <div class="auth-card">
-        <router-view />
-      </div>
+      <SiteFooter />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+/*
+ * AuthLayout —— 认证页面专用布局。
+ * 居中卡片式设计，适用于登录、注册、找回密码等页面。
+ * 底部固定展示站点页脚（备案号）。
+ */
+import SiteFooter from '@/components/common/SiteFooter.vue'
 </script>
 
 <style scoped>
@@ -26,6 +35,12 @@
   justify-content: center;
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .auth-container {
