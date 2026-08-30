@@ -96,5 +96,15 @@ build/
 # =========================
 # Documents
 # =========================
-HELP.md##
+HELP.md
 .vscode/
+
+# =========================
+# 公开版排除（内部文档/工具）
+# =========================
+docs/
+scripts/
+.agents/
+skills-lock.json
+AGENTS.md
+*.tgz
