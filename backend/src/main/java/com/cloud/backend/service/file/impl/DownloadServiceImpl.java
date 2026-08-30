@@ -207,7 +207,7 @@ public class DownloadServiceImpl implements DownloadService {
     /** 后台执行打包：逐文件写入本地临时 zip → 上传对象存储 → 广播完成/失败状态；失败保留任务状态供前端查询。 */
     private void pack(BatchTask task) {
         task.status = "PACKING";
-        progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "PACKING",
+        progressHandler.sendToUser(task.userId, "download", Map.of("taskId", task.taskId, "status", "PACKING",
                 "total", task.total, "done", 0));
         java.io.File tempFile = null;
         try {
@@ -217,7 +217,7 @@ public class DownloadServiceImpl implements DownloadService {
                 for (File file : task.files) {
                     writeZipEntry(zip, file, usedNames);
                     task.done++;
-                    progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "PACKING",
+                    progressHandler.sendToUser(task.userId, "download", Map.of("taskId", task.taskId, "status", "PACKING",
                             "total", task.total, "done", task.done));
                 }
             }
@@ -228,12 +228,12 @@ public class DownloadServiceImpl implements DownloadService {
             }
             task.url = storageService.generateDownloadUrl(task.objectName, adminSettingsService.getDownloadLinkTtlMinutes());
             task.status = "DONE";
-            progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "DONE",
+            progressHandler.sendToUser(task.userId, "download", Map.of("taskId", task.taskId, "status", "DONE",
                     "total", task.total, "done", task.done, "url", task.url));
         } catch (Exception e) {
             task.status = "FAILED";
             log.error("Batch pack failed: taskId={}", task.taskId, e);
-            progressHandler.broadcast("download", Map.of("taskId", task.taskId, "status", "FAILED"));
+            progressHandler.sendToUser(task.userId, "download", Map.of("taskId", task.taskId, "status", "FAILED"));
         } finally {
             if (tempFile != null) {
                 try {

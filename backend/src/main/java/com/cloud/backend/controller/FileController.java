@@ -1,6 +1,7 @@
 package com.cloud.backend.controller;
 
 import com.cloud.backend.annotation.Log;
+import com.cloud.backend.annotation.RateLimit;
 import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.Page;
@@ -146,6 +147,7 @@ public class FileController {
      * 初始化分片上传，返回 uploadId 与各分片的预签名上传地址。
      */
     @PostMapping("/upload/init")
+    @RateLimit(key = "upload", limit = 100, window = 60, dimension = RateLimit.Dimension.USER)
     public Result<UploadInitResponse> uploadInit(@Valid @RequestBody UploadInitRequest request) {
         return Result.success(uploadService.init(AuthorizationPolicy.getCurrentUserId(), request));
     }
@@ -211,6 +213,7 @@ public class FileController {
      * 创建批量下载任务（打包为压缩文件），返回任务 ID 供轮询进度。
      */
     @PostMapping("/download/batch")
+    @RateLimit(key = "download", limit = 200, window = 60, dimension = RateLimit.Dimension.USER)
     public Result<BatchDownloadResponse> downloadBatch(@Valid @RequestBody BatchDownloadRequest request) {
         return Result.success(downloadService.createBatchTask(
                 AuthorizationPolicy.getCurrentUserId(), request.getFileIds()));

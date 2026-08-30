@@ -260,7 +260,7 @@ public class UploadServiceImpl implements UploadService {
         redis.opsForSet().add(chunksKey, String.valueOf(seq));
         // WebSocket 推送上传进度
         Long uploaded = redis.opsForSet().size(chunksKey);
-        progressHandler.broadcast("upload", Map.of(
+        progressHandler.sendToUser(userId, "upload", Map.of(
                 "uploadId", uploadId,
                 "uploaded", uploaded == null ? 0 : uploaded,
                 "total", chunkCount));

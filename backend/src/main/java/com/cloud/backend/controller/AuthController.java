@@ -1,5 +1,6 @@
 package com.cloud.backend.controller;
 
+import com.cloud.backend.annotation.RateLimit;
 import com.cloud.backend.dto.*;
 import com.cloud.backend.service.system.AuthService;
 import com.cloud.backend.service.system.JwtBlacklistService;
@@ -51,6 +52,7 @@ public class AuthController {
      * 账号密码登录，成功返回 JWT。失败按登录尝试策略累计错误次数，超限锁定账号。
      */
     @PostMapping("/login")
+    @RateLimit(key = "login", limit = 10, window = 60, dimension = RateLimit.Dimension.IP)
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String ip = IpUtil.getClientIp(httpRequest);
         return Result.success(authService.login(request, ip));
@@ -60,6 +62,7 @@ public class AuthController {
      * 发送验证码（注册 / 登录 / 重置密码场景，按请求中的 captchaType 区分），带发送冷却限制。
      */
     @PostMapping("/send-code")
+    @RateLimit(key = "send-code", limit = 5, window = 60, dimension = RateLimit.Dimension.IP)
     public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
         authService.sendCode(request);
         return Result.success();
@@ -69,6 +72,7 @@ public class AuthController {
      * 注册新用户（受开放注册开关与邮箱验证开关约束），成功直接返回 JWT 完成自动登录。
      */
     @PostMapping("/register")
+    @RateLimit(key = "register", limit = 5, window = 60, dimension = RateLimit.Dimension.IP)
     public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         String ip = IpUtil.getClientIp(httpRequest);
         return Result.success(authService.register(request, ip));
@@ -78,6 +82,7 @@ public class AuthController {
      * 忘记密码：向已注册邮箱发送重置验证码（邮箱不存在时返回用户不存在）。
      */
     @PostMapping("/forgot-password")
+    @RateLimit(key = "forgot-password", limit = 3, window = 60, dimension = RateLimit.Dimension.IP)
     public Result<Void> forgotPassword(@Valid @RequestBody SendCodeRequest request) {
         authService.sendForgotPasswordCode(request.getEmail());
         return Result.success();
