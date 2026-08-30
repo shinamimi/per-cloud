@@ -109,3 +109,6 @@ skills-lock.json
 AGENTS.md
 *.tgz
 *.tgz
+
+# 内部工具
+.agents/
