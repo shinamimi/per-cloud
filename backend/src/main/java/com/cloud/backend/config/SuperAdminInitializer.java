@@ -13,22 +13,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * 超级管理员初始化 —— 应用启动时确保配置文件中指定的超级管理员账号存在且可用。
- *
- * 设计思路：
- * 1. 幂等初始化：账号已存在且角色正确时，仅当密码与配置不一致才重置密码
- * 2. 同名但非超管账号跳过初始化并告警，避免误改已注册的业务账号
- * 3. 新账号按注册流程创建（密码加密入库），配额取默认值（10GB）
- *
- * 修改指引：
- * - 【习惯】修改默认超管账号（用户名/密码/邮箱）→ application.yml 中 super-admin.username/password/email；
- *                                       改动后影响首次启动创建的账号与密码补齐行为
- * - 【习惯】修改密码补齐逻辑           → run() 中 passwordEncoder.matches() 分支；改动后影响配置变更后能否重新登录
- * - 【习惯】修改同名非超管账号的处理    → run() 中 "exists but is not SUPER_ADMIN" 分支；改动后影响是否覆盖业务账号
- * - 【习惯】修改新账号初始字段/配额     → run() 中 newAdmin 的 setter（如 setQuota(FileConstants.DEFAULT_QUOTA)）；
- *                               改动后影响新建超管的默认配额、会员状态等
- */
 @Component
 public class SuperAdminInitializer implements ApplicationRunner {
 

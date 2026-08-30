@@ -13,27 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 访客分享访问 —— /api/shares/access/**（公开，无需登录；SecurityConfig permitAll）。
- * 提取码验证 → 文件树/预览/下载/批量下载/转存。
- * 转存需登录（save 接口内校验）。
- *
- * 修改指引：
- * - 【习惯】分享信息           → GET /api/shares/access/{token}，调 shareService.getAccessInfo(token)；
- *                        公开路径，requirePassword=true 时前端弹提取码框
- * - 【习惯】提取码验证         → POST /api/shares/access/{token}/verify，调 shareService.verifyPassword(token, password)；
- *                        错误限次 5 次（Redis 计数），改动影响访客校验策略
- * - 【习惯】分享文件树         → GET /api/shares/access/{token}/files，调 shareService.getShareFiles(token)；平铺快照节点
- * - 【习惯】预览 / 下载        → GET /api/shares/access/{token}/file/{snapshotId}/preview（不计数）、
- *                        /download（download_count+1，达限置 EXHAUSTED）；调 previewShareFile / getShareDownloadUrl
- * - 【习惯】批量下载 / 任务查询  → POST /api/shares/access/{token}/batch-download、GET /batch-task/{taskId}；
- *                        调 shareService.batchDownload / getBatchTask；一次下载动作计数 +1
- * - 【习惯】转存              → POST /api/shares/access/{token}/save；需登录，save 内校验
- *                        AuthorizationPolicy.getCurrentUserId()，未登录抛 UNAUTHORIZED；复用秒传引用计数 +1
- * - 【习惯】新增/修改访客接口    → 保持 /api/shares/access/** 前缀；SecurityConfig 已对该前缀 permitAll，改前缀须同步白名单；
- *                        涉及用户数据的写操作（如转存）必须在服务内自行校验登录
- * - 【习惯】提取码策略         → 验证次数上限与 Redis 计数均在 shareService.verifyPassword 内实现，改动需同步服务层
- */
 @RestController
 @RequestMapping("/api/shares/access")
 public class GuestShareController {

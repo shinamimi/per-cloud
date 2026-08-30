@@ -17,25 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 团队文件控制器 —— 团队文件管理 + 团队回收站。
- * 上传/秒传复用 /api/files/upload/*（请求体带 teamId），不重复实现。
- * 下载/预览走团队鉴权（成员均可）；改/删按权限矩阵（MEMBER 只能操作自己上传的）。
- *
- * 修改指引：
- * - 【习惯】列表 / 树 / 目录     → GET /api/teams/{teamId}/files、/tree、POST /directory；
- *                         调 teamFileService.listFiles / tree / createDirectory；成员均可访问（服务内校验成员资格）
- * - 【习惯】改名 / 移动 / 复制 / 删除 → PUT /{fileId}/rename、POST /{fileId}/move、POST /{fileId}/copy、DELETE /{fileId}；
- *                         调 rename / move / copy / deleteToRecycle；MEMBER 只能操作自己上传的文件
- * - 【习惯】下载 / 预览         → GET /{fileId}/download（302 预签名重定向）、GET /{fileId}/preview；成员均可
- * - 【习惯】团队回收站          → GET /recycle-bin、POST /recycle-bin/{recycleId}/restore、DELETE /recycle-bin/{recycleId}；
- *                         调 teamFileService.recycleBin / restore / purge
- * - 【习惯】上传 / 秒传         → 复用 FileController 的 /api/files/upload/*（请求体带 teamId），不在此类实现，
- *                         改动上传逻辑请改 FileController 与 UploadService
- * - 【习惯】新增/修改接口       → 当前用户通过 @AuthenticationPrincipal LoginUser 获取（区别于用 AuthorizationPolicy 的控制器）；
- *                         需登录，若为公开接口须在 SecurityConfig 放行并同步前端 API 层
- * - 【习惯】分页参数            → list 的 page（默认 1）、size（默认 20），改动需同步前端分页组件
- */
 @RestController
 @RequestMapping("/api/teams/{teamId}/files")
 public class TeamFileController {

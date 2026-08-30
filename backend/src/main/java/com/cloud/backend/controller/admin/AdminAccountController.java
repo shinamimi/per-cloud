@@ -15,26 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 管理员账号管理控制器（后台）—— 管理员列表、创建、删除、角色调整、候选用户穿梭器。
- *
- * 设计思路：
- * 1. 列表按当前操作者权限分级展示：OPERATOR 可见运营人员，超级管理员额外可见 ADMIN
- * 2. 创建/删除/改角色等高危操作集中在服务层做权限与自我保护校验（不能操作自己/超管）
- * 3. 响应统一组装为 AdminUserResponse，配额字段含总配额（基础 + 赠送 + 奖励）
- *
- * 修改指引：
- * - 【习惯】管理员列表         → GET /api/admin/admins，调 userService.findAll 后按当前操作者权限过滤展示
- *                        （OPERATOR 见 OPERATOR，超管额外见 ADMIN）；路径权限在 SecurityConfig
- *                        （/api/admin/admins/** hasAnyRole("ADMIN","SUPER_ADMIN")），改动影响管理员可见范围
- * - 【习惯】创建管理员         → POST /api/admin/admins，调 userService.createAdmin；服务层校验角色可授予范围（超管角色不可创建）
- * - 【习惯】删除管理员         → DELETE /api/admin/admins/{id}，调 userService.deleteAdmin；服务层拦截删除自己与超管
- * - 【习惯】修改角色           → PUT /api/admin/admins/{id}/role，调 userService.updateAdminRole；拦截授予超管角色与修改自己
- * - 【习惯】候选用户列表       → GET /api/admin/admins/candidates，调 userService.listCandidates；排除已管理员，供穿梭器左列
- * - 【习惯】批量变更角色       → PUT /api/admin/admins/batch，调 userService.batchUpdateAdminRole；降级也传目标角色（USER）
- * - 【习惯】新增/修改接口      → 管理端接口权限由 SecurityConfig 路径规则控制（OPERATOR+/ADMIN+ 分级），新增接口需确认放行级别
- *                       并同步前端管理 API 层
- */
 @RestController
 @RequestMapping("/api/admin/admins")
 public class AdminAccountController {

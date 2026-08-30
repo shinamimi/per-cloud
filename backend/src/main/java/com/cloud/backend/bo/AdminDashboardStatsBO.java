@@ -1,20 +1,5 @@
 package com.cloud.backend.bo;
 
-/**
- * 管理后台仪表盘统计业务对象 —— 聚合用户数、文件数、总容量与总配额等指标。
- *
- * 设计思路：
- * 1. 使用率（usagePercent）由构造器统一计算，调用方无需重复实现换算
- * 2. 总配额为 0 时使用率按 0 处理（除零保护），避免前端展示异常
- *
- * 修改指引：
- * - 【统一】新增统计指标            → 新增字段 + 构造器参数；聚合来源需在 DashboardService（管理后台查询）同步补充；
- *                             改后需同步 DashboardService 聚合来源（管理后台查询）
- * - 【习惯】修改使用率计算方式      → usagePercent 计算公式在构造器中；当前为 totalSize/totalQuota*100，改动影响管理端仪表盘展示
- * - 【习惯】修改除零保护行为        → 构造器中 totalQuota > 0 判断；当前配额为 0 时使用率按 0 处理
- * - 【统一】修改字段类型/单位       → 各字段当前均为 long（字节）；改动需同步统计查询 SQL 与前端展示单位；
- *                             改后需同步统计查询 SQL 与前端展示单位
- */
 public class AdminDashboardStatsBO {
 
     /** 用户总数；【统一】改后需同步 DashboardService 聚合来源（管理后台查询） */

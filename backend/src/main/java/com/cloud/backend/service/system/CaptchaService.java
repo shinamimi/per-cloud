@@ -8,28 +8,6 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 邮箱验证码服务。
- *
- * 设计思路：
- * 1. 验证码使用 SecureRandom 生成 6 位数字，存入 Redis，过期时间可配置（session.captcha-ttl，默认 5 分钟）
- * 2. 验证码区分三种场景：注册(REGISTER)、登录(LOGIN)、重置密码(RESET_PASSWORD)
- *    通过 CaptchaType 区分 Key（如 captcha:REGISTER:xxx@email.com）
- * 3. 防刷机制：每个邮箱冷却期（mail.frequency-limit，默认 60 秒），冷却期内拒绝生成新验证码
- * 4. 验证通过后立即删除 Key，验证码只能使用一次
- *
- * 修改指引：
- * - 【习惯】想改"验证码位数/生成规则" → generateAndStore() 中 String.format("%06d", RANDOM.nextInt(1_000_000))；
- *   改动影响验证码强度与 Redis 校验
- * - 【习惯】想改"Redis Key 结构与场景隔离" → CAPTCHA_PREFIX 与 captchaKey()（captcha:{TYPE}:{email}）、
- *   verify(captchaId) 的 "captcha:LOGIN:" 拼接；改动须与 AuthServiceImpl/AuthController 传入的 captchaId 一致
- * - 【习惯】想改"验证码有效期" → generateAndStore() 中 settingsService.getCaptchaTtlSeconds()（默认 300 秒）；
- *   改动影响验证码过期窗口
- * - 【习惯】想改"冷却机制（时长/是否启用）" → isOnCooldown()/setCooldown() 与 settingsService.getMailFrequencyLimitSeconds()
- *   （默认 60 秒）；改动影响发信频率与防刷
- * - 【习惯】想改"验证一次有效" → verify() 中验证后 redisTemplate.delete(key)；改动影响验证码可复用性（安全）
- * - 【习惯】本类为具体实现类（@Service），非接口；被 AuthServiceImpl 直接注入调用
- */
 @Service
 public class CaptchaService {
 

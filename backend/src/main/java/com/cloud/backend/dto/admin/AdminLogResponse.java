@@ -5,17 +5,6 @@ import com.cloud.backend.enums.TargetType;
 
 import java.time.LocalDateTime;
 
-/**
- * 后台操作日志响应 DTO —— 操作日志列表接口的展示结构。
- *
- * 修改指引：
- * - 【统一】修改响应字段名/类型    → 字段为前端操作日志列表取值依据；改后需同步日志查询 SQL 与前端
- * - 【统一】修改 operation         → 自定义枚举 OperationType（enums/OperationType.java，取值 LOGIN/UPLOAD_FILE/DELETE_FILE 等）；
- *                           前端按操作类型展示；改后需同步枚举定义、日志写入逻辑与前端映射
- * - 【统一】修改 targetType        → 自定义枚举 TargetType（enums/TargetType.java，取值 USER/FILE/SHARE/TEAM）；改后需同步枚举定义、日志写入与前端
- * - 【统一】修改 targetId          → Long 操作目标 ID，配合 targetType 定位具体对象；改后需同步日志查询 SQL 与前端
- * - 【统一】新增响应字段          → 新增字段并同步日志查询 SQL 与前端，否则该字段恒为 null；改后需同步日志查询 SQL 与前端
- */
 public class AdminLogResponse {
 
     /** 日志记录 ID */

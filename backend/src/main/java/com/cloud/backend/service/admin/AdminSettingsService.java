@@ -4,33 +4,6 @@ import com.cloud.backend.dto.admin.QuotaBatchRequest;
 import com.cloud.backend.dto.admin.QuotaBatchResponse;
 import com.cloud.backend.dto.admin.AdminUserResponse;
 
-/**
- * 系统设置服务 —— 集中管理所有系统级配置项（t_setting 表）。
- * t_setting 表有记录时优先，否则使用配置文件默认值。
- *
- * 分组：
- * - 上传限制（upload.*）/ 存储限制（storage.*）/ 会话安全（session.*）
- * - 缓存策略（cache.*）/ 系统功能（system.*）/ 文件管理（file.*、share.*）
- * - 邮件服务（mail.*）/ 日志（log.*）
- *
- * 修改指引：
- * - 【习惯】想改"读取优先级（t_setting 有值优先，否则回落配置文件/yml 默认值）" → 各 getter 对应
- *   AdminSettingsServiceImpl.readLong/readInt/readBoolean/readString 与 upsertOrReset()（value 为 null
- *   删除配置行恢复默认）；改动影响全部系统级配置的生效来源
- * - 【习惯】想改"某个 getter 的 key/默认值/单位换算" → 各 getter 与其对应 KEY_* 常量（如 getMaxSizeUser 默认值取
- *   fileProperties.getMaxSizeUser()、getAccessTokenTtlMs 分钟→毫秒换算、getMailFrom 回落 yml spring.mail.from）；
- *   改动影响读取生效值，须保持 key 命名一致
- * - 【习惯】想改"某个 update* 的入参（null 恢复默认）" → updateUploadLimits()/updateStorage()/updateSession()/updateCache()/
- *   updateSystem()/updateFile()/updateMail()/updateLog()/updateTeam() 均调用 upsertOrReset()；
- *   改动影响对应配置组的重置语义与写库
- * - 【习惯】想改"SMTP 密码脱敏占位" → updateMail() 中 PASSWORD_MASK（"********"）判断，password 为空或占位符不更新密码；
- *   改动影响管理端回显与密码更新语义
- * - 【习惯】想改"老用户配额批量调整" → quotaBatch()（isPreview 内联计算总配额展示，执行只改基础 quota 字段、
- *   不触碰 adminBonusQuota/rewardQuota、幂等）；改动影响批量配额生效范围与三来源配额模型
- * - 【习惯】本接口 getter 被 AuthService/UploadService/TeamService/CaptchaService/LoginAttemptService/EmailService/
- *   OperationLogService 等广泛消费，改动语义须评估全部调用方
- * - 【习惯】新增方法 → 需同步实现类 AdminSettingsServiceImpl 与 AdminSettingsController
- */
 public interface AdminSettingsService {
 
     /* ==================== 上传限制 ==================== */

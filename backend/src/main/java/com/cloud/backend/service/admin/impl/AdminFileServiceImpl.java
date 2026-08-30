@@ -45,40 +45,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * 管理端全局文件管控实现 —— 全局文件列表、禁用/启用、全局回收站与恢复/彻底删除。
- *
- * 设计思路：
- * - 全局列表个人+团队统一（team_id=0 个人，>0 团队），userId/teamId/category/status 动态筛选
- * - 禁用/启用：改 t_file.status=2/1；用户侧列表 status != 0 仍可见，下载/预览拒绝
- * - 删除进全局回收站：tombstone 顶层名 + 递归子树 + t_recycle_bin.deleted_by=1 + 释放对应空间配额
- * - 恢复：递归恢复子树（删除时子节点 status 一并置 DELETED，仅恢复顶层会丢内容）；
- *   个人空间校验用户配额，团队空间校验团队配额
- * - 彻底删除：复用个人回收站物理清理（递归 + 秒传引用归零 + MinIO 删除）
- *
- * 修改指引：
- * - 【习惯】想改"全局列表个人/团队统一筛选（team_id=0 个人、>0 团队）" → page()/detail() 依赖的
- *   fileMapper.adminCount/adminPage 动态 SQL 及 fillOwners()/fillDisabledScope() 组装逻辑；
- *   改动影响管理端文件列表的可见范围与展示
- * - 【习惯】想改"禁用/启用状态流转（FileStatus NORMAL/DISABLED/DELETED）" → changeStatus()/disableObject()/enableObject()；
- *   有内容 hash 的走对象级 DisabledObject 记录（按 hash 全站禁 / 按 hash+用户仅用户禁），无 hash 直接改文件状态；
- *   改动影响用户侧列表可见性（status != 0 仍可见）与下载/预览是否被拒
- * - 【习惯】想改"对象级禁用幂等与启用重放" → disableObject() 吞 DuplicateKeyException 保证幂等、
- *   enableObject() 先全量恢复再重放剩余禁用记录；改动影响同名 hash 文件的禁用归属一致性
- * - 【习惯】想改"删除进全局回收站（tombstone 顶层名 + 递归子树置 DELETED + 写 t_recycle_bin.deleted_by=1 + 释放配额）" →
- *   deleteToGlobalRecycleBin()/tombstoneName()；改动影响回收站记录、唯一索引占用与配额释放时机
- * - 【习惯】想改"回收站保留天数（个人/团队区分）" → deleteToGlobalRecycleBin() 按 teamSpace 取
- *   adminSettingsService.getRecycleBinDays()/getTeamRecycleBinDays()；改动影响各记录的 expireTime 与过期清理点
- * - 【习惯】想改"全局回收站恢复（递归恢复子树 + 配额校验 + 同名唯一化 + 父目录可用校验）" → restoreRecord()/resolveTeamUniqueName()；
- *   改动影响恢复后目录结构完整性、团队/用户配额是否超限
- * - 【习惯】想改"彻底删除" → purge() 委托 recycleBinService.purgeRecord()（递归 + 秒传引用归零 + MinIO 删除）；
- *   改动影响秒传引用计数与存储对象清理
- * - 【习惯】事务边界：changeStatus()/deleteToGlobalRecycleBin()/restore()/purge() 均为 @Transactional，
- *   配额增减与状态、回收站记录同事务；改动须保持原子一致
- * - 【习惯】操作日志：上述方法内联写 OperationLog（DISABLE_FILE/ENABLE_FILE/DELETE_FILE/RESTORE_FILE）；
- *   改动记录时机/内容会影响 OperationLogService 与日志管理页
- * - 【习惯】与接口联动：本类实现 AdminFileService，改方法签名/行为须同步接口契约与 AdminFileController
- */
 @Service
 public class AdminFileServiceImpl implements AdminFileService {
 

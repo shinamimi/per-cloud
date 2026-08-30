@@ -6,21 +6,6 @@ import com.cloud.backend.dto.friend.FriendUserResponse;
 
 import java.util.List;
 
-/**
- * 好友服务 —— 双向确认 + 独立通用关系层。
- * 独立于团队，供团队拉人、定向分享复用。
- *
- * 修改指引：
- * - 【习惯】想改"发送好友请求规则（不能加自己/已是好友/待处理不可重发/REJECTED 后可重发）" → sendRequest() 对应
- *   FriendServiceImpl.sendRequest()；改动影响请求准入与重发语义
- * - 【习惯】想改"接受请求流程" → accept()（置 ACCEPTED + 成对写入 t_friendship user_a < user_b，@Transactional）；
- *   改动影响好友关系建立与并发重复接受
- * - 【习惯】想改"拒绝/删除好友" → reject()（置 REJECTED，对方可重发）/deleteFriend()（单向解除成对记录，
- *   0 行抛 FRIEND_NOT_FOUND）；改动影响关系状态流转
- * - 【习惯】想改"关系校验（定向分享/团队拉人复用）" → isFriendOrTeamMate()（好友 或 任一正常团队交集，自检返回 true）；
- *   改动影响定向分享/拉人的准入边界
- * - 【习惯】新增方法 → 需同步实现类 FriendServiceImpl 及 FriendController、ShareController/TeamController 等调用方
- */
 public interface FriendService {
 
     /** 好友列表 */

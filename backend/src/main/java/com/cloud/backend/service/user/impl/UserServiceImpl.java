@@ -21,38 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * 用户服务实现 —— 用户 CRUD、配额计算、密码管理与管理端用户治理。
- *
- * 设计思路：
- * 1. 配额三来源模型：总配额 = 基础配额（VIP 档位 / 普通档位）+ adminBonusQuota + rewardQuota，
- *    基础档位来自配置项（quota.default-user / quota.default-vip）
- * 2. 管理端治理操作（状态/配额/解锁/角色/密码重置）统一先做目标校验：
- *    不能操作管理员账号（AuthorizationPolicy.canManageUser），
- *    ADMIN 角色的授予/删除/变更仅限超级管理员，且不能操作自己
- * 3. 治理操作大多通过 @Log 注解记录操作日志，部分手工写日志（含详情文本）
- * 4. 已用空间通过 Mapper 原子更新（SQL 内自增/自减），避免并发覆盖
- *
- * 修改指引：
- * - 【习惯】想改"配额三来源模型（基础配额 + adminBonusQuota + rewardQuota）" → calculateTotalQuota() 与
- *   defaultUserQuota/defaultVipQuota 配置项（quota.default-user / default-vip）；
- *   改动影响所有上传/恢复/批量调整的配额判定，须与 AuthServiceImpl 注册默认配额、AdminSettingsServiceImpl
- *   quotaBatch 内联计算口径一致
- * - 【习惯】想改"注册默认字段补齐（VIP=false、赠送/奖励配额 0、BCrypt 加密）" → register()；
- *   改动影响新用户初始状态（登录/配额/权限依赖这些字段）
- * - 【习惯】想改"管理端目标校验（不能操作管理员账号）" → updateUserStatus()/updateUserQuota()/unlockUser()/
- *   resetUserPassword() 中的 AuthorizationPolicy.canManageUser()；改动影响治理操作的保护边界
- * - 【习惯】想改"ADMIN 角色授予/变更/删除权限（仅超级管理员、不能操作自己/超级管理员）" → createAdmin()/
- *   updateAdminRole()/deleteAdmin()/batchUpdateAdminRole() 与 Role 枚举比较；改动影响管理员权限矩阵
- * - 【习惯】想改"账号锁定与解锁（UserStatus.LOCKED ↔ NORMAL + 清零失败计数）" → unlockUser() 与
- *   LoginAttemptService 联动（AuthServiceImpl 登录失败也会置 LOCKED）；改动影响锁定语义的一致性
- * - 【习惯】想改"已用空间原子增减" → changeUsedSpace()（userMapper.updateUsedSpace 原子 SQL）；
- *   改动影响并发上传/删除下的配额准确性，勿改成读改写
- * - 【习惯】操作日志：治理方法大多用 @Log 切面，deleteAdmin()/batchUpdateAdminRole() 手工写日志（含用户名/角色详情）；
- *   改动影响 OperationLogService 与管理端审计
- * - 【习惯】与接口联动：本类实现 UserService，改签名/行为须同步接口契约及 UserController、AdminUserController、
- *   AuthServiceImpl/FileServiceImpl/RecycleBinServiceImpl/TeamServiceImpl 等调用方
- */
 @Service
 public class UserServiceImpl implements UserService {
 

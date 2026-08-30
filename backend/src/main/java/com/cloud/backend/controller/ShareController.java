@@ -11,21 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 我的分享 —— /api/shares（需登录）。
- * 创建分享、列表、修改有效期、取消分享。
- * 创建入口在文件列表（单文件/文件夹），访客访问走 GuestShareController。
- *
- * 修改指引：
- * - 【习惯】创建分享           → POST /api/shares，调 shareService.createShare(当前用户, request)；单文件 + 文件夹快照锁定，
- *                        创建后访客通过 /api/shares/access/** 访问
- * - 【习惯】我的分享列表        → GET /api/shares，调 shareService.listShares(当前用户)
- * - 【习惯】修改有效期         → PUT /api/shares/{id}，调 shareService.updateExpire(当前用户, id, request)；可延长/缩短/永久
- * - 【习惯】取消分享           → DELETE /api/shares/{id}，调 shareService.cancelShare；状态置 CANCELED 保留记录
- * - 【习惯】删除分享记录       → DELETE /api/shares/{id}/record，调 shareService.deleteShareRecord；物理删除彻底移除
- * - 【习惯】新增/修改接口       → 在 @RequestMapping("/api/shares") 下新增；需登录，若为公开接口须在 SecurityConfig 放行
- *                        （注意勿与 /api/shares/access/** 白名单前缀冲突）并同步前端 API 层
- */
 @RestController
 @RequestMapping("/api/shares")
 public class ShareController {

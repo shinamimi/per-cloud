@@ -1,6 +1,7 @@
 package com.cloud.backend.controller;
 
 import com.cloud.backend.annotation.Log;
+import com.cloud.backend.annotation.RateLimit;
 import com.cloud.backend.authorization.AuthorizationPolicy;
 import com.cloud.backend.constant.FileConstants;
 import com.cloud.backend.dto.Page;
@@ -51,38 +52,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * 文件管理控制器（用户端）—— 文件列表/目录树、分片上传、下载、重命名/移动/复制/删除、
- * 搜索、预览、音乐播放预留接口与回收站。
- *
- * 设计思路：
- * 1. 所有操作基于当前登录用户，用户 ID 通过 AuthorizationPolicy 从安全上下文获取
- * 2. 越权访问统一按文件不存在处理，不泄露他人文件信息
- * 3. 下载返回 302 重定向到预签名 URL，文件流不经应用服务器中转
- * 4. 上传拆分为 init（预签名）/ chunk（分片）/ merge（合并）/ sec（秒传）多阶段接口
- *
- * 修改指引：
- * - 【习惯】列表 / 树 / 目录      → GET /api/files、GET /api/files/tree、POST /api/files/directory；
- *                          调 fileService.pageByUserAndParent / tree / createDirectory；当前用户由
- *                          AuthorizationPolicy.getCurrentUserId() 获取（需登录），改动影响文件组织视图
- * - 【习惯】上传                 → POST /api/files/upload/init、GET /upload/policy、POST /upload/chunk、POST /upload/merge、
- *                          POST /upload/sec、GET /upload/progress/{uploadId}；调 uploadService.init / policy /
- *                          uploadChunk / merge / sec / progress；大小/并发限额受 AdminSettingsService 配置约束
- * - 【习惯】下载                 → GET /api/files/{id}/download（302 预签名重定向，@Log 记操作日志）、
- *                          POST /api/files/download/batch、GET /api/files/download/batch/{taskId}；
- *                          调 downloadService.getDownloadUrl / createBatchTask / getBatchTask
- * - 【习惯】改名 / 移动 / 复制 / 删除 → PUT /api/files/{id}/rename、POST /{id}/move、POST /{id}/copy、DELETE /{id}；
- *                          调 fileService.rename / move / copy / deleteToRecycle；删除进回收站可恢复
- * - 【习惯】搜索 / 预览           → GET /api/files/search、GET /api/files/{id}/preview；
- *                          调 searchService.search / previewService.preview
- * - 【习惯】音乐预留接口           → GET /api/files/audio/list、GET /api/files/{id}/play；play 仅 AUDIO 分类返回预签名 URL，
- *                          目录/非音频抛 PREVIEW_UNSUPPORTED
- * - 【习惯】回收站               → GET /api/files/recycle-bin、POST /recycle-bin/{id}/restore、DELETE /recycle-bin/{id}；
- *                          调 recycleBinService.listByUserId / restore / purge
- * - 【习惯】新增/修改接口         → 在 @RequestMapping("/api/files") 下新增；默认需登录（SecurityConfig /api/** authenticated），
- *                          若为公开接口须在 SecurityConfig 放行并同步前端 API 层
- * - 【习惯】分页参数              → list / search / audioList 的 page（默认 1）、size（默认 20），改动需同步前端分页组件
- */
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
@@ -146,6 +115,7 @@ public class FileController {
      * 初始化分片上传，返回 uploadId 与各分片的预签名上传地址。
      */
     @PostMapping("/upload/init")
+    @RateLimit(key = "upload", limit = 100, window = 60, dimension = RateLimit.Dimension.USER)
     public Result<UploadInitResponse> uploadInit(@Valid @RequestBody UploadInitRequest request) {
         return Result.success(uploadService.init(AuthorizationPolicy.getCurrentUserId(), request));
     }
@@ -211,6 +181,7 @@ public class FileController {
      * 创建批量下载任务（打包为压缩文件），返回任务 ID 供轮询进度。
      */
     @PostMapping("/download/batch")
+    @RateLimit(key = "download", limit = 200, window = 60, dimension = RateLimit.Dimension.USER)
     public Result<BatchDownloadResponse> downloadBatch(@Valid @RequestBody BatchDownloadRequest request) {
         return Result.success(downloadService.createBatchTask(
                 AuthorizationPolicy.getCurrentUserId(), request.getFileIds()));

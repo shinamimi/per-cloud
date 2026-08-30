@@ -30,33 +30,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-/**
- * 认证服务实现 —— 登录、注册、验证码、找回/重置密码。
- *
- * 设计思路：
- * 1. 登录/注册成功签发 JWT（无状态 Token），并写入操作日志（含客户端 IP）
- * 2. 登录失败接入登录尝试服务：连续失败达到阈值后锁定账号（LOCKED），
- *    再次成功登录时自动解锁；锁定期内禁止登录
- * 3. 验证码场景隔离存储（注册/重置/登录），带发送冷却，防止枚举轰炸
- * 4. 开放注册、邮箱验证、登录验证码均受管理端开关控制，关闭时跳过对应校验
- *
- * 修改指引：
- * - 【习惯】想改"登录锁定策略（连续失败达阈值锁定账号、窗口过后自动解锁）" → login() 与
- *   LoginAttemptService/UserStatus.LOCKED 流转；改动影响账号锁定/解锁的触发条件
- * - 【习惯】想改"登录验证码开关行为" → login() 中 settingsService.isCaptchaEnabled() 判定（关闭时忽略前端传的验证码）；
- *   改动影响登录安全校验强度
- * - 【习惯】想改"注册流程（开关 + 唯一性 + 邮件验证 + 默认配额）" → register() 中
- *   settingsService.isAllowRegister()/isMailVerifyEnabled()/getDefaultQuotaUser() 与 UserStatus/Role 枚举、
- *   新用户默认配额（仅影响新注册用户）；改动影响注册入口与配额初始值
- * - 【习惯】想改"验证码场景隔离与发信冷却" → sendCode()/sendForgotPasswordCode() 中
- *   captchaService.isOnCooldown()/generateAndStore()/setCooldown() 与 CaptchaType（REGISTER/RESET_PASSWORD/LOGIN）；
- *   改动影响发信频率与防枚举轰炸
- * - 【习惯】想改"重置密码（邮件验证码校验 + BCrypt 更新密码）" → resetPassword()；改动影响密码重置入口
- * - 【习惯】操作日志：login()/register() 内联写 LOGIN/REGISTER 操作日志（含 IP）；
- *   改动影响登录/注册审计
- * - 【习惯】与接口联动：本类实现 AuthService，改签名/行为须同步接口契约及 AuthController、
- *   UserService/LoginAttemptService/CaptchaService/EmailService 调用方
- */
 @Service
 public class AuthServiceImpl implements AuthService {
 

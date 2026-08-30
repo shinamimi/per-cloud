@@ -8,7 +8,7 @@
       <div class="auth-container">
         <div class="auth-header">
           <h1 class="auth-title">Cloud 云盘</h1>
-          <p class="auth-subtitle">企业级私有云存储服务</p>
+          <p class="auth-subtitle">个人私有云存储服务</p>
         </div>
         <div class="auth-card">
           <router-view />

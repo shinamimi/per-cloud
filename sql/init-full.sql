@@ -57,7 +57,9 @@ CREATE TABLE IF NOT EXISTS t_file (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_user_parent (user_id, parent_id, status),
-    UNIQUE KEY uk_user_parent_name (user_id, parent_id, name, team_id)
+    UNIQUE KEY uk_user_parent_name (user_id, parent_id, name, team_id),
+    INDEX idx_user_type_status (user_id, type, status),
+    INDEX idx_user_file_hash (user_id, file_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表';
 
 -- ---------------------------------------------------------------------------
@@ -72,7 +74,8 @@ CREATE TABLE IF NOT EXISTS t_file_hash (
     ref_count INT NOT NULL DEFAULT 0 COMMENT '全局引用计数，归零物理删除对象',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_hash (file_hash)
+    UNIQUE KEY uk_hash (file_hash),
+    INDEX idx_ref_count (ref_count)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='秒传索引表';
 
 -- ---------------------------------------------------------------------------
@@ -104,8 +107,8 @@ CREATE TABLE IF NOT EXISTS t_share (
     allow_save TINYINT NOT NULL DEFAULT 1 COMMENT '1=允许转存 0=禁止转存',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_token (share_token),
-    INDEX idx_user (user_id)
+    INDEX idx_user (user_id),
+    INDEX idx_user_status (user_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='分享表';
 
 -- ---------------------------------------------------------------------------
@@ -204,7 +207,8 @@ CREATE TABLE IF NOT EXISTS t_recycle_bin (
     expire_time DATETIME NOT NULL,                     -- 到期后物理删除
     INDEX idx_user (user_id),
     INDEX idx_expire (expire_time),
-    INDEX idx_deleted_by (deleted_by, team_id)
+    INDEX idx_deleted_by (deleted_by, team_id),
+    INDEX idx_user_deleted_by (user_id, deleted_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回收站表';
 
 -- ---------------------------------------------------------------------------
@@ -221,7 +225,8 @@ CREATE TABLE IF NOT EXISTS t_operation_log (
     user_agent VARCHAR(500) DEFAULT '',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user (user_id),
-    INDEX idx_created (created_at)
+    INDEX idx_created (created_at),
+    INDEX idx_user_operation_created (user_id, operation, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
 
 -- ---------------------------------------------------------------------------

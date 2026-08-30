@@ -11,22 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 后台分享管理控制器 —— 查看全部分享、取消分享、切换下载开关、物理删除分享记录。
- *
- * 设计思路：
- * 1. 列表查询后补充展示性字段（分享者昵称、文件名），供后台表格直接展示
- * 2. 管理端操作（取消/删除/开关）为强制性治理动作，服务层不做归属校验
- *
- * 修改指引：
- * - 【习惯】分享列表           → GET /api/admin/shares，调 shareService.findAll 并补充分享者昵称/文件名
- *                        （对象已删除时保持为空）；权限 OPERATOR+（SecurityConfig /api/admin/**）
- * - 【习惯】取消分享           → POST /api/admin/shares/{id}/cancel，调 adminCancelShare；立即失效分享链接
- * - 【习惯】切换下载开关       → PUT /api/admin/shares/{id}/download，调 adminSetAllowDownload(allowDownload)
- * - 【习惯】删除分享记录       → DELETE /api/admin/shares/{id}/record，调 adminDeleteShare；物理删除
- * - 【习惯】新增/修改接口       → 管理端操作为强制性治理动作（服务层 adminXxx 方法不做归属校验），改动需注意治理边界；
- *                        注意 SecurityConfig 权限级别并同步前端管理端 API 层
- */
 @RestController
 @RequestMapping("/api/admin/shares")
 public class AdminShareController {

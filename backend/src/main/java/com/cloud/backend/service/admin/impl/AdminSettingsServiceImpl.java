@@ -18,31 +18,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 系统设置服务实现 —— 所有系统级配置项集中管理（t_setting 表，key-value）。
- * 读取：t_setting 有值优先，否则回落配置文件默认值；写入：null = 删除配置行恢复默认。
- *
- * key 命名：
- * upload.* / storage.* / session.* / cache.* / system.* / file.* / share.* / mail.* / log.*
- *
- * 修改指引：
- * - 【习惯】想改"读取优先级（t_setting 有值优先，否则回落配置文件/yml 默认值）" → readLong/readInt/readBoolean/readString
- *   与 upsertOrReset()（value 为 null 时删除配置行恢复默认）；改动影响全部系统级配置的生效来源
- * - 【习惯】想改"某配置项的 key/默认值/单位" → 各 KEY_* 常量与其对应的 getter（如 getMaxSizeUser 默认值
- *   fileProperties.getMaxSizeUser()）；改动影响读取代金与 yml 兜底，须保持 key 与常量命名一致
- * - 【习惯】想改"单位换算（分钟↔毫秒、秒↔毫秒）" → getAccessTokenTtlMs()（分钟×60×1000）、getBlacklistTokenTtlSeconds()；
- *   改动影响 JWT 签发/校验与黑名单 TTL 的联动
- * - 【习惯】想改"SMTP 密码脱敏占位" → PASSWORD_MASK 常量与 updateMail() 中"等于占位符则不修改密码"判断；
- *   改动影响管理端回显与密码更新语义
- * - 【习惯】想改"老用户配额批量调整" → quotaBatch()：预览内联计算目标配额+adminBonus+reward，执行仅改基础 quota 字段
- *   （不触碰 adminBonusQuota/rewardQuota，幂等）；改动影响批量配额生效范围与三来源配额模型
- * - 【习惯】想改"配置校验规则" → quotaBatch() 中的日期/负数校验与 getShareDefaultDownloadPolicy() 的 DENY/ALLOW 白名单；
- *   改动影响非法入参的拦截
- * - 【习惯】与枚举/常量联动：share 下载策略、mail 加密方式等以 String 存储，读回时在 getter 内收敛白名单；
- *   改动取值集合须同步 getter 归一化逻辑
- * - 【习惯】与接口联动：本类实现 AdminSettingsService，改 getter/update* 签名须同步接口契约与 AdminSettingsController、
- *   FileProperties/JwtProperties 等配置类
- */
 @Service
 public class AdminSettingsServiceImpl implements AdminSettingsService {
 

@@ -15,22 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
-/**
- * 操作日志切面 —— 拦截所有标注 @Log 的方法，在方法执行成功后记录操作日志。
- *
- * 设计思路：
- * 1. 先执行目标方法再记日志：业务失败（抛异常）时不会留下误导性日志
- * 2. 当前用户从安全上下文获取；未登录场景（如开放接口）直接跳过记录
- * 3. 目标 ID 与详情支持 SpEL 表达式，通过方法参数名绑定上下文，可引用返回值（#result）
- *
- * 修改指引：
- * - 【习惯】修改日志记录时机        → around 中 joinPoint.proceed() 之后记录；如需记录失败日志需在 catch 分支补充
- * - 【习惯】修改 SpEL 上下文绑定    → evaluateSpel 中的变量绑定（参数名 + result）；新增变量需同步 @Log 注解的可用表达式说明
- * - 【习惯】修改未登录跳过策略      → around 中 userId == null 判断；当前未登录不记录，改动影响日志覆盖率
- * - 【习惯】修改日志落库方式        → operationLogService.log(...)；改异步可减少主流程延迟，需注意失败兜底
- * - 【统一】修改日志字段组装        → OperationLog 各 setter；需与 OperationLogService 的入库字段保持一致；
- *                             改后需同步 OperationLogService 的入库字段
- */
 @Aspect
 @Component
 public class LogAspect {

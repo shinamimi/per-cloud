@@ -6,41 +6,6 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-/**
- * 文件 Mapper。
- *
- * 核心方法：
- * - findByUserIdAndParentId：按用户和父目录 ID 列出子文件和目录，用于"打开文件夹"场景
- * - pageByUserIdAndParentId / countByUserIdAndParentId：分页列表
- * - findByUserIdAndParentIdAndName：同名检查（重名自动加后缀时使用）
- * - findByUserId：用户全部正常文件（目录树、递归删除收集）
- * - updateStatusByIds：批量逻辑删除（递归删除）
- * - deleteByIds：物理删除（回收站清理）
- *
- * 修改指引：
- * - 【习惯】增删文件             → insert / deleteById / deleteByIds（XML：src/main/resources/mapper/FileMapper.xml）；
- *                          deleteByIds 为 IN 批量物理删除（回收站清理用），改字段名需同步 XML 与实体；
- *                          insert 的 name 参与唯一索引 uk_user_parent_name(user_id, parent_id, name, team_id)，
- *                          改 name 或空间维度字段需同步数据库 DDL
- * - 【习惯】按用户/目录查询       → findByUserIdAndParentId（XML 同上）；仅 status != 0 的正常文件，按 type DESC, name ASC 排序，
- *                          改 status 过滤条件需与 Service 层删除/禁用状态联动
- * - 【习惯】分页查询（用户/团队）  → pageByUserIdAndParentId / pageByTeamIdAndParentId 及配套 count（XML 同上）；
- *                          LIMIT #{offset}, #{size} 由 Service 传入，改排序或返回列需同步 XML
- * - 【习惯】同名检查             → findByUserIdAndParentIdAndName / findByTeamIdAndParentIdAndName（XML 同上）；
- *                          重名自动加后缀时使用，仅 status != 0，配合唯一索引 uk_user_parent_name 防并发竞态
- * - 【习惯】按路径查询            → findByUserIdAndPath（XML 同上）；按完整路径查唯一文件，改 path 维护逻辑需同步 Service 层
- * - 【习惯】更新文件             → update / updateName / updateParent / updateStatus / updateStatusByIds（XML 同上）；
- *                          updateName 仅改 name（重命名）、updateParent 仅改 parentId（移动，MinIO 对象不动），
- *                          updateStatusByIds 为批量逻辑删除（递归删除收集的 ids），status 语义（0=删除/1=正常/2=禁用）
- *                          与 Service 层删除流程联动
- * - 【习惯】对象级禁用/恢复       → disableByHash / disableByHashAndUser / restoreByHash（XML 同上）；
- *                          SQL 条件 status 1→2 且 is_directory=0，改禁用状态值需与 DisabledObject 的 scope 规则
- *                          及 AdminFileService 启用流程联动
- * - 【习惯】团队维度查询          → findByTeamIdAndParentId / findByTeamId 等（XML 同上）；同表以 team_id 区分个人（0）/团队（>0）
- *                          空间，改归属判断需同步 SQL 与 DDL 索引 idx_team(team_id, parent_id, status)
- * - 【习惯】管理端全局文件        → adminPage / adminCount（XML 同上）；adminWhere 动态 SQL 含 username 子查询与排序分支，
- *                          改过滤/排序需同步 XML，且保持分页 offset/size 入参语义
- */
 @Mapper
 public interface FileMapper {
 

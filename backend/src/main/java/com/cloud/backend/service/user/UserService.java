@@ -7,36 +7,6 @@ import com.cloud.backend.enums.UserStatus;
 
 import java.util.List;
 
-/**
- * 用户服务接口 —— 用户 CRUD、配额计算、密码管理与管理端用户治理操作。
- *
- * 设计思路：
- * 1. 配额采用三来源模型：总配额 = 基础配额（VIP 与否）+ 管理端赠送 + 奖励
- * 2. 管理端操作（状态/配额/角色/密码重置）统一拦截对管理员账号的操作，
- *    部分高危动作仅超级管理员可执行，且不允许操作自己
- * 3. 管理端敏感操作记录操作日志（OperationLog）供审计
- *
- * 修改指引：
- * - 【习惯】想改"注册默认字段（VIP=false、赠送/奖励配额 0、BCrypt 密码）" → register() 对应 UserServiceImpl.register()；
- *   改动影响新用户初始状态
- * - 【习惯】想改"全字段覆盖更新语义" → update()（需先加载完整实体再修改，避免覆盖未改动字段）；改动影响所有走
- *   update() 的调用方
- * - 【习惯】想改"配额三来源模型（基础 + adminBonusQuota + rewardQuota）" → calculateTotalQuota()/getRemainingQuota()；
- *   改动影响配额计算与上传/恢复准入
- * - 【习惯】想改"已用空间原子调整" → changeUsedSpace()（Mapper 原子 SQL 自增自减，勿改读改写）；改动影响并发上传/删除
- *   的配额一致性
- * - 【习惯】想改"管理端治理权限约束（不能操作管理员账号/不能改自己/ADMIN 角色仅限超级管理员）" →
- *   updateUserStatus()/updateUserQuota()/unlockUser()/resetUserPassword()/deleteAdmin()/updateAdminRole()/
- *   batchUpdateAdminRole() 中 AuthorizationPolicy 校验；改动影响管理端治理边界
- * - 【习惯】想改"创建管理员/角色变更" → createAdmin()/updateAdminRole()/batchUpdateAdminRole()（逐项写日志）；
- *   改动影响管理员体系
- * - 【习惯】想改"解锁登录锁定" → unlockUser()（置 NORMAL + loginAttemptService.loginSucceeded() 清计数）；
- *   改动影响锁定解锁语义
- * - 【习惯】操作日志：createAdmin()/updateUserStatus()/updateUserQuota()/unlockUser()/updateAdminRole()/
- *   resetUserPassword() 用 @Log，deleteAdmin()/batchUpdateAdminRole() 手工写日志；改动影响 OperationLogService
- * - 【习惯】新增方法 → 需同步实现类 UserServiceImpl 及 AuthServiceImpl、AdminUserController、
- *   FileService/UploadService/TeamService 等大量调用方
- */
 public interface UserService {
 
     /**

@@ -1,19 +1,5 @@
 package com.cloud.backend.dto;
 
-/**
- * 文件搜索条件。
- * userId 必填；parentId 可选（限定目录）；teamId 为 0/不传表示个人空间，>0 为团队空间；
- * keyword 文件名模糊匹配；category 类型过滤（0-图片 1-文档 2-视频 3-音频 4-压缩包 5-其他）；
- * isDirectory 是否只查目录；offset/size 分页。
- *
- * 修改指引：
- * - 【统一】修改筛选字段名        → userId（必填）、parentId（限定目录）、teamId（0/不传=个人空间，>0=团队空间）、
- *                           keyword（文件名模糊）、mimeTypePrefix（MIME 前缀）、isDirectory（只查目录）、
- *                           category（类型过滤）；字段为文件搜索接口入参，改动需同步查询 SQL 与前端搜索条件；改后需同步查询 SQL 与前端搜索条件
- * - 【统一】修改 category 取值    → 0-图片 1-文档 2-视频 3-音频 4-压缩包 5-其他（对应 FileConstants 分类编号），改动需同步分类映射与前端；改后需同步分类映射与前端
- * - 【统一】修改分页语义          → offset（从 0 起）、size（每页条数，默认 20）；SQL 按 LIMIT offset,size 分页，改动影响列表分页；改后需同步所有分页查询与前端分页器
- * - 【习惯】新增筛选字段          → 新增字段并同步查询 SQL（XML）补充过滤条件，否则该条件不生效
- */
 public class FileQuery {
 
     private Long userId;

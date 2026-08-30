@@ -89,4 +89,16 @@ Duration ttl = Duration.ofHours(fileProperties.getUploadExpireHours());
 - presigned URL 不是"生成的字符串可以随便改 host"——S3 v4 签名包含 host，改 host 必 403。必须让签名时用的 endpoint 与浏览器访问地址一致。
 - 排查顺序建议：先看浏览器控制台报 CSP 还是网络；本地与服务器拓扑差异（容器内网名 vs 公网地址）是这类"本地正常、线上异常"的高发根因。
 
+### 问题 ③ 页脚公安备案图标无法显示（HTTP 403）
+
+**现象：** 登录页页脚新增公安备案图标 `beian.png`（`frontend/public/beian.png`）后，公网打开图片 403。同目录的 `index.html`、`assets/*` 均正常。
+
+**根因：** **本地打包的图片文件权限被原样带入了容器**。本地 `beian.png` 权限为 `-rw-r-----`（640，仅属主可读），经 `tar` → `scp` → 容器 `COPY dist` 全程保留；Nginx worker 以非 root 用户运行，**读不了 640 属主为 root 的文件** → 403（Nginx 返回 403 而非 404，易被误判为 CSP/限流/爬虫拦截）。实证：容器内 `ls -la` 显示 `-rw-r----- 1 root root beian.png`，容器内 `curl http://localhost/beian.png` 也 403；`chmod 644` 后公网立即 200。
+
+**修复：** `docker exec cloud-frontend sh -c "chmod 644 /usr/share/nginx/html/beian.png"`（容器内直改，无需重建镜像）。
+
+**经验沉淀：**
+- 新放入 `frontend/public/` 的静态资源**上传前确保权限为 644**（本地 `chmod 644` 或 `tar --mode`），否则会被 tar/scp/COPY 原样带入容器触发 403。
+- 排查 403 优先看**文件权限**，再考虑 CSP/限流/UA 拦截——先容器内 `ls -la` + 容器内 curl 区分是"文件不可读"还是"网络层拦截"。
+
 **经验沉淀（与 BUG 7 同源）：** 公网 HTTP 部署下，浏览器安全上下文限制会命中一组功能：`crypto.subtle`（哈希）、`navigator.clipboard`（剪贴板）、Service Worker、`navigator.geolocation` 等。**根治仍是接入 HTTPS**（域名 `szfanrongkj.com` 已解析在，签证书即可），HTTP 下则需逐一降级（哈希已降级 BUG 7、剪贴板本次降级）。

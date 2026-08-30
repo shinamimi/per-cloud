@@ -15,27 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Properties;
 
-/**
- * 邮件发送服务。
- *
- * 设计思路：
- * 1. 配置中心优先：mail.* 分组（ADMIN 可配）有值时动态构建 JavaMailSender（保存即生效，无需重启）
- * 2. 未配置时回落链：spring.mail.* 自动配置的 sender（local/dev）→ 顶层 mail.*（prod）
- * 3. mail.enabled 开关关闭时拒绝发送（前端提示"邮件服务未开启"）
- * 4. 发件人显示名（mail.from-name）可在配置中心设置
- *
- * 修改指引：
- * - 【习惯】想改"验证码邮件模板/主题" → sendCaptchaMail() 中 HTML 模板与 subject；改动影响邮件内容与前端体验
- * - 【习惯】想改"SMTP 开关/回落链" → sendHtmlMail() 中 settingsService.isMailEnabled() 校验与 buildMailSender() 的
- *   回落顺序（配置中心 mail.* → spring.mail 自动配置 → 顶层 mail.*）；改动影响发信可用性
- * - 【习惯】想改"加密方式（STARTTLS/SSL/NONE）" → buildSender() 的 props 设置与 settingsService.getMailEncryption()
- *   白名单；改动影响 SMTP 连接安全
- * - 【习惯】想改"发件人地址/显示名" → defaultFrom()（配置中心 mail.from → yml spring.mail.from → noreply@cloud.local
- *   兜底）与 getMailFromName()；改动影响收件端显示
- * - 【习惯】想改"发送失败语义" → sendHtmlMail() 中 catch 包装 BusinessException（MAIL_NOT_ENABLED/INTERNAL_ERROR）；
- *   改动影响调用方错误处理
- * - 【习惯】本类为具体实现类（@Service），非接口；被 AuthServiceImpl 直接注入调用
- */
 @Service
 public class EmailService {
 
