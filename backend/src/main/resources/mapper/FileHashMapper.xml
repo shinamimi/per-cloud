@@ -20,7 +20,7 @@
     </update>
 
     <update id="decrementRefCount">
-        UPDATE t_file_hash SET ref_count = ref_count - 1 WHERE file_hash = #{fileHash}
+        UPDATE t_file_hash SET ref_count = ref_count - 1 WHERE file_hash = #{fileHash} AND ref_count > 0
     </update>
 
     <delete id="deleteByHash" parameterType="java.lang.String">
