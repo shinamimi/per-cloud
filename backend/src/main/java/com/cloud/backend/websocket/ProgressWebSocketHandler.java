@@ -17,11 +17,28 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 统一进度通道 /ws/progress。
+ *
+ * 设计思路：
+ * 上传分片进度、批量打包进度均通过此通道推送（按用户隔离；多实例时用 Redis Pub/Sub 扩展，
+ * 见 file-module.md 11 节扩展预留）。消息格式：{type: "upload"|"download", ...业务字段}。
+ *
+ * 修改指引：
+ * - 【统一】修改消息格式            → broadcast/sendToUser 中的 {type, ...payload}；改动需同步前端解析与 file-module.md 消息格式约定；
+ *                             改后需同步前端解析与 file-module.md 消息格式约定
+ * - 【习惯】修改广播范围/定向推送   → userSessions 映射与 sendToUser/broadcast 循环；当前为单实例用户隔离，多实例需改 Redis Pub/Sub
+ * - 【习惯】修改连接生命周期处理    → afterConnectionEstablished / afterConnectionClosed / handleTransportError；
+ *                             当前会话存于内存 ConcurrentHashMap，服务重启即失效
+ * - 【统一】新增业务推送类型        → 调用方以 type 区分（upload/download）；新增类型需在前端注册对应处理；
+ *                             改后需同步调用方 type 取值与前端注册对应处理
+ */
 @Component
 public class ProgressWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ProgressWebSocketHandler.class);
 
+    /** 按 userId 隔离的会话映射，替代全局广播 */
     private final ConcurrentHashMap<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JwtTokenUtil jwtTokenUtil;
