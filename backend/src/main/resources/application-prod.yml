@@ -13,11 +13,33 @@ spring:
     username: ${MYSQL_USER}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 5
+      connection-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
 
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+          max-wait: 3000
+
+server:
+  tomcat:
+    threads:
+      max: 50
+      min-spare: 5
+    max-connections: 100
+    accept-count: 100
+    connection-timeout: 10000
 
 minio:
   endpoint: ${MINIO_ENDPOINT}

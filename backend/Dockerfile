@@ -5,7 +5,7 @@
 #
 # 设计思路：
 # 1. 采用多阶段之外的单层 runtime 镜像：镜像内仅含 JRE + jar，减少体积
-# 2. JVM 堆按 2C2G 轻量机预热：-Xmx512m + Serial GC 低内存占用
+# 2. JVM 堆按 2C2G 轻量机预热：-Xmx512m + G1GC 低延迟
 # 3. prod profile 所有配置来自环境变量（application-prod.yml），镜像不内嵌密钥
 # =============================================================================
 FROM eclipse-temurin:21-jre
@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY target/cloud-backend-0.0.1-SNAPSHOT.jar app.jar
 
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseSerialGC"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof"
 
 EXPOSE 8081
 

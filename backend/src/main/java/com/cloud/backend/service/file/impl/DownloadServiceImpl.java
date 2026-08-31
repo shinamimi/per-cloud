@@ -89,7 +89,7 @@ public class DownloadServiceImpl implements DownloadService {
         this.progressHandler = progressHandler;
         this.adminSettingsService = adminSettingsService;
         this.disabledObjectMapper = disabledObjectMapper;
-        this.packExecutor = Executors.newFixedThreadPool(2, runnable -> {
+        this.packExecutor = Executors.newFixedThreadPool(4, runnable -> {
             Thread thread = new Thread(runnable, "pack-task");
             thread.setDaemon(true);
             return thread;
