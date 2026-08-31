@@ -72,7 +72,7 @@ file:
   max-size-vip: 2147483648      # 2GB，VIP 用户单文件大小上限（默认值，管理员可配置）
   max-concurrent-user: 3        # 普通用户同时进行中的上传任务数上限（默认值，管理员可配置）
   max-concurrent-vip: 5         # VIP 用户同时进行中的上传任务数上限（默认值，管理员可配置）
-  small-file-threshold: 5242880 # 5MB，小于此阈值的文件不分片直接上传
+  small-file-threshold: 10485760 # 10MB，小于此阈值的文件不分片直接上传
   upload-expire-hours: 24       # 上传临时分片/元数据保留时长
   package-expire-hours: 24      # 打包下载产物保留时长
   recycle-days: 30              # 回收站保留天数，到期物理清理
