@@ -195,7 +195,7 @@ UploadInitRequest:
 
 UploadInitResponse:
   uploadId: string
-  chunkSize: int (默认 5MB)
+  chunkSize: int (默认 10MB)
   totalChunks: int
 
 UploadMergeRequest:

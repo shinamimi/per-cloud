@@ -5,12 +5,16 @@
  * 1. 前端计算 SHA256 → POST /sec（全站 Hash 命中 → 秒传完成，返回 { instant, file }）
  * 2. 未命中 → POST /upload/init（校验配额/单文件上限/并发数，返回 uploadId + chunkSize + totalChunks）
  * 3. GET /upload/progress/{uploadId} 取已传分片（断点续传）
- * 4. 按 chunkSize 切片 → POST /upload/chunk 逐片上传（seq 从 1 开始，跳过已传分片）
+ * 4. 按 chunkSize 切片 → 并发 POST /upload/chunk 上传（seq 从 1 开始，跳过已传分片）
  * 5. POST /upload/merge 合并 → 写 t_file → 配额一次性扣减
  *
  * 进度处理：
  * - 分片阶段按「已传片数 / 总片数」计算本地进度
  * - 后端 WebSocket 同步推送（/ws/progress）作为补充，store 层合并展示
+ *
+ * 并发上传：
+ * - 5 个分片并发上传，充分利用带宽
+ * - 使用 Promise 并发控制，避免浏览器连接数限制
  */
 import { sha256 as jsSha256 } from 'js-sha256'
 import { secUpload, uploadChunk, uploadInit, uploadMerge, uploadProgress } from '@/api/file'
@@ -47,18 +51,49 @@ export async function sha256(file: File): Promise<string> {
 }
 
 /**
+ * 并发控制：限制同时执行的异步任务数量
+ */
+async function concurrentMap<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = []
+  const executing = new Set<Promise<void>>()
+
+  for (const item of items) {
+    const p = fn(item).then((result) => {
+      results.push(result)
+    })
+    const wrapped = p.then(() => {
+      executing.delete(wrapped)
+    })
+    executing.add(wrapped)
+
+    if (executing.size >= concurrency) {
+      await Promise.race(executing)
+    }
+  }
+
+  await Promise.all(executing)
+  return results
+}
+
+/**
  * 上传单个文件（含秒传校验）。
  *
  * @param file     待上传文件
  * @param parentId 目标目录 ID
  * @param handlers 状态/进度回调（驱动上传队列 UI）
  * @param teamId   团队 ID（缺省为个人空间）
+ * @param concurrentChunks 并发分片数（默认 5）
  */
 export async function uploadOneFile(
   file: File,
   parentId: number,
   handlers: UploadHandlers,
   teamId?: number,
+  concurrentChunks: number = 5,
 ): Promise<UploadResult> {
   // 1. 计算 SHA256 → 秒传校验
   handlers.onStatus('hashing')
@@ -98,14 +133,25 @@ export async function uploadOneFile(
 
   handlers.onStatus('uploading')
 
-  // 4. 逐片上传（seq 从 1 开始，跳过已传分片）
+  // 4. 并发上传分片（seq 从 1 开始，跳过已传分片）
+  const pendingChunks: number[] = []
   for (let seq = 1; seq <= totalChunks; seq++) {
-    if (uploaded.has(seq)) continue
+    if (!uploaded.has(seq)) {
+      pendingChunks.push(seq)
+    }
+  }
+
+  let completedChunks = totalChunks - pendingChunks.length
+  const totalPending = pendingChunks.length
+
+  // 使用并发控制上传分片
+  await concurrentMap(pendingChunks, concurrentChunks, async (seq) => {
     const start = (seq - 1) * chunkSize
     const end = Math.min(start + chunkSize, file.size)
     await uploadChunk(uploadId, seq, file.slice(start, end))
-    handlers.onProgress(Math.round((seq / totalChunks) * 100))
-  }
+    completedChunks++
+    handlers.onProgress(Math.round((completedChunks / totalChunks) * 100))
+  })
 
   // 5. 合并分片（后端一次性扣减配额）
   handlers.onStatus('merging')
