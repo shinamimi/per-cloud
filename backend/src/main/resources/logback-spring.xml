@@ -142,8 +142,8 @@
             <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
                 <fileNamePattern>${LOG_PATH}/application-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
                 <maxFileSize>100MB</maxFileSize>
-                <maxHistory>30</maxHistory>
-                <totalSizeCap>3GB</totalSizeCap>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>256MB</totalSizeCap>
             </rollingPolicy>
         </appender>
 
@@ -160,8 +160,8 @@
             <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
                 <fileNamePattern>${LOG_PATH}/error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
                 <maxFileSize>100MB</maxFileSize>
-                <maxHistory>30</maxHistory>
-                <totalSizeCap>1GB</totalSizeCap>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>64MB</totalSizeCap>
             </rollingPolicy>
         </appender>
 

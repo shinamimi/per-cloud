@@ -17,9 +17,17 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminSettingsServiceImpl implements AdminSettingsService {
+
+    /* ==================== 缓存配置 ==================== */
+    private volatile Map<String, String> settingsCache = new ConcurrentHashMap<>();
+    private volatile long lastRefreshTime = 0;
+    private static final long REFRESH_INTERVAL_MS = 60_000; // 60秒刷新一次
 
     /* ==================== 上传限制 ==================== */
     private static final String KEY_MAX_SIZE_USER = "upload.max-size-user";
@@ -496,42 +504,59 @@ public class AdminSettingsServiceImpl implements AdminSettingsService {
     }
 
     private long readLong(String key, long defaultValue) {
-        Setting setting = settingMapper.findByKey(key);
-        if (setting == null || setting.getSettingValue() == null || setting.getSettingValue().isBlank()) {
+        String cachedValue = getCachedSetting(key);
+        if (cachedValue == null || cachedValue.isBlank()) {
             return defaultValue;
         }
         try {
-            return Long.parseLong(setting.getSettingValue());
+            return Long.parseLong(cachedValue);
         } catch (NumberFormatException e) {
             return defaultValue;
         }
     }
 
     private int readInt(String key, int defaultValue) {
-        Setting setting = settingMapper.findByKey(key);
-        if (setting == null || setting.getSettingValue() == null || setting.getSettingValue().isBlank()) {
+        String cachedValue = getCachedSetting(key);
+        if (cachedValue == null || cachedValue.isBlank()) {
             return defaultValue;
         }
         try {
-            return Integer.parseInt(setting.getSettingValue());
+            return Integer.parseInt(cachedValue);
         } catch (NumberFormatException e) {
             return defaultValue;
         }
     }
 
     private boolean readBoolean(String key, boolean defaultValue) {
-        Setting setting = settingMapper.findByKey(key);
-        if (setting == null || setting.getSettingValue() == null || setting.getSettingValue().isBlank()) {
+        String cachedValue = getCachedSetting(key);
+        if (cachedValue == null || cachedValue.isBlank()) {
             return defaultValue;
         }
-        return Boolean.parseBoolean(setting.getSettingValue());
+        return Boolean.parseBoolean(cachedValue);
     }
 
     private String readString(String key, String defaultValue) {
-        Setting setting = settingMapper.findByKey(key);
-        if (setting == null || setting.getSettingValue() == null || setting.getSettingValue().isBlank()) {
+        String cachedValue = getCachedSetting(key);
+        if (cachedValue == null || cachedValue.isBlank()) {
             return defaultValue;
         }
-        return setting.getSettingValue();
+        return cachedValue;
+    }
+
+    private String getCachedSetting(String key) {
+        if (System.currentTimeMillis() - lastRefreshTime > REFRESH_INTERVAL_MS) {
+            refreshSettingsCache();
+        }
+        return settingsCache.get(key);
+    }
+
+    private synchronized void refreshSettingsCache() {
+        if (System.currentTimeMillis() - lastRefreshTime > REFRESH_INTERVAL_MS) {
+            List<Setting> allSettings = settingMapper.findAll();
+            settingsCache = allSettings.stream()
+                    .filter(s -> s.getSettingValue() != null)
+                    .collect(Collectors.toMap(Setting::getSettingKey, Setting::getSettingValue));
+            lastRefreshTime = System.currentTimeMillis();
+        }
     }
 }
