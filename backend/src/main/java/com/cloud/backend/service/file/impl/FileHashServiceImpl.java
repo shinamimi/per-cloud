@@ -67,11 +67,7 @@ public class FileHashServiceImpl implements FileHashService {
         if (updated == 0) {
             return false;
         }
-        FileHash after = fileHashMapper.findByHash(fileHash);
-        if (after == null || after.getRefCount() <= 0) {
-            fileHashMapper.deleteByHash(fileHash);
-            return true;
-        }
-        return false;
+        // 原子删除：ref_count <= 0 时才删除（替代 decrement + findByHash + delete 的 TOCTOU）
+        return fileHashMapper.deleteIfNoRef(fileHash) > 0;
     }
 }

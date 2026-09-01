@@ -28,9 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +73,7 @@ public class FileServiceImpl implements FileService {
     private final FileHashMapper fileHashMapper;
     private final com.cloud.backend.config.FileProperties fileProperties;
     private final com.cloud.backend.service.file.RecycleBinService recycleBinService;
+    private final com.cloud.backend.mapper.RecycleBinMapper recycleBinMapper;
     private final com.cloud.backend.dao.FileDao fileDao;
     private final com.cloud.backend.service.admin.AdminSettingsService adminSettingsService;
 
@@ -82,6 +81,7 @@ public class FileServiceImpl implements FileService {
                            OperationLogService operationLogService, UserService userService,
                            FileHashMapper fileHashMapper, com.cloud.backend.config.FileProperties fileProperties,
                            com.cloud.backend.service.file.RecycleBinService recycleBinService,
+                           com.cloud.backend.mapper.RecycleBinMapper recycleBinMapper,
                            com.cloud.backend.dao.FileDao fileDao,
                            com.cloud.backend.service.admin.AdminSettingsService adminSettingsService) {
         this.fileMapper = fileMapper;
@@ -91,6 +91,7 @@ public class FileServiceImpl implements FileService {
         this.fileHashMapper = fileHashMapper;
         this.fileProperties = fileProperties;
         this.recycleBinService = recycleBinService;
+        this.recycleBinMapper = recycleBinMapper;
         this.fileDao = fileDao;
         this.adminSettingsService = adminSettingsService;
     }
@@ -283,8 +284,10 @@ public class FileServiceImpl implements FileService {
         }
         Map<Long, Long> idMap = new HashMap<>();
         File copied = copyNode(userId, file, targetParentId, idMap);
+        long extraSize = 0;
         if (file.isDir()) {
-            for (File child : collectSubtree(userId, fileId)) {
+            List<File> children = collectSubtree(userId, fileId);
+            for (File child : children) {
                 if (child.getId().equals(fileId)) {
                     continue;
                 }
@@ -294,13 +297,12 @@ public class FileServiceImpl implements FileService {
                 if (newParent == null) {
                     newParent = targetParentId;
                 }
-                copyNode(userId, child, newParent, idMap);
+                File copiedChild = copyNode(userId, child, newParent, idMap);
+                if (!child.isDir() && child.getSize() != null) {
+                    extraSize += child.getSize();
+                }
             }
         }
-        // 复制产生的新文件占用配额（等价于秒传）
-        long extraSize = collectSubtree(userId, copied.getId()).stream()
-                .map(File::getSize).filter(java.util.Objects::nonNull)
-                .mapToLong(Long::longValue).sum();
         if (extraSize > 0) {
             long remaining = userService.getRemainingQuota(userId);
             if (extraSize > remaining) {
@@ -338,7 +340,7 @@ public class FileServiceImpl implements FileService {
     }
 
     /**
-     * 删除到回收站（事务）：子树整体置 DELETED，逐节点写回收站记录（顶层用删除前原名），
+     * 删除到回收站（事务）：子树整体置 DELETED，批量写回收站记录（顶层用删除前原名），
      * 释放配额并写操作日志；顶层节点改内部名避免占用唯一索引。
      */
     @Override
@@ -353,13 +355,16 @@ public class FileServiceImpl implements FileService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expireTime = now.plusDays(adminSettingsService.getRecycleBinDays());
         long totalSize = 0;
+        // 批量更新状态（替代循环单条 UPDATE）
+        List<Long> nodeIds = nodes.stream().map(File::getId).toList();
+        fileMapper.updateStatusByIds(nodeIds, FileStatus.DELETED.getValue());
+        // 批量构建回收站记录
+        List<RecycleBin> recycleBins = new ArrayList<>();
         for (File node : nodes) {
             totalSize += node.getSize() != null ? node.getSize() : 0;
-            fileMapper.updateStatus(node.getId(), FileStatus.DELETED.getValue());
             RecycleBin recycleBin = new RecycleBin();
             recycleBin.setUserId(userId);
             recycleBin.setFileId(node.getId());
-            // 顶层节点用删除前原名（DB 中已是内部名）；子节点未改名
             recycleBin.setOriginalName(node.getId().equals(fileId) ? originalName : node.getName());
             recycleBin.setObjectName(node.getObjectName() == null ? "" : node.getObjectName());
             recycleBin.setFileHash(node.getFileHash() == null ? "" : node.getFileHash());
@@ -371,8 +376,10 @@ public class FileServiceImpl implements FileService {
             recycleBin.setMimeType(node.getMimeType() == null ? "" : node.getMimeType());
             recycleBin.setDeletedTime(now);
             recycleBin.setExpireTime(expireTime);
-            recycleBinService.save(recycleBin);
+            recycleBins.add(recycleBin);
         }
+        // 批量插入回收站（替代循环单条 INSERT）
+        recycleBinMapper.batchInsert(recycleBins);
         if (totalSize > 0) {
             userService.changeUsedSpace(userId, -totalSize);
         }
@@ -436,28 +443,8 @@ public class FileServiceImpl implements FileService {
         return parent.getPath() + "/" + name;
     }
 
-    /** BFS 收集子树（含根节点） */
+    /** 递归收集子树（含根节点），使用 MySQL 8 CTE 替代全表扫描 */
     private List<File> collectSubtree(Long userId, Long rootId) {
-        File root = fileMapper.findById(rootId);
-        if (root == null) {
-            return List.of();
-        }
-        Map<Long, List<File>> childrenByParent = fileMapper.findByUserId(userId).stream()
-                .collect(Collectors.groupingBy(File::getParentId));
-        List<File> result = new ArrayList<>();
-        result.add(root);
-        Deque<Long> queue = new ArrayDeque<>();
-        queue.add(rootId);
-        while (!queue.isEmpty()) {
-            Long current = queue.poll();
-            List<File> children = childrenByParent.getOrDefault(current, List.of());
-            for (File child : children) {
-                result.add(child);
-                if (child.isDir()) {
-                    queue.add(child.getId());
-                }
-            }
-        }
-        return result;
+        return fileMapper.findSubtree(rootId, userId);
     }
 }

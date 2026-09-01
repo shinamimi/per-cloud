@@ -32,6 +32,9 @@ public interface RecycleBinMapper {
 
     int insert(RecycleBin recycleBin);
 
+    /** 批量插入回收站记录（替代循环单条 INSERT） */
+    int batchInsert(@Param("records") List<RecycleBin> records);
+
     RecycleBin findById(Long id);
 
     RecycleBin findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);

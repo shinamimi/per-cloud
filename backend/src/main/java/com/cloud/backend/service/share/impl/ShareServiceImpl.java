@@ -298,9 +298,17 @@ public class ShareServiceImpl implements ShareService {
     /** 查询本人分享列表，附当前原文件名（原文件已删除时显示占位文案）。 */
     @Override
     public List<ShareResponse> listShares(Long userId) {
-        return shareMapper.findByUserId(userId).stream().map(share -> {
+        List<Share> shares = shareMapper.findByUserId(userId);
+        if (shares.isEmpty()) {
+            return List.of();
+        }
+        // 批量加载文件（替代 N+1）
+        Set<Long> fileIds = shares.stream().map(Share::getFileId).collect(Collectors.toSet());
+        Map<Long, File> fileMap = fileMapper.findByIds(fileIds).stream()
+                .collect(Collectors.toMap(File::getId, f -> f));
+        return shares.stream().map(share -> {
             ShareResponse response = ShareResponse.from(share);
-            File file = fileMapper.findById(share.getFileId());
+            File file = fileMap.get(share.getFileId());
             response.setName(file != null ? file.getName() : "（文件已删除）");
             return response;
         }).toList();
@@ -684,10 +692,10 @@ public class ShareServiceImpl implements ShareService {
         selected = selected.stream()
                 .filter(n -> !hasSelectedAncestor(n, byId, selectedIds))
                 .toList();
-        // BFS 展开选中目录为文件清单，构造 zip 用的 File（path 用快照相对路径保持目录层级）
+        // BFS 展开选中目录为文件清单
         Map<Long, List<ShareFile>> childrenByParent = all.stream()
                 .collect(Collectors.groupingBy(ShareFile::getParentId));
-        List<File> files = new ArrayList<>();
+        List<ShareFile> fileNodes = new ArrayList<>();
         Deque<ShareFile> queue = new ArrayDeque<>(selected);
         while (!queue.isEmpty()) {
             ShareFile node = queue.poll();
@@ -695,7 +703,18 @@ public class ShareServiceImpl implements ShareService {
                 queue.addAll(childrenByParent.getOrDefault(node.getId(), List.of()));
                 continue;
             }
-            File original = fileMapper.findById(node.getFileId());
+            fileNodes.add(node);
+        }
+        if (fileNodes.isEmpty()) {
+            return List.of();
+        }
+        // 批量加载原始文件（替代 N+1）
+        Set<Long> originalFileIds = fileNodes.stream().map(ShareFile::getFileId).collect(Collectors.toSet());
+        Map<Long, File> originalFileMap = fileMapper.findByIds(originalFileIds).stream()
+                .collect(Collectors.toMap(File::getId, f -> f));
+        List<File> files = new ArrayList<>();
+        for (ShareFile node : fileNodes) {
+            File original = originalFileMap.get(node.getFileId());
             if (original == null || original.getStatus() != FileStatus.NORMAL) {
                 continue;
             }

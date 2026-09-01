@@ -27,4 +27,9 @@
         DELETE FROM t_file_hash WHERE file_hash = #{fileHash}
     </delete>
 
+    <!-- 原子删除：ref_count <= 0 时才删除（替代 decrement + findByHash + delete 的 TOCTOU） -->
+    <delete id="deleteIfNoRef" parameterType="java.lang.String">
+        DELETE FROM t_file_hash WHERE file_hash = #{fileHash} AND ref_count <= 0
+    </delete>
+
 </mapper>
