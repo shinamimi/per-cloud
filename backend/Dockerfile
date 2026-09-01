@@ -12,10 +12,16 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup --shell /bin/sh appuser && \
+    mkdir -p /app/logs && chown -R appuser:appgroup /app
+
 COPY target/cloud-backend-0.0.1-SNAPSHOT.jar app.jar
 
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -Xlog:gc*:file=/app/logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10m"
 
 EXPOSE 8081
+
+USER appuser
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active=prod"]
