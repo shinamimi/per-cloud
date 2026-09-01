@@ -13,6 +13,9 @@ public interface FileMapper {
 
     File findById(Long id);
 
+    /** 批量查询文件（IN 查询，替代 N+1） */
+    List<File> findByIds(@Param("ids") java.util.Collection<Long> ids);
+
     List<File> findByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId);
 
     List<File> pageByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId,
@@ -26,6 +29,9 @@ public interface FileMapper {
     File findByUserIdAndPath(@Param("userId") Long userId, @Param("path") String path);
 
     List<File> findByUserId(Long userId);
+
+    /** 递归查询子树（MySQL 8 CTE，替代全表扫描） */
+    List<File> findSubtree(@Param("rootId") Long rootId, @Param("userId") Long userId);
 
     int update(File file);
 
@@ -75,4 +81,10 @@ public interface FileMapper {
     List<File> adminPage(com.cloud.backend.dto.AdminFileQuery query);
 
     long adminCount(com.cloud.backend.dto.AdminFileQuery query);
+
+    /** 统计文件总数（替代 findAll().size()） */
+    long countAll();
+
+    /** 统计文件总大小（替代 findAll().stream().mapToLong().sum()） */
+    long sumSize();
 }

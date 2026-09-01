@@ -16,4 +16,7 @@ public interface FileHashMapper {
     int decrementRefCount(String fileHash);
 
     int deleteByHash(String fileHash);
+
+    /** 原子删除：ref_count <= 0 时才删除（替代 TOCTOU 竞态） */
+    int deleteIfNoRef(String fileHash);
 }

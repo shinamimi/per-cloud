@@ -13,6 +13,16 @@
                 #{deletedBy}, #{parentId}, #{size}, #{mimeType}, #{deletedTime}, #{expireTime})
     </insert>
 
+    <insert id="batchInsert">
+        INSERT INTO t_recycle_bin (user_id, file_id, original_name, object_name, file_hash, type, team_id,
+                                   deleted_by, parent_id, size, mime_type, deleted_time, expire_time)
+        VALUES
+        <foreach collection="records" item="r" separator=",">
+            (#{r.userId}, #{r.fileId}, #{r.originalName}, #{r.objectName}, #{r.fileHash}, #{r.type}, #{r.teamId},
+             #{r.deletedBy}, #{r.parentId}, #{r.size}, #{r.mimeType}, #{r.deletedTime}, #{r.expireTime})
+        </foreach>
+    </insert>
+
     <select id="findById" parameterType="java.lang.Long" resultType="com.cloud.backend.entity.RecycleBin">
         SELECT * FROM t_recycle_bin WHERE id = #{id}
     </select>

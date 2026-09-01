@@ -15,6 +15,7 @@ import com.cloud.backend.utils.IdUtil;
 import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -131,24 +132,30 @@ public class PreviewServiceImpl implements PreviewService {
         return response;
     }
 
-    /** 生成/复用缩略图（gif/svg 不生成，直接复用原图） */
+    /** 生成/复用缩略图（gif/svg 不生成，直接复用原图）；异步生成不阻塞 Tomcat 线程 */
     private String thumbnailUrl(Long userId, File file, String extension, String originalUrl) {
         if ("gif".equals(extension) || "svg".equals(extension)) {
             return originalUrl;
         }
         String thumbnailObject = IdUtil.thumbnailObject(userId, file.getId());
-        if (!storageService.objectExists(thumbnailObject)) {
-            try (InputStream input = storageService.download(file.getObjectName())) {
-                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                Thumbnails.of(input).size(500, 500).outputFormat("jpg").toOutputStream(output);
-                byte[] bytes = output.toByteArray();
-                storageService.upload(thumbnailObject,
-                        new java.io.ByteArrayInputStream(bytes), bytes.length, "image/jpeg");
-            } catch (IOException e) {
-                log.warn("Generate thumbnail failed: fileId={}", file.getId(), e);
-                return originalUrl;
-            }
+        if (storageService.objectExists(thumbnailObject)) {
+            return storageService.generateDownloadUrl(thumbnailObject, adminSettingsService.getDownloadLinkTtlMinutes());
         }
-        return storageService.generateDownloadUrl(thumbnailObject, adminSettingsService.getDownloadLinkTtlMinutes());
+        // 缩略图不存在，异步生成，先返回原图 URL
+        generateThumbnailAsync(userId, file.getObjectName(), thumbnailObject, file.getId());
+        return originalUrl;
+    }
+
+    @Async("thumbnailExecutor")
+    public void generateThumbnailAsync(Long userId, String sourceObject, String thumbnailObject, Long fileId) {
+        try (InputStream input = storageService.download(sourceObject)) {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            Thumbnails.of(input).size(500, 500).outputFormat("jpg").toOutputStream(output);
+            byte[] bytes = output.toByteArray();
+            storageService.upload(thumbnailObject,
+                    new java.io.ByteArrayInputStream(bytes), bytes.length, "image/jpeg");
+        } catch (IOException e) {
+            log.warn("Generate thumbnail failed: fileId={}", fileId, e);
+        }
     }
 }

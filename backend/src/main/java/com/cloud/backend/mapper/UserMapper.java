@@ -48,4 +48,10 @@ public interface UserMapper {
 
     /** 用户搜索（好友/团队拉人）：用户名或邮箱前缀模糊匹配，最多 20 条 */
     List<User> searchByKeyword(@Param("keyword") String keyword, @Param("limit") int limit);
+
+    /** 统计用户总数（替代 findAll().size()） */
+    long countAll();
+
+    /** 统计用户配额总和（替代 findAll().stream().mapToLong().sum()） */
+    long sumQuota();
 }

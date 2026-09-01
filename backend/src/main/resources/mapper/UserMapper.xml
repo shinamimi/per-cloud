@@ -107,4 +107,14 @@
         LIMIT #{limit}
     </select>
 
+    <!-- 统计用户总数 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_user
+    </select>
+
+    <!-- 统计用户配额总和 -->
+    <select id="sumQuota" resultType="long">
+        SELECT COALESCE(SUM(quota), 0) FROM t_user
+    </select>
+
 </mapper>
