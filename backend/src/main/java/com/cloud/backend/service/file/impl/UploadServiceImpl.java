@@ -105,6 +105,10 @@ public class UploadServiceImpl implements UploadService {
         if (fileName.isEmpty() || fileName.length() > 255) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件名长度需在 1-255 之间");
         }
+        String extension = FileUtil.getExtension(fileName);
+        if (!FileUtil.isAllowed(extension)) {
+            throw new BusinessException(ErrorCode.UPLOAD_INVALID, "不支持的文件类型");
+        }
         long teamId = normalizeTeamId(request.getTeamId());
         validateParent(userId, teamId, request.getParentId());
         long fileSize = request.getFileSize();
@@ -390,6 +394,10 @@ public class UploadServiceImpl implements UploadService {
         if (fileName.isEmpty() || fileName.length() > 255) {
             throw new BusinessException(ErrorCode.UPLOAD_INVALID, "文件名长度需在 1-255 之间");
         }
+        String extension = FileUtil.getExtension(fileName);
+        if (!FileUtil.isAllowed(extension)) {
+            throw new BusinessException(ErrorCode.UPLOAD_INVALID, "不支持的文件类型");
+        }
         long teamId = normalizeTeamId(request.getTeamId());
         validateParent(userId, teamId, request.getParentId());
         requireNotBlocked(request.getFileHash(), userId);
@@ -449,7 +457,7 @@ public class UploadServiceImpl implements UploadService {
         return meta;
     }
 
-    /** 校验父目录：必须存在、为正常目录且空间归属（个人/团队）一致；根目录直接通过。 */
+    /** 校验父目录：必须存在、为正常目录、归属当前用户且空间归属（个人/团队）一致；根目录直接通过。 */
     private void validateParent(Long userId, Long teamId, Long parentId) {
         if (parentId == null || parentId == FileConstants.ROOT_PARENT_ID) {
             return;
@@ -465,6 +473,9 @@ public class UploadServiceImpl implements UploadService {
         } else {
             if (parent.getTeamId() == null || parent.getTeamId() != 0) {
                 throw new BusinessException(ErrorCode.UPLOAD_INVALID, "父目录不属于个人空间");
+            }
+            if (!parent.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.UPLOAD_INVALID, "父目录不属于当前用户");
             }
         }
     }

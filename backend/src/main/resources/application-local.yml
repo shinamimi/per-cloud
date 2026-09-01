@@ -14,9 +14,9 @@ spring:
       max-request-size: 520MB
 
   datasource:
-    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cloud}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3306}/${MYSQL_DATABASE:cloud}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:cloud}
-    password: ${MYSQL_PASSWORD:mimi}
+    password: ${MYSQL_PASSWORD:Gq2lLB5Qjgh7k7JNOWCkv8}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
