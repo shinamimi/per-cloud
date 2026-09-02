@@ -102,6 +102,8 @@ HELP.md
 # =========================
 # 公开版排除（内部文档/工具）
 # =========================
+!docs/public/
+!docs/public/**
 docs/
 scripts/
 .agents/
